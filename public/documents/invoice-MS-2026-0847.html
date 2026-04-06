@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice MS-2026-0847 — MedSupply Corp</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #e8e8e8; }
+  .page { max-width: 850px; margin: 30px auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .header { background: #003087; color: #fff; padding: 28px 40px; display: flex; justify-content: space-between; align-items: center; }
+  .logo-block .company-name { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+  .logo-block .tagline { font-size: 10px; color: #a0b8e0; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .header-right { text-align: right; font-size: 11px; color: #c8d8f0; line-height: 1.8; }
+  .doc-title-bar { background: #f0f4fa; border-bottom: 2px solid #003087; padding: 10px 40px; display: flex; justify-content: space-between; align-items: center; }
+  .doc-title-bar .doc-label { font-size: 18px; font-weight: 700; color: #003087; letter-spacing: 1px; text-transform: uppercase; }
+  .doc-title-bar .invoice-num { font-size: 13px; color: #555; }
+  .body-section { padding: 28px 40px; }
+  .address-row { display: flex; gap: 40px; margin-bottom: 24px; }
+  .address-block { flex: 1; }
+  .address-block .label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #003087; border-bottom: 1px solid #003087; padding-bottom: 3px; margin-bottom: 8px; }
+  .address-block p { line-height: 1.7; color: #333; }
+  .address-block .attn { font-size: 11px; color: #666; margin-top: 4px; }
+  .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid #d0d8e8; border-radius: 3px; margin-bottom: 24px; overflow: hidden; }
+  .meta-cell { padding: 10px 14px; border-right: 1px solid #d0d8e8; }
+  .meta-cell:last-child { border-right: none; }
+  .meta-cell:nth-child(n+4) { border-top: 1px solid #d0d8e8; }
+  .meta-cell .key { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 3px; }
+  .meta-cell .val { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+  .meta-cell .val.highlight { color: #003087; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 0; font-size: 12px; }
+  thead tr { background: #003087; color: #fff; }
+  thead th { padding: 9px 10px; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; }
+  thead th.num { text-align: right; }
+  tbody tr:nth-child(even) { background: #f5f8fd; }
+  tbody tr:hover { background: #eaf0fb; }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid #e8edf5; vertical-align: top; color: #2a2a2a; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody td .item-code { font-size: 10px; color: #888; margin-top: 2px; font-family: 'Courier New', monospace; }
+  .totals-section { display: flex; justify-content: flex-end; margin-top: 0; border-top: 2px solid #003087; padding-top: 14px; }
+  .totals-table { width: 280px; }
+  .totals-table tr td { padding: 5px 10px; font-size: 13px; }
+  .totals-table tr td:first-child { color: #555; }
+  .totals-table tr td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .totals-table .grand-total td { font-size: 15px; font-weight: 700; color: #003087; border-top: 2px solid #003087; padding-top: 8px; margin-top: 4px; }
+  .totals-table .tax-line td { color: #888; font-size: 12px; }
+  .payment-section { margin-top: 28px; padding: 16px 20px; background: #f0f4fa; border-left: 4px solid #003087; border-radius: 0 3px 3px 0; }
+  .payment-section .pay-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #003087; margin-bottom: 10px; }
+  .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .payment-grid .p-item { font-size: 12px; color: #444; }
+  .payment-grid .p-item span { font-weight: 600; color: #1a1a1a; }
+  .footer { background: #003087; color: #a0b8e0; padding: 14px 40px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+  .footer a { color: #c8d8f0; }
+  .exempt-note { font-size: 10px; color: #888; font-style: italic; }
+  .section-divider { border: none; border-top: 1px solid #e0e6f0; margin: 20px 0; }
+  @media print { body { background: white; } .page { box-shadow: none; margin: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="logo-block">
+      <div class="company-name">MedSupply Corp</div>
+      <div class="tagline">Medical &amp; Surgical Supply Solutions</div>
+    </div>
+    <div class="header-right">
+      2847 Industrial Parkway, Memphis, TN 38103<br>
+      Tel: (901) 555-0147 &nbsp;|&nbsp; Fax: (901) 555-0148<br>
+      AP@medsupplycorp.com<br>
+      www.medsupplycorp.com<br>
+      DUNS: 04-831-7720 &nbsp;|&nbsp; EIN: 62-1847293
+    </div>
+  </div>
+
+  <div class="doc-title-bar">
+    <div class="doc-label">Invoice</div>
+    <div class="invoice-num">Invoice #: <strong>MS-2026-0847</strong> &nbsp;|&nbsp; Submitted Via: <strong>Postal Mail</strong></div>
+  </div>
+
+  <div class="body-section">
+    <div class="address-row">
+      <div class="address-block">
+        <div class="label">Bill To</div>
+        <p><strong>Northfield Medical Center</strong></p>
+        <p>Accounts Payable Department</p>
+        <p>1401 N. Western Avenue</p>
+        <p>Chicago, IL 60622</p>
+        <p class="attn">Attn: Sarah Chen, AP Manager</p>
+      </div>
+      <div class="address-block">
+        <div class="label">Ship To</div>
+        <p><strong>Northfield Medical Center</strong></p>
+        <p>Central Receiving — Loading Dock B</p>
+        <p>1401 N. Western Avenue</p>
+        <p>Chicago, IL 60622</p>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-cell">
+        <div class="key">Invoice Number</div>
+        <div class="val highlight">MS-2026-0847</div>
+      </div>
+      <div class="meta-cell">
+        <div class="key">Invoice Date</div>
+        <div class="val">January 15, 2026</div>
+      </div>
+      <div class="meta-cell">
+        <div class="key">Due Date</div>
+        <div class="val">February 14, 2026</div>
+      </div>
+      <div class="meta-cell">
+        <div class="key">PO Reference</div>
+        <div class="val">NMC-PO-2026-1183</div>
+      </div>
+      <div class="meta-cell">
+        <div class="key">Payment Terms</div>
+        <div class="val">Net 30</div>
+      </div>
+      <div class="meta-cell">
+        <div class="key">Submitted Via</div>
+        <div class="val">Postal Mail</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:130px;">Item Code</th>
+          <th>Description</th>
+          <th class="num" style="width:60px;">Qty</th>
+          <th style="width:55px;">Unit</th>
+          <th class="num" style="width:90px;">Unit Price</th>
+          <th class="num" style="width:100px;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="item-code">MS-GLV-4400L</div></td>
+          <td>Nitrile Exam Gloves Large (box/100)</td>
+          <td class="num">240</td>
+          <td>box</td>
+          <td class="num">$8.95</td>
+          <td class="num">$2,148.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-DRP-7720</div></td>
+          <td>Sterile Surgical Drapes 3/4 Size</td>
+          <td class="num">500</td>
+          <td>ea</td>
+          <td class="num">$3.40</td>
+          <td class="num">$1,700.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-IVS-3310</div></td>
+          <td>IV Administration Set Universal</td>
+          <td class="num">300</td>
+          <td>ea</td>
+          <td class="num">$12.50</td>
+          <td class="num">$3,750.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-SAL-0500</div></td>
+          <td>Sterile Saline Irrigation 500mL (case/12)</td>
+          <td class="num">200</td>
+          <td>case</td>
+          <td class="num">$48.60</td>
+          <td class="num">$9,720.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-GWN-2400</div></td>
+          <td>Disposable Surgical Gown L/XL (case/24)</td>
+          <td class="num">180</td>
+          <td>case</td>
+          <td class="num">$38.75</td>
+          <td class="num">$6,975.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-WCD-5510</div></td>
+          <td>Wound Care Advanced Dressing Kit (box/10)</td>
+          <td class="num">450</td>
+          <td>box</td>
+          <td class="num">$22.50</td>
+          <td class="num">$10,125.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-BDK-1100</div></td>
+          <td>Phlebotomy Blood Draw Kit (box/50)</td>
+          <td class="num">300</td>
+          <td>box</td>
+          <td class="num">$15.80</td>
+          <td class="num">$4,740.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-SYR-1000</div></td>
+          <td>Sterile Luer-Lock Syringe 10mL (case/100)</td>
+          <td class="num">250</td>
+          <td>case</td>
+          <td class="num">$29.20</td>
+          <td class="num">$7,300.00</td>
+        </tr>
+        <tr>
+          <td><div class="item-code">MS-BWC-5000</div></td>
+          <td>Biohazard Waste Container 5gal (case/4)</td>
+          <td class="num">25</td>
+          <td>case</td>
+          <td class="num">$17.32</td>
+          <td class="num">$433.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="totals-section">
+      <table class="totals-table">
+        <tbody>
+          <tr>
+            <td>Subtotal</td>
+            <td>$46,891.00</td>
+          </tr>
+          <tr>
+            <td>Handling &amp; Logistics</td>
+            <td>$229.00</td>
+          </tr>
+          <tr class="tax-line">
+            <td>Tax <span class="exempt-note">(Tax-Exempt)</span></td>
+            <td>$0.00</td>
+          </tr>
+          <tr class="grand-total">
+            <td><strong>TOTAL DUE</strong></td>
+            <td><strong>$47,120.00</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="exempt-note" style="margin-top:8px; text-align:right;">Tax Exemption Certificate #IL-501c3-7741 on file</p>
+
+    <hr class="section-divider">
+
+    <div class="payment-section">
+      <div class="pay-title">Payment Instructions — ACH / Wire Transfer</div>
+      <div class="payment-grid">
+        <div class="p-item">Bank: <span>First Commerce Bank, Chicago, IL</span></div>
+        <div class="p-item">Account #: <span>4471-0028-8833</span></div>
+        <div class="p-item">Routing #: <span>071000013</span></div>
+        <div class="p-item">Reference: <span>Invoice MS-2026-0847</span></div>
+      </div>
+      <p style="font-size:11px; color:#666; margin-top:10px;">Please reference the invoice number on all payments and remittance advice. Checks payable to MedSupply Corp.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Thank you for your business. Questions? Contact AR@medsupplycorp.com or (901) 555-0147 ext. 3</span>
+    <span style="font-size:10px; color:#7090b8;">Page 1 of 1</span>
+  </div>
+</div>
+</body>
+</html>

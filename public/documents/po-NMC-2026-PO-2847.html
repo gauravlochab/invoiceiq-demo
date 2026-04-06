@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchase Order NMC-PO-2026-2847 — Northfield Medical Center</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #dce8e8; }
+  .page { max-width: 850px; margin: 30px auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .header { background: #0D6E6E; color: #fff; padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; }
+  .org-block { display: flex; align-items: center; gap: 14px; }
+  .org-symbol { font-size: 36px; line-height: 1; color: rgba(255,255,255,0.7); }
+  .org-name { font-size: 18px; font-weight: 800; letter-spacing: 0.3px; line-height: 1.2; }
+  .org-name small { font-size: 10px; font-weight: 400; color: #a0d4d4; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-top: 2px; }
+  .header-right { text-align: right; font-size: 11px; color: #a0d4d4; line-height: 1.8; }
+  .po-title-bar { background: #fff; border-bottom: 3px solid #0D6E6E; padding: 14px 40px; display: flex; justify-content: space-between; align-items: center; }
+  .po-doc-label { font-size: 22px; font-weight: 800; color: #0D6E6E; letter-spacing: 2px; text-transform: uppercase; }
+  .po-number-badge { background: #0D6E6E; color: #fff; padding: 6px 16px; border-radius: 3px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+  .body-section { padding: 28px 40px; }
+  .system-notice { background: #f0fafa; border: 1px solid #b0d8d8; border-radius: 3px; padding: 8px 14px; font-size: 11px; color: #555; margin-bottom: 20px; display: flex; justify-content: space-between; }
+  .system-notice span { color: #0D6E6E; font-weight: 600; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .info-block { border: 1px solid #c8dede; border-radius: 3px; overflow: hidden; }
+  .info-block .ib-header { background: #0D6E6E; color: #fff; padding: 7px 14px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+  .info-block .ib-body { padding: 12px 14px; }
+  .info-block p { line-height: 1.7; color: #333; font-size: 12px; }
+  .info-block .vendor-id { font-size: 10px; color: #888; margin-top: 6px; font-family: 'Courier New', monospace; }
+  .po-details-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #c8dede; border: 1px solid #c8dede; border-radius: 3px; margin-bottom: 24px; overflow: hidden; }
+  .pd-cell { background: #fff; padding: 10px 12px; }
+  .pd-cell:nth-child(n+5) { background: #f5fcfc; }
+  .pd-cell .key { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 3px; }
+  .pd-cell .val { font-size: 12px; font-weight: 600; color: #1a1a1a; }
+  .pd-cell .val.hl { color: #0D6E6E; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead tr { background: #0D6E6E; color: #fff; }
+  thead th { padding: 9px 10px; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; }
+  thead th.num { text-align: right; }
+  tbody tr { border-bottom: 1px solid #deeaea; }
+  tbody tr:nth-child(even) { background: #f3fbfb; }
+  tbody td { padding: 10px 10px; vertical-align: top; color: #2a2a2a; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody td .item-code { font-size: 10px; color: #888; font-family: 'Courier New', monospace; font-weight: 600; }
+  .totals-wrapper { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .totals-table { width: 300px; }
+  .totals-table tr td { padding: 7px 12px; font-size: 13px; border-bottom: 1px solid #deeaea; }
+  .totals-table tr td:first-child { color: #555; }
+  .totals-table tr td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .totals-table .grand-total td { font-size: 15px; font-weight: 700; color: #0D6E6E; border-top: 2px solid #0D6E6E; border-bottom: none; padding-top: 10px; }
+  .terms-section { margin-top: 24px; padding: 14px 18px; background: #f0fafa; border: 1px solid #b0d8d8; border-radius: 3px; font-size: 12px; color: #444; line-height: 1.7; }
+  .terms-section strong { color: #0D6E6E; }
+  .sig-section { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+  .sig-block .sig-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 6px; }
+  .sig-block .sig-line { border-bottom: 1px solid #888; height: 36px; margin-bottom: 6px; background: #fafafa; display: flex; align-items: flex-end; padding-bottom: 4px; padding-left: 8px; }
+  .sig-block .sig-name { font-size: 11px; color: #555; }
+  .sig-block .sig-name strong { color: #1a1a1a; }
+  .important-note { margin-top: 20px; padding: 10px 16px; background: #fff8e8; border-left: 4px solid #d4a000; border-radius: 0 3px 3px 0; font-size: 11px; color: #6b4800; }
+  .footer { background: #0D6E6E; color: #a0d4d4; padding: 12px 40px; font-size: 10px; display: flex; justify-content: space-between; margin-top: 30px; }
+  .footer strong { color: #fff; }
+  @media print { body { background: white; } .page { box-shadow: none; margin: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="org-block">
+      <div class="org-symbol">&#10010;</div>
+      <div>
+        <div class="org-name">
+          NORTHFIELD MEDICAL CENTER
+          <small>Procurement &amp; Supply Chain Services</small>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      1401 N. Western Avenue, Chicago, IL 60622<br>
+      Procurement Office: (312) 555-0200<br>
+      procurement@northfieldmed.org<br>
+      Tax ID: 36-2947801 &nbsp;|&nbsp; HIPAA Entity: NMC-CHI-001
+    </div>
+  </div>
+
+  <div class="po-title-bar">
+    <div class="po-doc-label">Purchase Order</div>
+    <div class="po-number-badge">PO# &nbsp;NMC-PO-2026-2847</div>
+  </div>
+
+  <div class="body-section">
+    <div class="system-notice">
+      <span>System Generated — Oracle Procurement Cloud r23.C</span>
+      <span>Generated: February 10, 2026 09:41:02 CST &nbsp;|&nbsp; Printed: February 10, 2026 09:41:14 CST</span>
+    </div>
+
+    <div class="two-col">
+      <div class="info-block">
+        <div class="ib-header">Vendor Information</div>
+        <div class="ib-body">
+          <p><strong>Steris Corporation</strong></p>
+          <p>5960 Heisley Road</p>
+          <p>Mentor, OH 44060</p>
+          <p style="margin-top:4px;">Tel: (440) 555-0193</p>
+          <p>invoices@steris.com</p>
+          <p class="vendor-id">Vendor ID: VND-0291-STERIS &nbsp;|&nbsp; Contract: CTR-2025-STE-007</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <div class="ib-header">Delivery Information</div>
+        <div class="ib-body">
+          <p><strong>Northfield Medical Center</strong></p>
+          <p>Central Receiving — Loading Dock B</p>
+          <p>1401 N. Western Avenue</p>
+          <p>Chicago, IL 60622</p>
+          <p style="margin-top:4px; font-size:11px; color:#666;">Contact: Receiving Dept. (312) 555-0211</p>
+          <p style="font-size:11px; color:#666;">Hours: Mon–Fri 7:00AM–4:30PM</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="po-details-grid">
+      <div class="pd-cell">
+        <div class="key">PO Number</div>
+        <div class="val hl">NMC-PO-2026-2847</div>
+      </div>
+      <div class="pd-cell">
+        <div class="key">PO Date</div>
+        <div class="val">February 10, 2026</div>
+      </div>
+      <div class="pd-cell">
+        <div class="key">Required By</div>
+        <div class="val">February 25, 2026</div>
+      </div>
+      <div class="pd-cell">
+        <div class="key">Payment Terms</div>
+        <div class="val">Net 30</div>
+      </div>
+      <div class="pd-cell">
+        <div class="key">Buyer</div>
+        <div class="val">James Park</div>
+      </div>
+      <div class="pd-cell">
+        <div class="key">Department</div>
+        <div class="val">Surgical Services</div>
+      </div>
+      <div class="pd-cell">
+        <div class="key">Contract Ref</div>
+        <div class="val">CTR-2025-STE-007</div>
+      </div>
+      <div class="pd-cell">
+        <div class="key">Cost Center</div>
+        <div class="val">CC-4410-SURG</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px;">#</th>
+          <th style="width:115px;">Item Code</th>
+          <th>Description</th>
+          <th class="num" style="width:65px;">Qty Ord</th>
+          <th style="width:55px;">Unit</th>
+          <th class="num" style="width:90px;">Unit Price</th>
+          <th class="num" style="width:100px;">Ext. Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:#aaa; font-size:11px;">001</td>
+          <td><div class="item-code">STE-4821-A</div></td>
+          <td>Surgical Draping Kit Pro &mdash; Sterile (individually wrapped)</td>
+          <td class="num">500</td>
+          <td>ea</td>
+          <td class="num">$2.10</td>
+          <td class="num">$1,050.00</td>
+        </tr>
+        <tr>
+          <td style="color:#aaa; font-size:11px;">002</td>
+          <td><div class="item-code">STE-2200-C</div></td>
+          <td>Surgical Isolation Gown AAMI Level 3 XL</td>
+          <td class="num">800</td>
+          <td>ea</td>
+          <td class="num">$8.75</td>
+          <td class="num">$7,000.00</td>
+        </tr>
+        <tr>
+          <td style="color:#aaa; font-size:11px;">003</td>
+          <td><div class="item-code">STE-9940-B</div></td>
+          <td>Disposable Full-Face Shield with Anti-Fog Coating</td>
+          <td class="num">3,000</td>
+          <td>ea</td>
+          <td class="num">$1.20</td>
+          <td class="num">$3,600.00</td>
+        </tr>
+        <tr>
+          <td style="color:#aaa; font-size:11px;">004</td>
+          <td><div class="item-code">STE-3310-D</div></td>
+          <td>Sterile Gauze Pad 4&times;4 inch (pkg/100)</td>
+          <td class="num">500</td>
+          <td>pkg</td>
+          <td class="num">$14.50</td>
+          <td class="num">$7,250.00</td>
+        </tr>
+        <tr>
+          <td style="color:#aaa; font-size:11px;">005</td>
+          <td><div class="item-code">STE-7710-A</div></td>
+          <td>Sterilization Wrap CSR 24&times;24 (case/500)</td>
+          <td class="num">1,000</td>
+          <td>sheet</td>
+          <td class="num">$4.85</td>
+          <td class="num">$4,850.00</td>
+        </tr>
+        <tr>
+          <td style="color:#aaa; font-size:11px;">006</td>
+          <td><div class="item-code">STE-1100-C</div></td>
+          <td>Bouffant Surgical Cap Disposable (case/100)</td>
+          <td class="num">2,000</td>
+          <td>ea</td>
+          <td class="num">$1.90</td>
+          <td class="num">$3,800.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="totals-wrapper">
+      <table class="totals-table">
+        <tbody>
+          <tr>
+            <td>PO Subtotal</td>
+            <td>$27,550.00</td>
+          </tr>
+          <tr>
+            <td>Estimated Freight</td>
+            <td>$1,000.00</td>
+          </tr>
+          <tr>
+            <td>Tax</td>
+            <td>$0.00</td>
+          </tr>
+          <tr class="grand-total">
+            <td><strong>PO Total</strong></td>
+            <td><strong>$28,550.00</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="terms-section">
+      <strong>Terms &amp; Conditions:</strong> Net 30 &nbsp;&bull;&nbsp; Pricing per Contract <strong>#CTR-2025-STE-007</strong> effective June 1, 2025 through May 31, 2027. All goods must conform to specifications. Vendor must reference PO number on all shipping documents, packing slips, and invoices. Northfield Medical Center reserves the right to return non-conforming goods at vendor's expense.
+    </div>
+
+    <div class="sig-section">
+      <div class="sig-block">
+        <div class="sig-label">Authorized By — VP Supply Chain</div>
+        <div class="sig-line">
+          <span style="font-family: 'Georgia', serif; font-style: italic; font-size: 16px; color: #1a1a1a;">Maria Rodriguez</span>
+        </div>
+        <div class="sig-name"><strong>Dr. Maria Rodriguez</strong> &nbsp;|&nbsp; VP Supply Chain &nbsp;|&nbsp; Feb 10, 2026</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Approved By — Chief Financial Officer</div>
+        <div class="sig-line">
+          <span style="font-family: 'Georgia', serif; font-style: italic; font-size: 16px; color: #1a1a1a;">Karen Liu</span>
+        </div>
+        <div class="sig-name"><strong>Karen Liu</strong> &nbsp;|&nbsp; CFO &nbsp;|&nbsp; Feb 10, 2026</div>
+      </div>
+    </div>
+
+    <div class="important-note">
+      <strong>Notice to Vendor:</strong> All pricing must adhere to contracted rates as specified in Contract #CTR-2025-STE-007. Invoices exceeding PO amounts by more than 2% will be automatically placed on hold pending AP review. Questions regarding this PO should be directed to procurement@northfieldmed.org or (312) 555-0200.
+    </div>
+  </div>
+
+  <div class="footer">
+    <span><strong>NORTHFIELD MEDICAL CENTER</strong> &nbsp;&mdash;&nbsp; 1401 N. Western Avenue, Chicago, IL 60622</span>
+    <span>PO# NMC-PO-2026-2847 &nbsp;|&nbsp; Page 1 of 1 &nbsp;|&nbsp; CONFIDENTIAL</span>
+  </div>
+</div>
+</body>
+</html>

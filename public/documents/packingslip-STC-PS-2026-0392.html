@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packing Slip PS-2026-0392 — Steris Corporation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1a1a1a; background: #d8dde0; }
+  .page { max-width: 680px; margin: 30px auto; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+  .partial-banner { background: #c0392b; color: #fff; text-align: center; padding: 10px; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .header { background: #006BA6; color: #fff; padding: 18px 28px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .co-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+  .co-sub { font-size: 9px; letter-spacing: 2px; color: #a0ccec; text-transform: uppercase; margin-top: 2px; }
+  .header-right { text-align: right; font-size: 10px; color: #a8d0ec; line-height: 1.9; }
+  .doc-band { background: #f0f7fc; border-bottom: 2px solid #006BA6; padding: 10px 28px; display: flex; justify-content: space-between; align-items: center; }
+  .doc-type-label { font-size: 15px; font-weight: 700; color: #006BA6; text-transform: uppercase; letter-spacing: 1.5px; }
+  .doc-type-label small { font-size: 9px; font-weight: 400; color: #888; display: block; letter-spacing: 1px; margin-top: 1px; }
+  .slip-num { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+  .body { padding: 20px 28px; }
+  .shipping-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+  .meta-panel { border: 1px solid #c8dde8; border-radius: 3px; overflow: hidden; }
+  .meta-panel .mp-head { background: #006BA6; color: #fff; padding: 6px 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; }
+  .meta-panel .mp-body { padding: 10px 12px; }
+  .meta-panel p { font-size: 11px; line-height: 1.8; color: #333; }
+  .meta-panel .highlight { font-weight: 700; font-size: 12px; color: #1a1a1a; }
+  .carrier-box { margin-bottom: 16px; background: #f5f9fc; border: 1px solid #c8dde8; border-radius: 3px; padding: 10px 14px; display: flex; gap: 30px; }
+  .carrier-box .cb-item { font-size: 11px; color: #444; }
+  .carrier-box .cb-item .cb-key { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #999; letter-spacing: 0.8px; margin-bottom: 2px; }
+  .carrier-box .cb-item .cb-val { font-weight: 600; color: #1a1a1a; font-family: 'Courier New', monospace; }
+  .ref-row { display: flex; gap: 24px; margin-bottom: 16px; padding: 8px 12px; background: #f0f7fc; border: 1px solid #c8dde8; border-radius: 3px; }
+  .ref-item { font-size: 11px; color: #444; }
+  .ref-item .rk { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #999; letter-spacing: 0.8px; margin-bottom: 2px; }
+  .ref-item .rv { font-weight: 600; color: #006BA6; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead tr { background: #006BA6; color: #fff; }
+  thead th { padding: 8px 8px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; }
+  thead th.c { text-align: center; }
+  thead th.r { text-align: right; }
+  tbody tr { border-bottom: 1px solid #dde8f0; }
+  tbody tr:nth-child(even) { background: #f5f9fc; }
+  tbody td { padding: 9px 8px; vertical-align: top; }
+  tbody td.c { text-align: center; }
+  tbody td.r { text-align: right; }
+  tbody td .icode { font-size: 9px; color: #999; font-family: 'Courier New', monospace; margin-top: 1px; }
+  .status-ok { color: #1a7a3c; font-size: 14px; font-weight: 700; }
+  .status-warn { color: #d4600a; font-size: 12px; font-weight: 600; display: flex; align-items: flex-start; gap: 3px; }
+  .status-warn .warn-note { font-size: 10px; color: #c04800; font-weight: 600; line-height: 1.4; }
+  .received-section { margin-top: 20px; border: 1px solid #c8dde8; border-radius: 3px; overflow: hidden; }
+  .received-section .rs-head { background: #f0f7fc; padding: 8px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #006BA6; border-bottom: 1px solid #c8dde8; }
+  .received-grid { display: grid; grid-template-columns: 1fr 1fr; padding: 12px 14px; gap: 10px; }
+  .rg-item { font-size: 11px; color: #444; }
+  .rg-item .rk { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #999; letter-spacing: 0.8px; margin-bottom: 2px; }
+  .rg-item .rv { font-weight: 600; color: #1a1a1a; }
+  .sig-section { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .sig-block .slbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #999; margin-bottom: 6px; }
+  .sig-box { border: 1px solid #aaa; border-radius: 2px; height: 52px; background: #fafafa; display: flex; align-items: flex-end; padding: 6px 10px; }
+  .sig-box .sig-text { font-family: 'Georgia', 'Times New Roman', serif; font-style: italic; font-size: 18px; color: #1a1a1a; }
+  .sig-name { font-size: 10px; color: #555; margin-top: 4px; }
+  .notes-section { margin-top: 18px; padding: 10px 14px; background: #fff8e8; border-left: 4px solid #d4a000; border-radius: 0 3px 3px 0; font-size: 11px; color: #6b4800; }
+  .notes-section strong { color: #4a3000; }
+  .footer { background: #f0f7fc; border-top: 2px solid #006BA6; padding: 10px 28px; display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 20px; }
+  .footer strong { color: #006BA6; }
+  @media print { body { background: white; } .page { box-shadow: none; margin: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="partial-banner">&#9888;&nbsp; PARTIAL DELIVERY &nbsp;&#9888;</div>
+
+  <div class="header">
+    <div>
+      <div class="co-name">STERIS.</div>
+      <div class="co-sub">Shipping &amp; Receiving Document</div>
+    </div>
+    <div class="header-right">
+      5960 Heisley Road, Mentor, OH 44060<br>
+      Distribution Center: (440) 555-0195<br>
+      shipping@steris.com
+    </div>
+  </div>
+
+  <div class="doc-band">
+    <div class="doc-type-label">
+      Packing Slip / Delivery Receipt
+      <small>Warehouse Copy — Retain for Records</small>
+    </div>
+    <div class="slip-num">PS-2026-0392</div>
+  </div>
+
+  <div class="body">
+    <div class="carrier-box">
+      <div class="cb-item">
+        <div class="cb-key">Ship Date</div>
+        <div class="cb-val">February 24, 2026</div>
+      </div>
+      <div class="cb-item">
+        <div class="cb-key">Delivered</div>
+        <div class="cb-val">February 25, 2026</div>
+      </div>
+      <div class="cb-item">
+        <div class="cb-key">Carrier</div>
+        <div class="cb-val">XPO Logistics</div>
+      </div>
+      <div class="cb-item">
+        <div class="cb-key">Tracking Number</div>
+        <div class="cb-val">7249184920183</div>
+      </div>
+      <div class="cb-item">
+        <div class="cb-key">Pkg Count</div>
+        <div class="cb-val">42 of 43</div>
+      </div>
+    </div>
+
+    <div class="shipping-meta">
+      <div class="meta-panel">
+        <div class="mp-head">Ship From</div>
+        <div class="mp-body">
+          <p><span class="highlight">Steris Corporation</span></p>
+          <p>Distribution Center — Mentor, OH</p>
+          <p>5960 Heisley Road</p>
+          <p>Mentor, OH 44060</p>
+        </div>
+      </div>
+      <div class="meta-panel">
+        <div class="mp-head">Deliver To</div>
+        <div class="mp-body">
+          <p><span class="highlight">Northfield Medical Center</span></p>
+          <p>Central Receiving — Loading Dock B</p>
+          <p>1401 N. Western Avenue</p>
+          <p>Chicago, IL 60622</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ref-row">
+      <div class="ref-item">
+        <div class="rk">PO Reference</div>
+        <div class="rv">NMC-PO-2026-2847</div>
+      </div>
+      <div class="ref-item">
+        <div class="rk">Sales Order</div>
+        <div class="rv">SO-2026-88412</div>
+      </div>
+      <div class="ref-item">
+        <div class="rk">Packing Slip #</div>
+        <div class="rv">PS-2026-0392</div>
+      </div>
+      <div class="ref-item">
+        <div class="rk">Invoice Ref</div>
+        <div class="rv">STC-2026-19847</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:95px;">Item Code</th>
+          <th>Description</th>
+          <th class="c" style="width:65px;">Qty Ordered</th>
+          <th class="c" style="width:65px;">Qty Shipped</th>
+          <th style="width:120px;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="icode">STE-4821-A</div></td>
+          <td>Surgical Draping Kit Pro<br><span style="font-size:10px; color:#888;">Sterile, individually wrapped</span></td>
+          <td class="c"><strong>500</strong></td>
+          <td class="c">500</td>
+          <td><span class="status-ok">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td><div class="icode">STE-2200-C</div></td>
+          <td>Surgical Gown AAMI Level 3 XL</td>
+          <td class="c"><strong>800</strong></td>
+          <td class="c">800</td>
+          <td><span class="status-ok">&#10003;</span></td>
+        </tr>
+        <tr style="background: #fff8f0;">
+          <td><div class="icode">STE-9940-B</div></td>
+          <td>Disposable Full-Face Shield Anti-Fog</td>
+          <td class="c"><strong>3,000</strong></td>
+          <td class="c" style="color:#c04800; font-weight:700;">2,980</td>
+          <td>
+            <div class="status-warn">
+              <span>&#9888;</span>
+              <div class="warn-note">SHORT &mdash; 20 units<br>on backorder.<br>ETA: Mar 5, 2026</div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="icode">STE-3310-D</div></td>
+          <td>Sterile Gauze Pad 4&times;4 inch (pkg/100)</td>
+          <td class="c"><strong>500</strong></td>
+          <td class="c">500</td>
+          <td><span class="status-ok">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td><div class="icode">STE-7710-A</div></td>
+          <td>Sterilization Wrap CSR 24&times;24 (case/500)</td>
+          <td class="c"><strong>1,000</strong></td>
+          <td class="c">1,000</td>
+          <td><span class="status-ok">&#10003;</span></td>
+        </tr>
+        <tr>
+          <td><div class="icode">STE-1100-C</div></td>
+          <td>Bouffant Surgical Cap Disposable (case/100)</td>
+          <td class="c"><strong>2,000</strong></td>
+          <td class="c">2,000</td>
+          <td><span class="status-ok">&#10003;</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="received-section">
+      <div class="rs-head">Receiving Confirmation</div>
+      <div class="received-grid">
+        <div class="rg-item">
+          <div class="rk">Received By</div>
+          <div class="rv">Tony Martinez, Receiving Clerk</div>
+        </div>
+        <div class="rg-item">
+          <div class="rk">Received Date &amp; Time</div>
+          <div class="rv">February 25, 2026 @ 14:32</div>
+        </div>
+        <div class="rg-item">
+          <div class="rk">Condition on Arrival</div>
+          <div class="rv">Good — 1 pkg noted short</div>
+        </div>
+        <div class="rg-item">
+          <div class="rk">Delivery Location</div>
+          <div class="rv">Loading Dock B, Central Receiving</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sig-section">
+      <div class="sig-block">
+        <div class="slbl">Receiver Signature</div>
+        <div class="sig-box">
+          <span class="sig-text">Tony Martinez</span>
+        </div>
+        <div class="sig-name">Tony Martinez &nbsp;&bull;&nbsp; Receiving Clerk &nbsp;&bull;&nbsp; Feb 25, 2026 14:32</div>
+      </div>
+      <div class="sig-block">
+        <div class="slbl">Driver / Carrier Signature</div>
+        <div class="sig-box">
+          <span class="sig-text">R. Valdez</span>
+        </div>
+        <div class="sig-name">R. Valdez &nbsp;&bull;&nbsp; XPO Logistics Driver &nbsp;&bull;&nbsp; Feb 25, 2026 14:28</div>
+      </div>
+    </div>
+
+    <div class="notes-section">
+      <strong>Notes:</strong> Item STE-9940-B (Face Shield) short shipped by 20 units. Backorder acknowledged by Steris Customer Service Rep (Case #STE-CS-2026-4418). Remaining 20 units to ship separately under SO-2026-88412-B with expected delivery March 5, 2026. All other items received in full and in good condition. No visible damage to packaging.
+    </div>
+  </div>
+
+  <div class="footer">
+    <span><strong>STERIS Corporation</strong> &nbsp;&mdash;&nbsp; Packing Slip PS-2026-0392 &nbsp;|&nbsp; SO: SO-2026-88412</span>
+    <span>Page 1 of 1 &nbsp;|&nbsp; PARTIAL DELIVERY &nbsp;|&nbsp; Retain this document</span>
+  </div>
+</div>
+</body>
+</html>
