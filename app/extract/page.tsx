@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { AnimatedBeam } from "@/components/magicui/animated-beam";
+
+// Maps each demo document to its corresponding exception ID
+const DOC_TO_EXCEPTION: Record<string, string> = {
+  "invoice-STC-2026-19847": "EX-006",   // Steris — price mismatch
+  "invoice-MS-2026-0923":   "EX-002",   // MedSupply — duplicate
+  "invoice-MS-2026-0847":   "EX-002",   // MedSupply — duplicate (original)
+  "invoice-MTS-INV-00291":  "EX-003",   // MedTech — no PO / suspicious
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -123,7 +132,7 @@ function SkeletonLoading() {
           className="w-3 h-3 rounded-full animate-spin"
           style={{ border: "1px solid #D6D3D1", borderTopColor: "#1C1917" }}
         />
-        <span className="section-label">EXTRACTING WITH CLAUDE</span>
+        <span className="section-label">EXTRACTING WITH INVOICE AGENT</span>
       </div>
       <div className="space-y-3">
         {widths.map((w, i) => (
@@ -137,9 +146,11 @@ function SkeletonLoading() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ExtractPage() {
+  const router = useRouter();
   const [selectedDoc, setSelectedDoc] = useState<string>("invoice-STC-2026-19847");
   const [loading, setLoading] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedData | null>(null);
+  const [extractError, setExtractError] = useState<string | null>(null);
   const [revealIndex, setRevealIndex] = useState(0);
   const [allRevealed, setAllRevealed] = useState(false);
 
@@ -168,6 +179,7 @@ export default function ExtractPage() {
     if (!selectedDoc) return;
     setLoading(true);
     setExtracted(null);
+    setExtractError(null);
     setRevealIndex(0);
     setAllRevealed(false);
 
@@ -178,9 +190,13 @@ export default function ExtractPage() {
         body: JSON.stringify({ document: selectedDoc }),
       });
       const json = await res.json();
-      setExtracted(json.data ?? null);
-    } catch {
-      setExtracted(null);
+      if (!res.ok || !json.success) {
+        setExtractError(json.error ?? `Server error ${res.status}`);
+      } else {
+        setExtracted(json.data ?? null);
+      }
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : "Network error — is the server running?");
     } finally {
       setLoading(false);
     }
@@ -406,12 +422,19 @@ export default function ExtractPage() {
         style={{ width: 340, borderLeft: "1px solid #E7E5E4", background: "#FFFFFF", flexShrink: 0 }}
       >
         <div className="flex-1 overflow-auto">
-          {/* State 1: Empty */}
+          {/* State 1: Empty or error */}
           {!loading && !extracted && (
             <div className="flex items-center justify-center h-full px-6">
-              <span style={{ fontSize: 12, color: "#A8A29E", textAlign: "center" }}>
-                Extract a document to see structured data
-              </span>
+              {extractError ? (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 12, color: "#DC2626", marginBottom: 4, fontWeight: 500 }}>Extraction failed</div>
+                  <div style={{ fontSize: 11, color: "#A8A29E" }}>{extractError}</div>
+                </div>
+              ) : (
+                <span style={{ fontSize: 12, color: "#A8A29E", textAlign: "center" }}>
+                  Extract a document to see structured data
+                </span>
+              )}
             </div>
           )}
 
@@ -539,6 +562,7 @@ export default function ExtractPage() {
           >
             {hasNoPO ? (
               <button
+                onClick={() => router.push("/exceptions/EX-003")}
                 style={{
                   width: "100%",
                   background: "#DC2626",
@@ -555,6 +579,10 @@ export default function ExtractPage() {
               </button>
             ) : (
               <button
+                onClick={() => {
+                  const exId = selectedDoc ? DOC_TO_EXCEPTION[selectedDoc] : null;
+                  router.push(exId ? `/exceptions/${exId}` : "/exceptions");
+                }}
                 style={{
                   width: "100%",
                   background: "#1C1917",
@@ -571,7 +599,9 @@ export default function ExtractPage() {
               </button>
             )}
             <Link
-              href="/exceptions"
+              href={selectedDoc && DOC_TO_EXCEPTION[selectedDoc]
+                ? `/exceptions/${DOC_TO_EXCEPTION[selectedDoc]}`
+                : "/exceptions"}
               style={{ fontSize: 12, color: "#78716C", textAlign: "center", textDecoration: "none" }}
             >
               View in Exception Queue →
