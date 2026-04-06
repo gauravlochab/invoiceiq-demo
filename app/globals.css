@@ -1,34 +1,209 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-geist);
 }
 
-* {
-  box-sizing: border-box;
+/* ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
+   Warm stone palette — NOT cool blue-gray.
+   Color is data, not decoration.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --bg-base:    #FAFAF9;   /* warm page bg */
+  --bg-surface: #FFFFFF;   /* card/panel bg */
+  --bg-subtle:  #F5F5F4;   /* stone-100 — hover rows, section fills */
+  --bg-muted:   #E7E5E4;   /* stone-200 — input borders, dividers */
+
+  /* Borders */
+  --border:       #E7E5E4;   /* stone-200 */
+  --border-strong: #D6D3D1;  /* stone-300 */
+
+  /* Text */
+  --text-primary:   #1C1917;   /* stone-900 */
+  --text-secondary: #78716C;   /* stone-500 */
+  --text-muted:     #A8A29E;   /* stone-400 */
+  --text-inverse:   #FAFAF9;
+
+  /* Sidebar */
+  --sidebar-bg:            #0C0A09;   /* near-black, warm */
+  --sidebar-border:        #292524;   /* stone-800 */
+  --sidebar-text:          #57534E;   /* stone-600 */
+  --sidebar-text-hover:    #D6D3D1;   /* stone-300 */
+  --sidebar-text-active:   #FAFAF9;   /* stone-50 */
+  --sidebar-active-bg:     #1C1917;   /* stone-900 */
+
+  /* Semantic — used ONLY to communicate data meaning */
+  --critical:       #DC2626;   --critical-bg:  #FEF2F2;   --critical-text: #991B1B;
+  --warning:        #B45309;   --warning-bg:   #FEF3C7;   --warning-text:  #92400E;
+  --success:        #15803D;   --success-bg:   #F0FDF4;   --success-text:  #166534;
+  --neutral:        #57534E;   --neutral-bg:   #F5F5F4;   --neutral-text:  #44403C;
 }
+
+/* ─── RESET ──────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
 
 body {
+  background: var(--bg-base);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: #D6D3D1; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #A8A29E; }
 
-/* Animate number counters */
-@keyframes countUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-count { animation: countUp 0.5s ease forwards; }
+/* ─── TABLE CONVENTIONS ──────────────────────────────────────────────────── */
 
-/* Pulse dot */
-@keyframes ping-slow {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.4); opacity: 0.5; }
+.data-table { width: 100%; border-collapse: collapse; }
+
+.data-table thead tr {
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
 }
-.animate-ping-slow { animation: ping-slow 2s ease-in-out infinite; }
+
+.data-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.data-table th.right,
+.data-table td.right { text-align: right; }
+
+.data-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:hover { background: var(--bg-subtle); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table td.mono {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.data-table td.amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  text-align: right;
+}
+
+/* ─── STATUS DOTS ────────────────────────────────────────────────────────── */
+
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.critical { background: var(--critical); }
+.status-dot.warning  { background: var(--warning); }
+.status-dot.success  { background: var(--success); }
+.status-dot.neutral  { background: #A8A29E; }
+.status-dot.blue     { background: #2563EB; }
+
+/* ─── SECTION LABEL ──────────────────────────────────────────────────────── */
+
+.section-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ─── CARD ───────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* ─── BADGE ──────────────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge.critical {
+  background: var(--critical-bg);
+  color: var(--critical-text);
+  border-color: #FECACA;
+}
+
+.badge.warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: #FDE68A;
+}
+
+.badge.success {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border-color: #BBF7D0;
+}
+
+.badge.neutral {
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+  border-color: var(--border);
+}
+
+.badge.blue {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border-color: #BFDBFE;
+}
+
+/* ─── MUTED DIVIDER ──────────────────────────────────────────────────────── */
+
+.divider { border: none; border-top: 1px solid var(--border); }
+
+/* ─── PROGRESS BAR ───────────────────────────────────────────────────────── */
+
+.progress-track {
+  height: 4px;
+  background: var(--bg-muted);
+  border-radius: 2px;
+  overflow: visible;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
