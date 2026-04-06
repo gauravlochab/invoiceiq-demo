@@ -298,7 +298,7 @@ export default function ExtractPage() {
               transition: "opacity 0.15s",
             }}
           >
-            {loading ? "Extracting…" : "Extract with Claude →"}
+            {loading ? "Extracting…" : "Extract with AI →"}
           </button>
         </div>
 
