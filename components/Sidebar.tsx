@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, AlertTriangle, Copy, FileText } from "lucide-react";
+import { Upload, LayoutDashboard, AlertTriangle, Copy, FileText } from "lucide-react";
 
 const nav = [
+  { href: "/extract", label: "Extract", icon: Upload },
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/exceptions", label: "Exceptions", icon: AlertTriangle, badge: 7, critical: true },
   { href: "/duplicates", label: "Duplicates", icon: Copy, badge: 1 },
