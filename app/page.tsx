@@ -23,6 +23,7 @@ import {
   statusConfig,
   typeConfig,
 } from "@/lib/data";
+import { NumberTicker } from "@/components/magicui/number-ticker";
 
 // ─── Derived data ─────────────────────────────────────────────────────────────
 
@@ -176,7 +177,7 @@ export default function DashboardPage() {
                 lineHeight: 1,
               }}
             >
-              1,847
+              <NumberTicker value={1847} />
             </p>
             <p style={{ fontSize: 11, color: "#A8A29E", marginTop: 6 }}>Q1 2026</p>
           </div>
@@ -200,7 +201,7 @@ export default function DashboardPage() {
                 lineHeight: 1,
               }}
             >
-              10
+              <NumberTicker value={10} />
             </p>
             <p style={{ fontSize: 11, color: "#A8A29E", marginTop: 6 }}>7 open</p>
           </div>
@@ -224,7 +225,7 @@ export default function DashboardPage() {
                 lineHeight: 1,
               }}
             >
-              $392,720
+              <NumberTicker value={392720} prefix="$" delay={0.2} />
             </p>
             <p style={{ fontSize: 11, color: "#A8A29E", marginTop: 6 }}>22% of period spend</p>
           </div>
@@ -248,7 +249,7 @@ export default function DashboardPage() {
                 lineHeight: 1,
               }}
             >
-              $56,670
+              <NumberTicker value={56670} prefix="$" delay={0.3} />
             </p>
             <p style={{ fontSize: 11, color: "#A8A29E", marginTop: 6 }}>2 resolved</p>
           </div>
@@ -271,7 +272,7 @@ export default function DashboardPage() {
                 lineHeight: 1,
               }}
             >
-              2
+              <NumberTicker value={2} delay={0.4} />
             </p>
             <p style={{ fontSize: 11, color: "#A8A29E", marginTop: 6 }}>1 breached</p>
           </div>

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { BorderBeam } from "@/components/magicui/border-beam";
+import { AnimatedBeam } from "@/components/magicui/animated-beam";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,6 +143,13 @@ export default function ExtractPage() {
   const [revealIndex, setRevealIndex] = useState(0);
   const [allRevealed, setAllRevealed] = useState(false);
 
+  // ── AnimatedBeam pipeline refs ──────────────────────────────────────────────
+  const pipelineRef = useRef<HTMLDivElement>(null);
+  const node1Ref = useRef<HTMLDivElement>(null);
+  const node2Ref = useRef<HTMLDivElement>(null);
+  const node3Ref = useRef<HTMLDivElement>(null);
+  const node4Ref = useRef<HTMLDivElement>(null);
+
   const selectedDocMeta = documents.find((d) => d.id === selectedDoc) ?? null;
 
   // Sequential reveal animation
@@ -274,6 +283,62 @@ export default function ExtractPage() {
 
       {/* ── CENTER PANEL: PDF Viewer ────────────────────────────────────── */}
       <div className="flex flex-col flex-1 overflow-hidden" style={{ background: "#F5F5F4" }}>
+
+        {/* ── AnimatedBeam pipeline (initial state only) ─────────────────── */}
+        {!loading && !extracted && (
+          <div
+            ref={pipelineRef}
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0,
+              padding: "20px 32px",
+              borderBottom: "1px solid #E7E5E4",
+              background: "#FAFAF9",
+            }}
+          >
+            {/* Node 1 — Invoice PDF */}
+            <div ref={node1Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "white", border: "1px solid #E7E5E4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📄</div>
+              <span style={{ fontSize: 10, color: "#A8A29E", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>Invoice PDF</span>
+            </div>
+
+            {/* Spacer for beam 1→2 */}
+            <div style={{ flex: 1, minWidth: 48 }} />
+
+            {/* Node 2 — AI Extraction */}
+            <div ref={node2Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "white", border: "1px solid #E7E5E4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🤖</div>
+              <span style={{ fontSize: 10, color: "#A8A29E", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>AI Extraction</span>
+            </div>
+
+            {/* Spacer for beam 2→3 */}
+            <div style={{ flex: 1, minWidth: 48 }} />
+
+            {/* Node 3 — Structured Data */}
+            <div ref={node3Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "white", border: "1px solid #E7E5E4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📊</div>
+              <span style={{ fontSize: 10, color: "#A8A29E", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>Structured Data</span>
+            </div>
+
+            {/* Spacer for beam 3→4 */}
+            <div style={{ flex: 1, minWidth: 48 }} />
+
+            {/* Node 4 — Exception Queue */}
+            <div ref={node4Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "#FEF2F2", border: "1px solid #FECACA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚠️</div>
+              <span style={{ fontSize: 10, color: "#DC2626", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>Exception Queue</span>
+            </div>
+
+            {/* Beams */}
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node1Ref} toRef={node2Ref} duration={2} delay={0} colorFrom="#A8A29E" colorTo="#1C1917" />
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node2Ref} toRef={node3Ref} duration={2} delay={0.7} colorFrom="#A8A29E" colorTo="#1C1917" />
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node3Ref} toRef={node4Ref} duration={2} delay={1.4} colorFrom="#F59E0B" colorTo="#DC2626" />
+          </div>
+        )}
+
         {/* Header bar */}
         <div
           className="flex items-center justify-between px-4 py-2.5"
@@ -305,15 +370,25 @@ export default function ExtractPage() {
         {/* PDF embed area */}
         <div className="flex-1 p-4 overflow-hidden" style={{ minHeight: 0 }}>
           {selectedDoc ? (
-            <iframe
-              src={`/documents/pdfs/${selectedDoc}.pdf`}
-              className="w-full h-full rounded-lg"
-              style={{
-                border: "1px solid #E7E5E4",
-                minHeight: 500,
-                background: "#FFFFFF",
-              }}
-            />
+            <div className="relative overflow-hidden w-full h-full rounded-lg" style={{ minHeight: 500 }}>
+              <iframe
+                src={`/documents/pdfs/${selectedDoc}.pdf`}
+                className="w-full h-full rounded-lg"
+                style={{
+                  border: "1px solid #E7E5E4",
+                  minHeight: 500,
+                  background: "#FFFFFF",
+                }}
+              />
+              {loading && (
+                <BorderBeam
+                  duration={3}
+                  colorFrom="#DC2626"
+                  colorTo="#F59E0B"
+                  borderWidth={2}
+                />
+              )}
+            </div>
           ) : (
             <div
               className="w-full h-full rounded-lg flex items-center justify-center"

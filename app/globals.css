@@ -4,6 +4,13 @@
   --font-sans: var(--font-geist);
 }
 
+/* ─── MAGIC UI KEYFRAMES ─────────────────────────────────────────────────── */
+
+@keyframes borderBeamSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
    Warm stone palette — NOT cool blue-gray.
    Color is data, not decoration.
