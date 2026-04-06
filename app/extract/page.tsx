@@ -449,80 +449,75 @@ export default function ExtractPage() {
               {/* VENDOR */}
               {extracted.vendor && (
                 <FieldGroup title="VENDOR">
-                  {(() => { fieldCounter = 0; return null; })()}
                   <KVRow label="Name"    value={extracted.vendor.name}    revealed={isRevealed()} />
                   <KVRow label="Address" value={extracted.vendor.address} revealed={isRevealed()} />
                   <KVRow label="Email"   value={extracted.vendor.email}   revealed={isRevealed()} />
+                  {extracted.vendor.phone && (
+                    <KVRow label="Phone" value={extracted.vendor.phone}   revealed={isRevealed()} />
+                  )}
                 </FieldGroup>
               )}
 
-              {/* INVOICE */}
-              {extracted.invoice && (
+              {/* BILL TO */}
+              {extracted.billTo && (
+                <FieldGroup title="BILL TO">
+                  <KVRow label="Name"    value={extracted.billTo.name}    revealed={isRevealed()} />
+                  <KVRow label="Address" value={extracted.billTo.address} revealed={isRevealed()} />
+                </FieldGroup>
+              )}
+
+              {/* INVOICE DETAILS */}
+              {extracted.invoiceNumber && (
                 <FieldGroup title="INVOICE">
-                  <KVRow label="Invoice #"       value={extracted.invoice.number}        revealed={isRevealed()} />
-                  <KVRow label="Date"            value={extracted.invoice.date}           revealed={isRevealed()} />
-                  <KVRow label="PO Reference"    value={extracted.invoice.po_reference}  revealed={isRevealed()} />
-                  <KVRow label="Payment Terms"   value={extracted.invoice.payment_terms} revealed={isRevealed()} />
-                  <KVRow label="Total Amount"    value={extracted.invoice.total_amount}  revealed={isRevealed()} />
+                  <KVRow label="Invoice #"     value={String(extracted.invoiceNumber)}  revealed={isRevealed()} />
+                  <KVRow label="Date"          value={String(extracted.invoiceDate ?? "")}    revealed={isRevealed()} />
+                  <KVRow label="PO Reference"  value={String(extracted.poReference ?? "")}    revealed={isRevealed()} />
+                  <KVRow label="Payment Terms" value={String(extracted.paymentTerms ?? "")}   revealed={isRevealed()} />
+                  <KVRow label="Due Date"      value={String(extracted.dueDate ?? "")}         revealed={isRevealed()} />
+                  {extracted.totalAmount != null && (
+                    <KVRow
+                      label="Total Amount"
+                      value={`$${Number(extracted.totalAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                      revealed={isRevealed()}
+                    />
+                  )}
                 </FieldGroup>
               )}
 
               {/* LINE ITEMS */}
-              {Array.isArray(extracted.line_items) && extracted.line_items.length > 0 && (
-                <FieldGroup title="LINE ITEMS">
+              {Array.isArray(extracted.lineItems) && extracted.lineItems.length > 0 && (
+                <FieldGroup title={`LINE ITEMS (${extracted.lineItems.length})`}>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse" style={{ fontSize: 11 }}>
                       <thead>
                         <tr style={{ background: "#F5F5F4", borderBottom: "1px solid #E7E5E4" }}>
-                          {["ITEM", "QTY", "UNIT PRICE", "TOTAL"].map((h) => (
-                            <th
-                              key={h}
-                              style={{
-                                padding: "6px 6px",
-                                fontSize: 10,
-                                fontWeight: 500,
-                                letterSpacing: "0.06em",
-                                textTransform: "uppercase",
-                                color: "#A8A29E",
-                                textAlign: "left",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
+                          {["ITEM CODE", "DESCRIPTION", "QTY", "UNIT PRICE", "TOTAL"].map((h) => (
+                            <th key={h} style={{ padding: "6px 6px", fontSize: 10, fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", color: "#A8A29E", textAlign: "left", whiteSpace: "nowrap" }}>
                               {h}
                             </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {extracted.line_items.map((item, idx) => {
+                        {extracted.lineItems.map((item: Record<string, unknown>, idx: number) => {
                           const rowRevealed = isRevealed();
                           if (!rowRevealed) return null;
                           return (
                             <tr key={idx} style={{ borderBottom: "1px solid #F5F5F4" }}>
-                              <td style={{ padding: "6px 6px" }}>
-                                <div
-                                  style={{
-                                    fontFamily: "monospace",
-                                    fontSize: 10,
-                                    color: "#78716C",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {item.code}
-                                </div>
-                                <div
-                                  className="truncate"
-                                  style={{ fontSize: 11, color: "#1C1917", maxWidth: 100 }}
-                                >
-                                  {item.description}
-                                </div>
+                              <td style={{ padding: "6px 6px", fontFamily: "monospace", fontSize: 10, color: "#78716C", whiteSpace: "nowrap" }}>
+                                {String(item.itemCode ?? "")}
                               </td>
-                              <td style={{ padding: "6px 6px", color: "#1C1917" }}>{item.qty}</td>
-                              <td style={{ padding: "6px 6px", color: "#1C1917", whiteSpace: "nowrap" }}>
-                                {item.unit_price}
+                              <td style={{ padding: "6px 6px", fontSize: 11, color: "#1C1917", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {String(item.description ?? "")}
                               </td>
-                              <td style={{ padding: "6px 6px", color: "#1C1917", whiteSpace: "nowrap" }}>
-                                {item.total}
+                              <td style={{ padding: "6px 6px", color: "#1C1917", textAlign: "right" }}>
+                                {String(item.quantity ?? "")}
+                              </td>
+                              <td style={{ padding: "6px 6px", color: "#1C1917", whiteSpace: "nowrap", textAlign: "right" }}>
+                                ${Number(item.unitPrice ?? 0).toFixed(2)}
+                              </td>
+                              <td style={{ padding: "6px 6px", color: "#1C1917", whiteSpace: "nowrap", textAlign: "right", fontWeight: 500 }}>
+                                ${Number(item.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                               </td>
                             </tr>
                           );
@@ -530,19 +525,28 @@ export default function ExtractPage() {
                       </tbody>
                     </table>
                   </div>
+                  {/* Totals row */}
+                  {isRevealed() && (
+                    <div style={{ borderTop: "1px solid #E7E5E4", marginTop: 4, paddingTop: 8, display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 11, color: "#A8A29E" }}>TOTAL AMOUNT</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#1C1917" }}>
+                        ${Number(extracted.totalAmount ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
                 </FieldGroup>
               )}
 
               {/* FLAGS */}
               {flagCodes.length > 0 && (
                 <FieldGroup title="FLAGS DETECTED">
-                  <div className="space-y-1.5">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {flagCodes.map((code, idx) => {
                       const flagRevealed = isRevealed();
                       if (!flagRevealed) return null;
                       const { label, severity } = flagLabel(code);
                       return (
-                        <div key={idx} className="flex items-center gap-2">
+                        <div key={idx}>
                           <span className={`badge ${severity}`}>{label}</span>
                         </div>
                       );
