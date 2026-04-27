@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const MODEL = "gpt-4o";
 
 function getPromptForDocument(document: string): string {
   if (document.startsWith("invoice-")) {
@@ -79,11 +80,9 @@ For the flags array, include any of these that apply:
 }`;
   }
 
-  // Fallback: generic extraction
   return `Extract all structured data from this document and return it as valid JSON.`;
 }
 
-// Generic invoice prompt for uploaded files (we don't know the doc type)
 const UPLOAD_PROMPT = `Extract this document into the following JSON structure exactly:
 {
   "documentType": "invoice",
@@ -117,52 +116,41 @@ const SYSTEM_PROMPT =
   "You are a document extraction AI for a hospital accounts payable system. " +
   "Extract all structured data from the provided document and return ONLY valid JSON with no markdown, no explanation.";
 
-async function extractWithClaude(pdfBase64: string, userPrompt: string) {
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [
+async function extractWithOpenAI(pdfBase64: string, userPrompt: string, filename: string) {
+  const response = await client.responses.create({
+    model: MODEL,
+    input: [
+      {
+        role: "system",
+        content: [{ type: "input_text", text: SYSTEM_PROMPT }],
+      },
       {
         role: "user",
         content: [
           {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: pdfBase64,
-            },
+            type: "input_file",
+            filename,
+            file_data: `data:application/pdf;base64,${pdfBase64}`,
           },
-          {
-            type: "text",
-            text: userPrompt,
-          },
+          { type: "input_text", text: userPrompt },
         ],
       },
     ],
+    text: { format: { type: "json_object" } },
   });
-
-  const firstBlock = response.content[0];
-  if (firstBlock.type !== "text") {
-    throw new Error("Unexpected response type from Claude");
-  }
-  return firstBlock.text;
+  return response.output_text;
 }
 
-function parseClaudeResponse(claudeText: string) {
-  // Strip markdown code fences if Claude wrapped the JSON despite instructions
-  const stripped = claudeText
+function parseResponse(text: string) {
+  const stripped = text
     .trim()
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
-
   try {
     return { data: JSON.parse(stripped), rawText: null };
   } catch {
-    // Return raw text so the caller can still inspect what Claude produced
-    return { data: null, rawText: claudeText };
+    return { data: null, rawText: text };
   }
 }
 
@@ -175,18 +163,12 @@ export async function POST(req: NextRequest) {
     try {
       formData = await req.formData();
     } catch {
-      return NextResponse.json(
-        { success: false, error: "Failed to parse form data" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Failed to parse form data" }, { status: 400 });
     }
 
     const file = formData.get("file") as File | null;
     if (!file) {
-      return NextResponse.json(
-        { success: false, error: "No file provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
     }
 
     let pdfBase64: string;
@@ -195,18 +177,14 @@ export async function POST(req: NextRequest) {
       pdfBase64 = Buffer.from(bytes).toString("base64");
     } catch (err) {
       return NextResponse.json(
-        {
-          success: false,
-          error: `Failed to read uploaded file: ${err instanceof Error ? err.message : String(err)}`,
-        },
+        { success: false, error: `Failed to read uploaded file: ${err instanceof Error ? err.message : String(err)}` },
         { status: 500 }
       );
     }
 
     try {
-      const claudeText = await extractWithClaude(pdfBase64, UPLOAD_PROMPT);
-      const { data, rawText } = parseClaudeResponse(claudeText);
-
+      const text = await extractWithOpenAI(pdfBase64, UPLOAD_PROMPT, file.name || "upload.pdf");
+      const { data, rawText } = parseResponse(text);
       return NextResponse.json({
         success: true,
         document: file.name,
@@ -216,10 +194,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (err) {
       return NextResponse.json(
-        {
-          success: false,
-          error: `Claude API error: ${err instanceof Error ? err.message : String(err)}`,
-        },
+        { success: false, error: `OpenAI API error: ${err instanceof Error ? err.message : String(err)}` },
         { status: 500 }
       );
     }
@@ -227,15 +202,11 @@ export async function POST(req: NextRequest) {
 
   // ─── Path B: JSON body (pre-loaded document name) ──────────────────────────
   let document: string;
-
   try {
     const body = await req.json();
     document = body.document;
   } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid JSON request body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ success: false, error: "Invalid JSON request body" }, { status: 400 });
   }
 
   if (!document || typeof document !== "string") {
@@ -245,22 +216,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Sanitize: strip any path traversal characters
   const safeDocument = path.basename(document);
   const filename = `${safeDocument}.pdf`;
   const pdfPath = path.join(process.cwd(), "public", "documents", "pdfs", filename);
 
   if (!fs.existsSync(pdfPath)) {
-    return NextResponse.json(
-      { success: false, error: `PDF not found: ${filename}` },
-      { status: 404 }
-    );
+    return NextResponse.json({ success: false, error: `PDF not found: ${filename}` }, { status: 404 });
   }
 
   let pdfBase64: string;
   try {
-    const pdfBuffer = fs.readFileSync(pdfPath);
-    pdfBase64 = pdfBuffer.toString("base64");
+    pdfBase64 = fs.readFileSync(pdfPath).toString("base64");
   } catch (err) {
     return NextResponse.json(
       { success: false, error: `Failed to read PDF: ${err instanceof Error ? err.message : String(err)}` },
@@ -271,9 +237,8 @@ export async function POST(req: NextRequest) {
   const userPrompt = getPromptForDocument(safeDocument);
 
   try {
-    const claudeText = await extractWithClaude(pdfBase64, userPrompt);
-    const { data, rawText } = parseClaudeResponse(claudeText);
-
+    const text = await extractWithOpenAI(pdfBase64, userPrompt, filename);
+    const { data, rawText } = parseResponse(text);
     return NextResponse.json({
       success: true,
       document: safeDocument,
@@ -283,10 +248,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     return NextResponse.json(
-      {
-        success: false,
-        error: `Claude API error: ${err instanceof Error ? err.message : String(err)}`,
-      },
+      { success: false, error: `OpenAI API error: ${err instanceof Error ? err.message : String(err)}` },
       { status: 500 }
     );
   }
