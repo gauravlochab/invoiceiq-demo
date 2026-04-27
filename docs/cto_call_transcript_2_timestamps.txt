@@ -1,0 +1,91 @@
+[00:00] then select the reason and then add comments to it and then confirm the rejection if this
+[00:11] is accepted then this is again with the reason rejected, wrong quantity, something here.
+[00:20] But why is all the match is accepted and everything rejected?
+[00:26] So what I am asking is, is it rejecting the invoice?
+[00:30] No no, it's taking basically this entry, it's not rejecting the invoice.
+[00:42] So does the reject mean that we are rejecting that line item, so it's not an override to
+[00:54] say we made a mistake, we in the sense our software made a mistake, rejection is yes
+[01:01] we agree with the finding, so if there is a discrepancy and they hit accept, it should
+[01:13] ask for a reason, it's more like an override instead of an accept.
+[01:17] Ok sure, yeah it makes sense, I have to again change this where they can change the status
+[01:25] for example right now.
+[01:26] See the ones that are matching, do we even need them to accept reject there?
+[01:33] Yeah we can accept it but again like if somebody says that there is a extraction or some kind
+[01:42] of an error, then how do they do that, they can, I can just kind of, we can brainstorm
+[01:54] about if there can be a fast track mechanism where there is a match then either they accept
+[02:01] or reject, something like that or.
+[02:03] I think maybe I am thinking we leave it the way you have accept and reject, only thing
+[02:09] is if it's a mismatch and they click accept, the reason has to be mandatory they have to
+[02:16] type a note.
+[02:17] How about in the case of a match we add review, I don't know, I guess.
+[02:26] If it is a match it's not an issue, but if it's a match and they click reject, then they
+[02:33] have to give a reason, if it's not a match and they accept, then also they have to give
+[02:40] a reason.
+[02:41] So whenever they are going against our finding, they have to give a reason, yeah, yeah, correct,
+[02:47] yeah, looking at that way is also correct and if we do that again like let's do this,
+[02:57] accept, reject, wrong quantity, then it shows actions, so it asks for request correction,
+[03:10] approve with override and escalate to manager, here in manager they can select it and add
+[03:16] the note, whoever the manager is and press escalate, if not for example let's go with
+[03:25] one of the first view of, but my question is if they rejected even one, they should
+[03:34] not be allowed to override, okay, would make sense, say reject, because if they reject
+[03:47] then they can't override, it has to be all accept, only then they can do a override,
+[04:14] yeah, remove in the sense it should be greyed out or it should give an error saying you
+[04:18] can't approve since you have rejected this line item, at least one line item, then request
+[04:25] correction, so escalate I have shown you, request correction is again this where there
+[04:33] is a vendor email that we just extracted and then subject and just the same and the message
+[04:42] here we have identified blah, blah, blah, then regards XYZ from the hospital itself,
+[04:49] AP is accountable, send correction request, that is one, approve with override, I will
+[04:55] just grey it out, if somebody is, something is rejected and those are the options for
+[05:03] this, any suggestions here other than I guess one, I think can there be an outright rejection,
+[05:12] so let's say if it's duplicate, they say reject and the reject means nothing else happens,
+[05:22] it just gets rejected, yeah, make sense, and let's say vanilla flow where everything is
+[05:36] the same, did it extract something else, no, say accept, accept, accept, request correction,
+[05:58] same thing, approve with override, yeah, this approve, yeah, this is this, but again
+[06:06] yeah, we will, is this a good way, say in the approve override, it says that this approve
+[06:12] has been this, override region and then approve with override or should we just grey it out
+[06:20] because we are showcasing this and asking for a reason as well if they want like an
+[06:25] override, and what's your question, our question is you said that if there is only one, say
+[06:38] somebody rejected, right, let's see, if there is a rejection, it should not allow approval
+[06:45] at all, yeah, cool, so my question was just that if somebody say reject, not this, accept,
+[06:54] reject, say approve, so the approve right now the screen says this, but again like it's
+[07:07] showing a warning and asking for a reason for override and then saying approve with
+[07:12] override, but like you mentioned that we grey it out, just some suggestion of an option
+[07:17] like do we, right now it's showing this, we can grey it out, I guess it's simple, I think
+[07:23] we should grey it out, the reason is they can't reject on one hand, now what they could
+[07:33] do is they could say pay the remaining, instead of saying approve, we could say approve, well
+[07:47] I think let's not do that, let's ask the customer when we do the demo and based on their scenario,
+[07:53] but for now we should just, I think you can, don't change anything, let it be there like
+[07:58] that on the approve with override, that's fine, because this is more of a demo and we
+[08:05] can change it anyway, yeah, so right now what is present is fine and we grey it out and
+[08:12] everything once we discuss, is it, yeah, we can do that later, yeah, cool, then is exceptions,
+[08:18] I have just removed all the screens, duplicate, just added an option here just to check if
+[08:24] somebody is asking for duplicates etc. and then there's exceptions, again we can go straight
+[08:33] up here, the same with this, same screen, just the type, vendor, flag, severity, review,
+[08:44] takes you to that screen, then was the major one is vendor scoring, say this, where somebody
+[08:52] has invoice one, total spend, risk ratio, scored by, flag, penalize, remove, exception
+[09:05] history is this, for example this is, exception history is this, is there one that has multiple
+[09:17] invoices of 14, 30, yeah, so when you are expanding is it showing all the invoices or
+[09:24] just the exceptions, I guess just the exceptions, yeah, mostly, if there are multiple exceptions
+[09:32] then again it's made up, but yeah, I get your point like show all the exceptions and just
+[09:39] have a scroll here to go through the exceptions, yeah, we can, I mean I think again this is
+[09:48] a demo, so that's fine, but at least they get the idea, okay, yeah, total spend, then
+[09:53] risk ratio etc., I was planning to just have some kind of a graph here, say the dashboard
+[10:01] is this, yeah, so we have again the same recent exceptions, spending, occurrence, by category,
+[10:18] exceptions, vendor scoring I was planning to have just some kind of a donut or any kind
+[10:23] of a visuals to it, so that they can see the scoring or something, some kind of a visual,
+[10:32] so but yeah, yeah, for now I think this is good, we don't need a visual because this
+[10:37] is individual vendors, yeah, and there is export report etc., that is fine, then one
+[10:45] was just adding the invoices, having like more invoices here, I will just create one,
+[10:51] I tried yesterday as well when you mentioned that we can create the invoices, I will just
+[10:58] add some kind of a PDF that looks realistic, I have removed the contract tab from here
+[11:07] and then yeah, we can just in the demo upload one and then start from there, yeah, okay,
+[11:21] no, this is looking good, yeah, so Bala is trying to get the meeting next week, so we will,
+[11:27] sure, sure, no problem, I will just add like few visual if it looks nice, then I will just
+[11:33] add the invoices, that's it, the real invoices and PO, yeah, one thing that I didn't show,
+[11:40] I forgot about that, let's see that as well, in exceptions, let's go from here only, yeah,
+[11:48] this one, where you have changed ones, okay, you can change it, the documents, and then
+[11:56] it read, does the comparison, yeah, yeah, I have to add this, I was just playing around
+[12:04] with the changed ones and adding more PDFs, I will, when it opens, it will just, I was
+[12:10] planning to have just an overlay, but we should not change the invoice, because I think the
+[12:15] invoice is the baseline, yeah, you are only changing the PO and the packing slip, because
+[12:19] the bank,

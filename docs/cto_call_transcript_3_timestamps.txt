@@ -1,0 +1,293 @@
+[00:00] Land size it's like five times the land of India. Yep. It's us
+[00:05] Spread out. So you have
+[00:08] pharmacies and hospitals that need medication
+[00:12] That is made by the manufacturers like Pfizer
+[00:16] J&J and everyone is making the medicine, right? I have I do that with my brother as well. We manufacture
+[00:23] all the soft gels, all the Nutra verticals, yeah, yeah, we have a manufacturing unit in my hometown
+[00:34] So yeah, right now I'm also helping him with all the export only like how to export from here to say
+[00:42] Africa, Bangladesh, Dubai
+[00:45] Oh nice. So this is your own company or? Yeah with my brother's company
+[00:50] But he doesn't have anyone who can help him with the tech or anything
+[00:55] So he said that oh you do it
+[00:57] I will kind of give you all the resources if you want to then again with Claude and everything. It's just
+[01:04] putting the agents on work because it's very basic, but yeah, I'm also curious to figure out how the
+[01:10] CRM and automation and sales navigator and this
+[01:15] Other tool works where I we just have a bunch of big file of contacts and contacts and how do I just reach out
+[01:24] Go to their website
+[01:28] Message them on LinkedIn and this automation runs every time every day with a few of the cases
+[01:34] So you already created it for him? I am creating right
+[01:39] You're creating it, okay
+[01:41] Because we need to we need something similar, but maybe with the twist for our so anyway, so essentially what happens is
+[01:50] this customer Emery source
+[01:53] Essentially acts as the middle layer
+[01:56] They take it from all the manufacturers and send it to all the pharmacies
+[02:02] Okay, so the manufacturers probably have factories like fuel
+[02:07] In some places key places and they have so obviously they are shipping their
+[02:15] Pallets of drugs to this company. They then take break it apart and then send it out all to all the pharmacies
+[02:22] Okay, so that's their core business
+[02:27] So if you see the screen
+[02:29] first part is the demand generation, so this is like a
+[02:33] Request comes from pharmacies. Hey, we need you to pick up this many
+[02:37] bottles of certain drugs and so on right and then obviously that order gets transmitted to all the
+[02:45] manufacturers
+[02:47] What when the order comes
+[02:51] They there are manual steps where they may check the unit of measure saying is it supposed to be number of bottles is
+[02:59] Cases is the drug code correct or not because the drug code we keep changing
+[03:04] Is it did I get multiple orders because of transmission error things like that, right?
+[03:10] Then there is this thing called suspicious order monitoring. So there could be like fake pharmacies or somebody pretending to be pharmacy
+[03:20] especially controlled drugs
+[03:23] You know like painkillers things like that. They want to
+[03:28] Order so this person checks, you know, is this a genuine pharmacy? Do they still have a valid license?
+[03:35] Is the pricing match? So a lot of these manual steps happening
+[03:40] And then they receive so let's say the order goes through to the
+[03:46] manufacturer
+[03:46] manufacturer
+[03:47] Sends a shipment
+[03:49] So these guys at their warehouse, there is a receiving clerk who's receiving this shipment
+[03:55] Checking if the shipment is damaged so they may take a picture
+[04:00] Emailing to somebody like a supervisor
+[04:03] If you know, maybe the bar code gets merged
+[04:08] During shipping they may have to find other means to
+[04:12] See, what is the you know shipping there is something called cold chain integrity like some of the drugs
+[04:20] sensitive to temperature
+[04:22] so they have to make sure that
+[04:24] The temperature was not compromised. So they download the log
+[04:28] They'll compare against matrix. They may have to upload the data to some portal to say this is done
+[04:36] There is also a supply chain security. They have to make sure that you know, did someone
+[04:42] Like swap the products in it way, right?
+[04:46] So they'll randomly take out some check the serial number against the database things like that
+[04:52] Okay
+[04:53] Then there is this planning so, you know, obviously they are getting it from multiple manufacturers
+[04:58] They have to come. Sorry, you had a question
+[05:02] Okay, so they are getting from multiple manufacturers. Now, they have to combine that to a pharmacy
+[05:08] They have to take lots from multiple places
+[05:11] Sometimes maybe the truck is running late. They have to decide do I wait or ship?
+[05:16] There could be some urgency like some drug that's life-threatening or
+[05:22] Something that's time sensitive. So a lot of manual decision-making also goes in besides what the
+[05:30] ERP does for
+[05:32] planning
+[05:34] And then the outbound shipments, I haven't completed but again, there is some similar steps happen
+[05:39] So we want to show the customer that yes, you have a ERP tool
+[05:42] But there are a lot of these manual steps that we can with AI
+[05:48] And our process automation
+[05:52] We can streamline it. So I was thinking that obviously we can't we don't want to show everything
+[05:59] There's things we can pick and choose like maybe there could be address verification. So we could have
+[06:05] Obviously, we don't have access to these databases
+[06:09] So we have to maybe create a made-up database of addresses of pharmacies and show that we are doing verification
+[06:18] Same thing with license. I don't know if the websites are there or Excel spreadsheets. I'm thinking maybe
+[06:25] You can pick one process and say how will we do it? Maybe just take this part and
+[06:32] Show them how we will do it
+[06:37] And I guess that was that is the
+[06:39] Most impactful part to show in general because there is verification, license and then how do we do
+[06:47] Pricing, deviation and everything and how do we kind of check what is the best pricing
+[06:54] As well. What is the contract pricing? So I think this is similar to the
+[07:00] Invoice and contract match we are doing so we can do that
+[07:03] These two would be more like look up in the database or
+[07:08] Like looking at the coordinates from Google Map to see is that pharmacy there in that address?
+[07:16] Other thing was data this this could be like this is probably they don't do today
+[07:23] For a particular demographic, so let's say if somebody's for certain drugs
+[07:27] What's the trend of the prescription and the demographics to say
+[07:32] Is there sudden? So let's say there is one city which is which has a population of thousand people
+[07:39] Right, but suddenly they are asking for
+[07:43] 500 pills, right
+[07:45] Doesn't make sense. So looking at the city the target city of the
+[07:51] demographics and trend
+[07:53] We can say if this quantity doesn't make sense and that could be again something we can
+[07:59] have some data for maybe we can create some data for 10 cities and
+[08:05] Tipping manifest could be for 10 cities and we can do some kind of test, right?
+[08:12] Yeah, I guess that's that's the
+[08:15] main part that we can focus because it has and again the
+[08:18] Receipt shipment is also there. But again, the cold chain and everything is like not a very big deal
+[08:25] Or basically doesn't have a too much of impact
+[08:31] I mean there could be millions of dollars of drug get
+[08:34] Spoiled because temperature right
+[08:37] or somebody didn't pay attention and do this check properly and now all of a sudden you have
+[08:44] Drugs sitting at the pharmacy, which is not working from that
+[08:49] Thought process. Yeah, like there can and these drugs can be super expensive because all the
+[08:56] Things that they want they need is obviously something that makes them
+[09:02] Yeah, and not to mention any kind of lawsuit that can happen, right?
+[09:07] So again, we will tell the customer when we do this check
+[09:11] So again, we will tell the customer when we do the demo will focus on one but whatever is your priority will adjust
+[09:20] I guess this this works
+[09:23] The very few as you mentioned that contract pricing and everything we already have it
+[09:27] we kind of replicated into this flow the license we can kind of scrape and see whether what are the all the
+[09:35] Demo licenses if you have anything
+[09:37] Regarding again the contracts and the invoices. Yeah, I think some of these state board these
+[09:44] Probably is open data
+[09:46] Because I know that license verification for a lot of things is openly available
+[09:51] So we can again we can pick like two states for example and three cities
+[09:58] For each and then create some test
+[10:01] Data for that. Okay, and if I start with just this flow suspicious under monitoring
+[10:07] There is an analyst. So basically we are doing the address verification
+[10:11] We take like two states a couple of cities say four or five whatever we take and then we just check
+[10:19] the pharmacy
+[10:21] On some kind of a from our database or say API etc
+[10:26] We show them that they know this is getting tracked from the database whether this is a legit one or not
+[10:32] Then if that has a license or not, or this is the license again made up name made up license from their formatted
+[10:39] online
+[10:41] Formats all the documents they have already provided and then I guess after the for the price
+[10:46] Deviation we can show them or that's the contract and come to the invoices and everything
+[10:51] This is the kind of errors and whatever we are
+[10:55] Kind of figuring out one once that matches and then it goes to I guess it just
+[11:02] Verified right?
+[11:04] Yeah, yeah, and you know again use maybe we'll use AI to generate some of the data. So it looks more real
+[11:11] specific to
+[11:13] the manufacturer contract pricing is a
+[11:17] Generate for like certain pharmacy. Sorry manufacturers like Pfizer and
+[11:23] Biogen J&J something like that, right?
+[11:27] Cool. Yeah makes sense and any any other stuff you need you
+[11:31] Want me to cover in that flow?
+[11:33] Other than this so workflow in my head is just creating a database adding dummy data
+[11:39] Having dummy say a pharmacy or you can have a legit pharmacy
+[11:44] Who cares in that because it's unlike an open source data itself. We check it with the Google
+[11:49] We show them or that's and if they have some location
+[11:53] The current customer then we can pick that state so that it makes more sense or becomes more relative
+[12:00] To them. Yes, that's some pharmacy
+[12:02] so if you have some kind of data on like where they are located or where they
+[12:08] Kind of sit and then we can use that
+[12:11] then again just matching it with Google showing them or that's the legit one because now if we use their kind of
+[12:18] Location then more they will more relate to it. Then is license. I will just extract right now
+[12:23] I will just check what are the licenses that a man or that a pharmacy requires to for the manufacturers or the
+[12:31] documentation, etc
+[12:33] Then we use those to check against so basically one
+[12:38] Usually the license is straightforward. There is a code property
+[12:42] Just go to the website for the code and say for the name and see there is a license
+[12:47] Oh, it's basic extraction. Is it?
+[12:52] Yeah, I think so, let me see if I see
+[13:03] So
+[13:09] Like this is North Carolina Board of Pharmacy, so there's a license type
+[13:15] Is a pharmacy license and then basically we just need to put the name right so if I put
+[13:34] So you see it comes up and says their permit status is inactive, right so
+[13:43] That's what we are checking right by now in this case, obviously there are too many pharmacies with that name, but if I
+[13:51] do
+[13:53] So
+[14:00] Okay, so let's say we have a permit number
+[14:04] And if we search for that permit number let me actually look for
+[14:12] Private pharmacies because Walgreens
+[14:15] There are too many of them, right whereas if I look for
+[14:24] Joseph's pharmacy, right? I mean, this is like
+[14:29] Some guy
+[14:32] Private
+[14:37] And this guy is in Durham also
+[14:40] Okay
+[14:52] Okay, it says it's active right only one record we found and it says active active status
+[15:01] Right, and I think maybe the permit the best way to do is would be using a permit
+[15:08] permit number
+[15:11] By my question is will we receive a permit number?
+[15:14] See here. They are not doing a search by address. I think so. Let's try Walgreens again
+[15:29] So I guess you know we could say that
+[15:32] Obviously, we will not receive the permit number will receive the address
+[15:36] We could say we put this address and say oh this is inactive
+[15:41] Right. So essentially the search is not allowing you to put the address but in the results
+[15:47] Let me find a different state board because the state board North Carolina seems to be
+[15:55] More complicated California
+[16:05] We need to extract the status from somewhere
+[16:13] This is also by name
+[16:18] Yeah, maybe that's a good idea pharmacy license lookup API
+[16:36] You
+[16:43] Okay, so yeah, why don't you like investigate and see what is the easiest way to do that and then we go for
+[16:50] Okay
+[16:53] Okay research into it I guess first I will just create a workflow kind of share it with you this is what we have
+[16:59] And
+[17:01] This is all everything we
+[17:04] We can do with in this current workflow. For example, like what kind of API what we will be checking etc
+[17:11] Etc. And then I will share it with you and then we can just go for the implementation
+[17:17] Yeah, okay. So one other thing I was thinking was the the whole demo you have created
+[17:24] Yeah, how are you how have you organized the prompts is there like
+[17:32] Multiple markdown files and is that maybe we can put a user GitHub so we can both see
+[17:39] You know the changes that we're making I can just push it on the
+[17:45] Access
+[17:50] Okay, okay, okay, I was also playing around with anti-gravity
+[17:59] And so I was trying to design so if you're able to see
+[18:05] Yeah, I was talking about a workflow assistant I
+[18:10] had this
+[18:12] layered architecture with
+[18:14] business layer as crew AI
+[18:17] Or lang chain or whatever it wants
+[18:21] Database layer MCP
+[18:24] Then I was talking about like a workflow designer where we can design the workflow
+[18:30] Building a task library building an action library
+[18:33] So I was trying to capture all my thoughts and I will compare against like how you are doing it
+[18:39] And maybe we can sort of combine this idea to see to make it more more layered more reusable
+[18:48] Yeah
+[18:49] Okay
+[18:52] All right, it's it's like even the requirement it autocompletes a lot of the requirement
+[18:59] It's not not always good, but at least 50% of the time. Yeah, it comes up good set of requirements
+[19:07] Yeah, I guess I don't no longer use ID
+[19:11] You just I terminal to do everything now
+[19:15] So it's more just adding making an architecture design then asking some other model to
+[19:23] Review it tell me whether what I am thinking is the right thing or if my understanding is correct
+[19:29] And so basically I just go for CLI. I don't have again like I don't use
+[19:36] ID but doesn't ID let you think through it does like
+[19:42] Yeah, better than like ID is more like instant. Sorry the CLI is more like you're constantly giving commands
+[19:51] Again, like I have connected with obsidian etc. And then architectures and everything. So there is a workflow of this
+[19:59] whenever say I want to
+[20:02] Research into something right and it will give me some kind of files and everything and just go back to
+[20:08] Integrity and then read through it if I want to then again if not, then the skills
+[20:14] Can just make me understand what kind of stuff it has created and then I mostly kind of just go through a simple
+[20:22] iterations of what I have understood and what my plan was and
+[20:26] Can just give fill the gaps between my understanding and what I should just know
+[20:32] So it's more like a conversation and then why if I have a clear picture and then in final I just go back to
+[20:39] Antigravity if there is an architecture, there is some prompt and there is something else
+[20:44] to fill it's more like me clearing the
+[20:48] Flu in my head and then creating one
+[20:52] So whenever I talk and I mostly talk to the CLI and once I have the final
+[20:58] architecture final workflow where I just know that
+[21:01] AI also knows that what I understand and what my understanding was in the first place
+[21:07] So it has not creating anything else etc. etc. Because it just sometimes create a lot of stuff that I don't require
+[21:15] So yeah, that's that's mostly it and there are
+[21:17] And do you use just one markdown file or do you split them into separate markdowns?
+[21:23] Yeah, there are a lot of markdown files like for everything there is a markdown
+[21:28] Even like the meeting notes, I will just create
+[21:33] all the architecture
+[21:36] No, so do you split the let's say the
+[21:40] Architecture separately function requirements are pretty
+[21:44] System requirements separately. No, that's all in one place. Yeah, it's not in one place. It's more about
+[21:50] documenting that into the file
+[21:53] With the code itself
+[21:55] So now when I am creating the map say I'm creating a map of my code base
+[22:01] Another code base map looks like oh, this is the top
+[22:06] Function or class and everything and these are the functionalities. These are the repeated one. These are used here and everything
+[22:11] So it just creates a map
+[22:13] With a plug-in and then you can just in a cool way see and go through how the flow will work
+[22:21] Now once you have that again, like I don't go for
+[22:25] Checking where the markdown files are whether the architecture one has different one or anything
+[22:30] I kind of figure it because you're not manually creating it. You're letting it create
+[22:37] So and but how I check everything is fine with the test cases with
+[22:43] Tree or a graph of my code base and then from my code base
+[22:48] I just know where all the functionalities are going essentially because
+[22:51] If I go through the code file that is again what I am looking at in my head because oh, this is a function
+[22:57] Oh this
+[22:58] Arguments are being passed. So this is the params and everything. So yeah, I guess it's more
+[23:04] Learning what I am doing and if that is correct and if I miss something then I will just initially when I'm planning it
+[23:11] I will add all the test cases
+[23:13] For everything so that whenever it passes if something gets missed and it's included in the
+[23:20] In this planning. So what I read mostly is the first MD file where it creates the whole planning document
+[23:27] That I give an hour or two just to polish it create it whatever I can think of
+[23:32] Whatever say I'm creating a UX right now. So imagine you are creating a design. So how it looks in your head
+[23:40] So I will just create say show me how it will look
+[23:45] Don't add any functionalities and anything show me how it will look show me the architecture how the workflow will flow
+[23:51] Imagine you have an example just tell me from this point to this point
+[23:56] What will be the end results and how are the say the corner cases?
+[24:01] Included in this so it's more about having a conversation instead of previously what I used to do
+[24:07] When I started like going into the code and then checking my flow again and then thinking whether
+[24:13] The test cases are corrected or not. So yeah, I mostly do a conversation whenever I'm saying I
+[24:20] Want to have some answer from the code base
+[24:25] from the flow etc
+[24:28] That's planning is the most I guess
+[24:31] Yeah
+[24:34] Okay
+[24:37] Just create one and then first is I will push the code give you the access if you can share the
+[24:45] Username your github username and then I will create a plan and the plan again
+[24:50] I will just push it where you can just check the plan or if you have any feedback and then we can connect and
+[24:56] If that is good to view then I will continue with the implementation if you have any feedback
+[25:01] Yeah, I can connect and then we can change it and then I will start with the implementation
+[25:08] Okay, and my github name is simple Rajesh Jaluka
+[25:19] You know like this ad hoc thing works for you or should I set up something or more regular for us
+[25:26] It's fine, whatever you feel like
+[25:30] Okay, so we'll see I mean I wanted to like
+[25:36] Only when there is something I I thought we'll meet otherwise
+[25:42] It's I guess easier for both of us and
+[25:46] If like we want there is something coming up and everything
+[25:49] Then we can just continue
+[25:55] Okay, all right, thank you you too

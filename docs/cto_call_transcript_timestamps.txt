@@ -1,0 +1,214 @@
+[00:00] So, I guess that was the first one, the invoice intelligence and the second one was again
+[00:06] the detection and the process.
+[00:09] So we started with the extraction part here and then matching it with PO, the other stuff
+[00:24] and then I guess the invoice processing.
+[00:30] So the flow should be, you go to the, so when we do the demo, first is the extraction, you
+[00:37] say the invoice comes in, we extract and so the first step is they confirm that the extraction
+[00:46] is correct and then when they click on next, it does a matching against the shipping manifest
+[00:57] and the purchase order and shows where the discrepancies are, what you're showing here.
+[01:08] This is showing for each purchase order, right, line each, all the line items in a purchase
+[01:13] order.
+[01:15] Okay, so and then the action could be, you know, like you have hold, what is reject correction?
+[01:30] On the right side, you have all these things, so one could be approved with override and
+[01:35] say...
+[01:36] This is just placeholders, it's kind of, yes, it says that request correction as in like
+[01:43] this is incorrect or kind of whatever we are extracting, it's not matching, then you go
+[01:48] back and get the invoices corrected or whatever, it's just a placeholder that we created, approve
+[01:55] with override, again, same escalate to manager or something, yeah.
+[01:59] What actions do we want to keep here?
+[02:03] No, I mean, this is fine, we can, because this is more of a conversation to say, we
+[02:09] don't know the processes, so we have some examples of what are the different actions
+[02:14] that can be taken and so I think first you have the invoice extraction, then you come
+[02:20] and look at this screen and then now, like is anything behind one of these buttons?
+[02:29] No, right now, it's just placeholders, as you can see, if I click, I can, yeah, so I
+[02:35] think just have the escalate to manager, which basically then allows someone to review, so
+[02:44] we could basically just say, we can hit any of these buttons and will do and then the
+[02:50] next step could be that you show the dashboard and say, and so somewhere, I think we need
+[02:57] to capture, sorry, go back to the previous screen, I'm trying to think what should we
+[03:04] display, so one is extraction and then after that is reviewing the exception.
+[03:14] In the exception, we should have a way to capture a confirmation that this is a valid
+[03:23] concern and a comment, right, so can you go to the match against, so I'm trying to
+[03:33] think here, it should be hold, maybe we don't need hold, because either it's request correction
+[03:40] and what we should do is, we should have a screen for request correction, where it sends
+[03:51] an email to the vendor, so request correction could be a screen that comes up, where a user
+[04:01] could type a comment and say, hey, I'm noticing these discrepancies, well, before we do that,
+[04:10] I think in this screen, first we should have a confirmation button to say that I agree,
+[04:19] maybe I think we should have a button on each row, which says accept or reject,
+[04:32] right, so I think accept means, yes, I agree that this is a discrepancy or it could be reject,
+[04:43] but if they reject, they have to put a reason like why they are rejecting.
+[04:46] And then I guess basically when they kind of press the reject button, there's a pop-up that
+[04:52] say comments and you just add it and then submit it and it kind of goes into, do you want to take
+[04:59] it to the review or you just right away say it's rejected, imagine like. Well, that's a good point,
+[05:06] I think first is accept, accept is they agree, second is if they don't agree, why wouldn't they
+[05:13] agree is my question, because either the extraction is wrong, right, that could have
+[05:21] been caught there, since the action is not wrong, the only way for them to reject could be that
+[05:30] they may say, oh, quality is less because we are going to, we have a second shipment that came in,
+[05:40] right, that could be, so let's think about it, right, so rejection could be additional
+[05:53] shipment, I mean, that could be one, second could be that we are, the price mismatch could be,
+[06:06] we are looking at the wrong PO. Can you explain the second shipment, how does that make sense,
+[06:14] for example, the quantity is less than I say second shipment is there, so basically
+[06:20] it's coming in the second shipment and the quantity will match or something.
+[06:24] Yeah, yeah, so you know like sometimes Amazon will ship it in two shipments instead of one
+[06:30] shipment, but you know, maybe the packing slip is mismatched, right, I don't know, right,
+[06:38] so I think we have to provide, just for the demo, I think we should provide,
+[06:47] wait, I'm thinking, I agree, I reject, so I'll, let me compile a list of reasons for rejection
+[06:56] and they have to pick one of those, okay,
+[07:00] I think we should have a button to say, so where are you showing the PO,
+[07:05] is there a screen to see the PO, there is this and the PO is here, purchase order,
+[07:17] okay, and I think maybe what we should do is we should have a button to say
+[07:23] a change PO, in the sense you picked up the PO, but maybe it's the wrong PO, okay, yeah,
+[07:31] makes sense, right, so we should have a button, in fact, I think right next to that, so if you go back,
+[07:42] you're showing the documents, right, you're showing three documents, invoice,
+[07:47] PO of packing, right, next to the open button, we should have change, okay, yeah,
+[07:57] which means if we don't want to compare against this document, we want to compare against
+[08:02] something else, yeah, we picked up the wrong PO and I want to change it, when we change it, it's
+[08:07] kind of the, I will just add a selection where there are a lot of PO's with similar name,
+[08:13] it will just come on top and say that this is quite relevant to you, yeah, and same thing with
+[08:21] the packing slip, right, so maybe they pick a different packing slip and then you let them,
+[08:27] so I think because then that takes care of the issue of hey, you did the wrong PO or not,
+[08:34] I think, so at the end of the day, we want them to agree to them or reject because of a valid
+[08:43] reason and then maybe we don't need hold invoice, okay, so we should either say request correction
+[08:56] or we could say approve with override or we say escalate to manager, so should we just remove
+[09:06] like, just say approve because we have already added all the comments etc, so imagine like if
+[09:13] I am thinking of the workflow here, I came in, I am just checking, I am a manual reviewer, I
+[09:18] see all the rows and see all the matching, I have left the comment, I have added it,
+[09:25] it's gone to somewhere, so when it's gone, then again, you want to approve it,
+[09:32] so basically, I am just imagining how do we showcase the workflow where I have made the
+[09:37] changes, obviously, I am not approving it, I am kind of telling that oh, that's gone to the review
+[09:45] if I have added the comments, so I am just not able to comprehend here, if I have made the
+[09:51] changes, then will I approve it, obviously, in my mind, I want, I am just waiting for the review
+[09:57] or basically, I have added the comments or whatever I want to do, if there are mistakes,
+[10:03] how do we say because hold initially, when I was thinking was say, I have added all the changes,
+[10:10] changes as in I have added all the comments and those comments are not positive, say I want to
+[10:16] kind of go on and do something else and it's there is some mistake there.
+[10:22] No, so the way this will happen is the invoice counts, I am doing the review,
+[10:31] in fact, one other thing to remember is if we are when we are adding that button at the line item
+[10:38] level, until all the buttons have been clicked in the sense either approved or rejected,
+[10:45] none of the buttons on the four buttons you are showing, they should all be grayed out.
+[10:55] Maybe escalate to manager should be there because maybe I do not feel comfortable,
+[11:01] I can just straight away escalate to the manager and let the manager do something.
+[11:05] Yeah, even if it's all are not approved, I kind of rejected it, I have grayed out everything,
+[11:12] so one button we can we can let there stay as escalate to manager because again, you have
+[11:21] added changes, then you say, oh, these are grayed out, I escalate to the manager,
+[11:25] if they still need all the changes. Yeah, in fact, maybe approve with override
+[11:36] with override. Okay, so once they provide all the details, so then yeah, if they rejected,
+[11:43] but they give a valid reason, then the approval override makes sense. And then they'll give a
+[11:49] reason why they're overwriting, right? So when they click on that approve, so I think in all
+[11:54] cases, when they say escalate to manager, there needs to be a note that they fill out as to why
+[11:59] they are escalating. If they do with override, there needs to be a note. If they say request
+[12:05] correction, again, they need to type a note. And then it goes to the only thing is and we should
+[12:12] show that in case of escalate to manager, I pick a manager, maybe the name from a drop down.
+[12:23] Yeah. And if it is request correction, I need to put a email address, right? Or maybe the
+[12:29] suppliers contract should be there in the system, right? Yeah, something like
+[12:36] having a overlay where it says send an email suggest something on the email from the drop
+[12:43] down either you paste it or either it's do you think drop down or something for the email or
+[12:50] just paste it and then add the content and then send it to just pick it up from we can assume that
+[12:56] we know the suppliers there is corporation. So in the profile of various corporation,
+[13:01] we have the email address. Okay, makes sense. Yeah. Then four or five suggested email from
+[13:08] this organization is there and you just send it. Yeah. Should I just proceed to the next?
+[13:18] Oh, yeah. And then then we can just go to the so I think then we will have the manager screen,
+[13:25] right? When we say escalate to manager, the manager screen will be the same thing they
+[13:30] can basically review. And again, they can do request correction or approve. I mean,
+[13:37] ultimately, what is the end game is, it's either approved with override or we are requesting
+[13:42] correction. Yeah, basically a resolution is there. It has to get. So that's the only thing
+[13:49] that screen will look the same. It just it's going to a different person. But you're showing
+[13:55] the same screen again. And that person can escalate to their manager. So I think, again,
+[14:02] I think this could be sort of a loop where we don't have to do anything different. And then
+[14:08] you just have the dashboard after that, which basically shows. And for the escalator manager,
+[14:13] once you go, you say and that it takes you to the screen of manager. So for him. Yeah. Okay. And
+[14:22] same. He did like the last time the manager comes and says, What invoices do I have for
+[14:28] review and approval? Right? Same thing. Yeah, that was in a chatbot manner. Right now in this,
+[14:36] they can just do a list view of things that need to be approved. And same thing for
+[14:43] the request corrections. Or, you know, overall, I think we can show status, right?
+[14:48] Of the invoices to say, this is waiting correction. We have received a response.
+[14:54] Okay. Approve escalated things like that. Right now we don't have that. Yeah.
+[15:00] Yeah. So I think in this, we can have like a status field in the bottom, right with each
+[15:08] to say, it's waiting for waiting on manager waiting on correction or approved with override
+[15:15] something. I think that that should be enough. If once we make these changes,
+[15:21] that should be good enough for us to take it to them and show them.
+[15:26] Cool. For dashboard, any, any suggestions here, what needs to be changed? It shows this,
+[15:32] we will add like one for invoices, basically the status for invoices. This shows us process
+[15:38] exception amount, etc. One suggestion was taking this to the invoices where this has been revealed,
+[15:48] I guess, suspicion, etc. Then I will just create one screen where it just takes you
+[15:53] to the these filtered ones so that you can look at it for a right. Okay. So that is fine.
+[16:01] That's a small change. Exceptions is fine, critical, etc. You review it.
+[16:08] Then exceptions is here where it shows all the exceptions open, critical, higher, duplicate,
+[16:15] match exception, duplicate billing, then basically criticality level,
+[16:27] where it stands and then all then again, same thing. I don't know where it takes you the same
+[16:34] page. Then duplicates is again that we talked about. You have how much, like,
+[16:43] the how much similarity, etc. We are saying analysis of AI.
+[16:49] Here, like, do you want any changes because it kind of showcases just the similarity and
+[16:57] does this analysis where, again, these button right now are not doing anything.
+[17:03] So any, any suggestions for the duplication?
+[17:08] How it's shown right now.
+[17:13] Is the same way we should, even if it's a duplicate, right? So in that case,
+[17:19] so if you go back to the invoice, at a lab, maybe the
+[17:27] so in so basically, I think, if we don't, that means everything is incorrect, right?
+[17:36] And so maybe, for duplicate, there's no value in showing
+[17:42] accept or reject, maybe action could be at an invoice level, same thing, same set of buttons to
+[17:49] say, accept or reject, right, except with override or to manage it.
+[17:58] And again, like, point was somewhere, it says that same vendor,
+[18:05] something else, same vendor is decided with some of the changes,
+[18:09] more things with same invoice number, again, like, whatever similarity it's giving you,
+[18:16] based on that, it's saying, oh, this is kind of similar, this is not, I think this is 99%
+[18:23] similar, 70% similar. So that kind of similarity score it's doing, doing basically, for example,
+[18:29] it's here, it says 100%, then it says, oh, this is, I know for sure, this is the same way.
+[18:37] But I think, you know, I think having a separate screen for duplicate and separate for exception
+[18:42] doesn't need to be there, because you already have, the screen should be the same, the one
+[18:48] that we showed where they accept, reject, and then they have these actions. I think the only
+[18:52] difference with the duplicate is the entire invoice is duplicate, or the entire invoice could
+[18:59] be fake. So I think, if there are line item level issues, then you show the button.
+[19:06] But if the overall invoice is bad, then we just, we don't even need the line item level, we just
+[19:14] have rejection, override, things like that. One other thing I thought of is, we should have a
+[19:21] one screen, which should be a vendor scoring, which means which vendors are making mistakes.
+[19:31] So it could show that this vendor is 100%. That means their invoices are always accurate.
+[19:38] This vendor is constantly making one mistake or the other here and there. So depending on the
+[19:45] ratio of mistakes, we should do like a vendor scoring. And people can click on the score and
+[19:52] say this vendor how many mistakes they have made in the past. Basically kind of reporting
+[19:58] all the analysis based on whatever we are figuring out. Yeah, and that way they can take an action
+[20:06] and say this vendor is making too many mistakes, they could red flag the vendor and then maybe
+[20:12] penalize the vendor or maybe bar them from doing future business. And so it could be that action
+[20:21] when they click on the vendor, they could say that, recommend the vendor for penalty or maybe
+[20:31] it could be recommend that the vendor be removed from as buyer. Cool, makes sense.
+[20:40] Then last one is the contract screen, where you have these,
+[20:47] total value contract, current spend, unclaimed rebates, contract reached.
+[20:54] Well, I think instead of a contract level, we are doing the same thing at a vendor level.
+[20:58] So basically you don't need the contract level. I guess last time also you mentioned that instead
+[21:03] of contracts, we just go back to the processes and say though this is the contract and that's
+[21:08] invoice and then we match it. Yeah. And once we match it and then you have all the analysis,
+[21:17] then you do the review anyway with the contract and you see all the matching items etc,
+[21:25] approve it and then approve it for compliance where we can have everything.
+[21:35] I guess for review, it's again just the same thing, extracting. Let me see.
+[21:43] Yeah, I think the contract one, let's keep aside right now. I don't want to
+[21:47] show them that. We'll just focus on the invoice. Yeah, just this one only. And then the
+[21:54] vendor score is the piece you add, which basically says you can see like,
+[22:03] and I'm trying to think whether we should give any kind of rating or we should just
+[22:08] put the number of mistakes, like a quantification of, like a ratio, 100 invoices, 100 line items,
+[22:15] or maybe dollar value and the mistakes. We can have some kind of a, say, imagine this
+[22:24] spend versus gap is something that you see, but we can have like a reporting of historical things
+[22:32] where you, from the historical stats itself, you kind of figure out or this has created more
+[22:39] mistakes instead of, and then you just keep it in the ascending and descending order,
+[22:45] whatever you see on the report. But what I was trying to say is that it's not the,
+[22:51] one is the quantity of mistakes, they made five mistakes, but it's the dollar value. So if they
+[22:57] have done $100,000 of business, but their discrepancies have been $20,000. So that's
+[23:04] like a ratio of one is to five or 20%, that dollar percentage, dollar of mistake,
+[23:12] the highest should come to the top. So if 30% dollar is at risk, that should be on top.
+[23:19] Cool. Makes sense. So basically just the cost that the hospital is bearing for their costs,
+[23:26] their mistakes, if that is higher than it goes on the top and then the same.
+[23:31] Yes. Yeah. Makes sense. I guess. Yeah. Then I will do the changes. I have few
+[23:36] things that I was kind of figuring out from Twitter, X, then I will just use all the skills,
+[23:43] et cetera, create better views. I have now all the skills handy that can just create
+[23:51] a very cool looking UI. So yeah, we'll do the changes. And when is this meeting?
+[24:02] I haven't requested. I was waiting for you to see when we can do it. Maybe I think,
+[24:08] do you think this week, maybe too early? Should we try next week, maybe Monday, Tuesday?
+[24:13] Monday is fine.
+[24:15] Okay. We will request the time and see if they, when they give us.
+[24:21] I don't have any problem.
+[24:22] This week, not this week, correct? Because you probably will take a day or two.
+[24:26] Yeah. This will take a day or two and then I will just come back to you as well to discuss.
+[24:32] And we can bring Bala also to review and then give any input. Okay.
+[24:36] Yeah. Yeah.
+[24:37] Good. All right.
+[24:38] Bye-bye. Take care.
+[24:39] Good day.
+[24:40] Bye. You too.
