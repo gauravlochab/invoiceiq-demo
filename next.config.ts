@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  allowedDevOrigins: [
+    'invoiceiq.agileclevel',
+    'invoiceiq.agileclevel.demo',
+    'localhost',
+  ],
 };
 
 export default nextConfig;

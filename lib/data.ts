@@ -1,6 +1,6 @@
 // ─── NORTHFIELD MEDICAL CENTER — DEMO DATA ───────────────────────────────────
 // Q1 2026 Invoice Intelligence Demo
-// Total exceptions caught: $392,720
+// Total exceptions caught: $396,810
 
 export type Severity = "critical" | "high" | "medium" | "low";
 export type ExceptionType =
@@ -30,12 +30,17 @@ export interface Exception {
 export interface InvoiceLineItem {
   itemCode: string;
   description: string;
+  poDescription?: string;
+  invoiceDescription?: string;
+  poUnit?: string;
+  invoiceUnit?: string;
   poQty: number;
   poUnitPrice: number;
   invoiceQty: number;
   invoiceUnitPrice: number;
   packingSlipQty: number;
   status: "match" | "price_mismatch" | "qty_mismatch" | "both_mismatch";
+  flags?: ("price" | "qty" | "description" | "unit")[];
 }
 
 export interface DuplicatePair {
@@ -86,7 +91,7 @@ export const exceptions: Exception[] = [
     description:
       "Cumulative Q1 spend of $623,890 exceeds annual contract cap of $500,000 by $123,890. Contract #CTR-2024-BIO-009 has no auto-renewal clause. 23 invoices processed post-cap breach.",
     detectedAt: "2026-03-28T09:14:22Z",
-    assignee: "Sarah Chen",
+    assignee: "Rajesh Jaluka",
   },
   {
     id: "EX-002",
@@ -131,7 +136,7 @@ export const exceptions: Exception[] = [
     description:
       "Contract #CTR-2025-CAR-003 entitles Northfield to an 8.5% quarterly rebate on pharmaceutical spend exceeding $200K. Q1 spend: $312,400. Expected rebate credit memo: $26,554 (on excess $312,400). No credit memo received. Additionally, $62,876 in volume discount adjustments not applied across 47 line items.",
     detectedAt: "2026-04-01T06:00:00Z",
-    assignee: "Sarah Chen",
+    assignee: "Rajesh Jaluka",
   },
   {
     id: "EX-005",
@@ -191,7 +196,7 @@ export const exceptions: Exception[] = [
     description:
       "Duplicate invoice detected. HS-2026-77341 and HS-2026-77298 submitted 4 days apart for identical line items totalling $8,750. Second invoice blocked before payment.",
     detectedAt: "2026-01-31T07:44:00Z",
-    assignee: "Sarah Chen",
+    assignee: "Rajesh Jaluka",
   },
   {
     id: "EX-009",
@@ -202,7 +207,7 @@ export const exceptions: Exception[] = [
     invoiceNumber: "VZT-2026-Q1",
     invoiceDate: "2026-03-31",
     amount: 94200,
-    flaggedAmount: 6840,
+    flaggedAmount: 6850,
     description:
       "GPO contract entitles 7.25% rebate on spend above $80K/quarter. Q1 spend: $94,200. Rebate on $14,200 excess: $1,030. Additionally, 3% early-payment discount not applied across 12 invoices totalling $194,000 = $5,820 missed.",
     detectedAt: "2026-04-01T06:00:00Z",
@@ -221,54 +226,313 @@ export const exceptions: Exception[] = [
     description:
       "Unit of measure mismatch. PO ordered 24 'cases' of IV tubing. Invoice billed 24 'cartons' at a higher per-unit price. Price variance: $3,890. Resolved: vendor issued credit memo.",
     detectedAt: "2026-02-06T08:30:00Z",
-    assignee: "Sarah Chen",
+    assignee: "Rajesh Jaluka",
   },
 ];
 
 // ─── THREE-WAY MATCH DETAIL (for EX-006 Steris) ──────────────────────────────
 
+// PO-specific data: different POs have different quantities and prices
+export const sterisLineItemsByPO: Record<string, Partial<Record<string, { poQty: number; poUnitPrice: number }>>> = {
+  // Main PO — matches invoice quantities, contracted price $2.10 for STE-4821-A
+  "po-NMC-2026-PO-2847.pdf": {
+    "STE-4821-A": { poQty: 500, poUnitPrice: 2.10 },
+    "STE-2200-C": { poQty: 800, poUnitPrice: 8.75 },
+    "STE-9940-B": { poQty: 3000, poUnitPrice: 1.20 },
+    "STE-3310-D": { poQty: 500, poUnitPrice: 14.50 },
+    "STE-7710-A": { poQty: 1000, poUnitPrice: 4.85 },
+    "STE-1100-C": { poQty: 2000, poUnitPrice: 1.90 },
+  },
+  // Alternative PO — different quantities (smaller order)
+  "po-NMC-2026-PO-2651.pdf": {
+    "STE-4821-A": { poQty: 400, poUnitPrice: 2.10 },
+    "STE-2200-C": { poQty: 600, poUnitPrice: 8.75 },
+    "STE-9940-B": { poQty: 1500, poUnitPrice: 1.20 },
+    "STE-3310-D": { poQty: 300, poUnitPrice: 14.50 },
+    "STE-7710-A": { poQty: 500, poUnitPrice: 4.85 },
+    "STE-1100-C": { poQty: 1000, poUnitPrice: 1.90 },
+  },
+  // Older PO — even smaller, missing some items
+  "po-NMC-2026-PO-2499.pdf": {
+    "STE-4821-A": { poQty: 300, poUnitPrice: 2.10 },
+    "STE-2200-C": { poQty: 500, poUnitPrice: 8.75 },
+    "STE-9940-B": { poQty: 2000, poUnitPrice: 1.20 },
+    "STE-3310-D": { poQty: 200, poUnitPrice: 14.50 },
+    "STE-7710-A": { poQty: 0, poUnitPrice: 0 },
+    "STE-1100-C": { poQty: 0, poUnitPrice: 0 },
+  },
+};
+
+// PS-specific data: different packing slips have different received quantities
+export const sterisLineItemsByPS: Record<string, Partial<Record<string, number>>> = {
+  // Main PS — matches invoice quantities, except STE-9940-B is 20 short
+  "packingslip-STC-PS-2026-0392.pdf": {
+    "STE-4821-A": 500,
+    "STE-2200-C": 800,
+    "STE-9940-B": 2980,
+    "STE-3310-D": 500,
+    "STE-7710-A": 1000,
+    "STE-1100-C": 2000,
+  },
+  // Alternative PS — matches PO-2651 quantities, 20 short on shields
+  "packingslip-STC-PS-2026-0371.pdf": {
+    "STE-4821-A": 400,
+    "STE-2200-C": 600,
+    "STE-9940-B": 1480,
+    "STE-3310-D": 300,
+    "STE-7710-A": 500,
+    "STE-1100-C": 1000,
+  },
+  // Older PS — matches PO-2499, missing last two items
+  "packingslip-STC-PS-2026-0350.pdf": {
+    "STE-4821-A": 300,
+    "STE-2200-C": 500,
+    "STE-9940-B": 2000,
+    "STE-3310-D": 200,
+    "STE-7710-A": 0,
+    "STE-1100-C": 0,
+  },
+};
+
+// Default line items (matches PO-2847 + PS-0392)
+// PO should have ALL the same items as invoice at same quantities
+// Only discrepancies: price on STE-4821-A ($2.10 vs $2.50) and PS qty on STE-9940-B (2980 vs 3000)
 export const sterisLineItems: InvoiceLineItem[] = [
   {
     itemCode: "STE-4821-A",
     description: "Sterile Surgical Drape Set / Surgical Draping Kit Pro",
+    poDescription: "Sterile Surgical Drape Set Standard",
+    invoiceDescription: "Surgical Draping Kit Pro (individually wrapped)",
+    poUnit: "ea",
+    invoiceUnit: "ea",
     poQty: 500,
     poUnitPrice: 2.1,
     invoiceQty: 500,
     invoiceUnitPrice: 2.5,
     packingSlipQty: 500,
     status: "price_mismatch",
+    flags: ["price", "description"],
   },
   {
     itemCode: "STE-2200-C",
-    description: "Surgical Gowns Level 3 (XL)",
-    poQty: 200,
+    description: "Surgical Isolation Gown AAMI Level 3 XL",
+    poDescription: "Surgical Isolation Gown AAMI Level 3 XL",
+    invoiceDescription: "Surgical Isolation Gown AAMI Level 3 XL",
+    poUnit: "ea",
+    invoiceUnit: "ea",
+    poQty: 800,
     poUnitPrice: 8.75,
-    invoiceQty: 200,
+    invoiceQty: 800,
     invoiceUnitPrice: 8.75,
-    packingSlipQty: 200,
+    packingSlipQty: 800,
     status: "match",
+    flags: [],
   },
   {
     itemCode: "STE-9940-B",
-    description: "Disposable Face Shield Pro",
-    poQty: 1000,
+    description: "Disposable Full-Face Shield with Anti-Fog Coating",
+    poDescription: "Disposable Full-Face Shield with Anti-Fog Coating",
+    invoiceDescription: "Disposable Full-Face Shield with Anti-Fog Coating",
+    poUnit: "ea",
+    invoiceUnit: "ea",
+    poQty: 3000,
     poUnitPrice: 1.2,
-    invoiceQty: 1000,
+    invoiceQty: 3000,
     invoiceUnitPrice: 1.2,
-    packingSlipQty: 980,
+    packingSlipQty: 2980,
     status: "qty_mismatch",
+    flags: ["qty"],
   },
   {
     itemCode: "STE-3310-D",
-    description: "Sterile Gauze Pads 4x4 (pkg/100)",
-    poQty: 150,
+    description: "Sterile Gauze Pad 4x4 inch (pkg/100)",
+    poDescription: "Sterile Gauze Pad 4x4 inch (pkg/100)",
+    invoiceDescription: "Sterile Gauze Pad 4x4 inch (pkg/100)",
+    poUnit: "pkg",
+    invoiceUnit: "ea",
+    poQty: 500,
     poUnitPrice: 14.5,
-    invoiceQty: 150,
+    invoiceQty: 500,
     invoiceUnitPrice: 14.5,
-    packingSlipQty: 150,
+    packingSlipQty: 500,
     status: "match",
+    flags: ["unit"],
+  },
+  {
+    itemCode: "STE-7710-A",
+    description: "Sterilization Wrap CSR 24x24 (case/500)",
+    poDescription: "Sterilization Wrap CSR 24x24 (case/500)",
+    invoiceDescription: "Sterilization Wrap CSR 24x24 (case/500)",
+    poUnit: "sheet",
+    invoiceUnit: "sheet",
+    poQty: 1000,
+    poUnitPrice: 4.85,
+    invoiceQty: 1000,
+    invoiceUnitPrice: 4.85,
+    packingSlipQty: 1000,
+    status: "match",
+    flags: [],
+  },
+  {
+    itemCode: "STE-1100-C",
+    description: "Bouffant Surgical Cap Disposable (case/100)",
+    poDescription: "Bouffant Surgical Cap Disposable (case/100)",
+    invoiceDescription: "Bouffant Surgical Cap Disposable (case/100)",
+    poUnit: "ea",
+    invoiceUnit: "ea",
+    poQty: 2000,
+    poUnitPrice: 1.9,
+    invoiceQty: 2000,
+    invoiceUnitPrice: 1.9,
+    packingSlipQty: 2000,
+    status: "match",
+    flags: [],
   },
 ];
+
+// ─── THREE-WAY MATCH DETAIL (for EX-007 Medline) ─────────────────────────────
+
+// Three-way match data for EX-007 (Medline Industries — qty mismatch)
+export const medlineLineItems: InvoiceLineItem[] = [
+  {
+    itemCode: "MDL-EG-200",
+    description: "Exam Gloves Nitrile Medium (Box/200)",
+    poDescription: "Exam Gloves Nitrile Medium (Box/200)",
+    invoiceDescription: "Exam Gloves Nitrile Medium (Box/200)",
+    poUnit: "box", invoiceUnit: "box",
+    poQty: 300, poUnitPrice: 18.50,
+    invoiceQty: 365, invoiceUnitPrice: 18.50,
+    packingSlipQty: 300,
+    status: "qty_mismatch",
+    flags: ["qty"],
+  },
+  {
+    itemCode: "MDL-BP-100",
+    description: "Bed Pads Disposable (Case/100)",
+    poDescription: "Bed Pads Disposable (Case/100)",
+    invoiceDescription: "Bed Pads Disposable (Case/100)",
+    poUnit: "case", invoiceUnit: "case",
+    poQty: 150, poUnitPrice: 42.00,
+    invoiceQty: 150, invoiceUnitPrice: 42.00,
+    packingSlipQty: 150,
+    status: "match",
+    flags: [],
+  },
+  {
+    itemCode: "MDL-SC-8G",
+    description: "Sharps Container 8 Gallon",
+    poDescription: "Sharps Container 8 Gallon",
+    invoiceDescription: "Sharps Container 8 Gallon",
+    poUnit: "ea", invoiceUnit: "ea",
+    poQty: 80, poUnitPrice: 28.50,
+    invoiceQty: 80, invoiceUnitPrice: 28.50,
+    packingSlipQty: 80,
+    status: "match",
+    flags: [],
+  },
+];
+
+// ─── THREE-WAY MATCH DETAIL (for EX-010 Owens & Minor) ───────────────────────
+
+// Three-way match data for EX-010 (Owens & Minor — UOM mismatch)
+export const owensLineItems: InvoiceLineItem[] = [
+  {
+    itemCode: "OM-IVT-24",
+    description: "IV Tubing Extension Set",
+    poDescription: "IV Tubing Extension Set (case/24)",
+    invoiceDescription: "IV Tubing Extension Set (carton/24)",
+    poUnit: "case", invoiceUnit: "carton",
+    poQty: 24, poUnitPrice: 156.00,
+    invoiceQty: 24, invoiceUnitPrice: 162.08,
+    packingSlipQty: 24,
+    status: "price_mismatch",
+    flags: ["price", "unit", "description"],
+  },
+  {
+    itemCode: "OM-SYR-50",
+    description: "Irrigation Syringe 60mL (Box/50)",
+    poDescription: "Irrigation Syringe 60mL (Box/50)",
+    invoiceDescription: "Irrigation Syringe 60mL (Box/50)",
+    poUnit: "box", invoiceUnit: "box",
+    poQty: 40, poUnitPrice: 34.00,
+    invoiceQty: 40, invoiceUnitPrice: 34.00,
+    packingSlipQty: 40,
+    status: "match",
+    flags: [],
+  },
+];
+
+// ─── CONTRACT DETAILS (for exception detail pages) ──────────────────────────
+
+// Contract details for exception detail pages
+export const exceptionContracts: Record<string, {
+  contractNumber: string;
+  vendor: string;
+  cap: number;
+  currentSpend: number;
+  startDate: string;
+  endDate: string;
+  terms: string;
+  rebateRate?: number;
+  rebateThreshold?: number;
+  rebateOwed?: number;
+  tiers?: { label: string; maxQty: number; unitPrice: number }[];
+  currentQty?: number;
+}> = {
+  "EX-001": {
+    contractNumber: "CTR-2024-BIO-009",
+    vendor: "BioMed Equipment Inc.",
+    cap: 500000,
+    currentSpend: 623890,
+    startDate: "2025-01-01",
+    endDate: "2025-12-31",
+    terms: "Annual spend cap of $500,000. No auto-renewal clause. Contract expired Dec 31, 2025.",
+  },
+  "EX-004": {
+    contractNumber: "CTR-2025-CAR-003",
+    vendor: "Cardinal Health",
+    cap: 1500000,
+    currentSpend: 892400,
+    startDate: "2025-04-01",
+    endDate: "2026-03-31",
+    terms: "Quarterly rebate of 8.5% on pharmaceutical spend exceeding $200K.",
+    rebateRate: 8.5,
+    rebateThreshold: 200000,
+    rebateOwed: 89430,
+  },
+  "EX-005": {
+    contractNumber: "CTR-2025-CAR-003",
+    vendor: "Cardinal Health",
+    cap: 1500000,
+    currentSpend: 892400,
+    startDate: "2025-04-01",
+    endDate: "2026-03-31",
+    terms: "Tiered pricing: $85/unit up to 1,000 units/month, $72/unit above 1,000.",
+    tiers: [
+      { label: "Tier 1", maxQty: 1000, unitPrice: 85.00 },
+      { label: "Tier 2", maxQty: 999999, unitPrice: 72.00 },
+    ],
+    currentQty: 2340,
+  },
+  "EX-009": {
+    contractNumber: "CTR-2025-VZT-002",
+    vendor: "Vizient Inc.",
+    cap: 500000,
+    currentSpend: 94200,
+    startDate: "2025-01-01",
+    endDate: "2026-12-31",
+    terms: "7.25% rebate on spend above $80K/quarter. 3% early-payment discount on all invoices.",
+    rebateRate: 7.25,
+    rebateThreshold: 80000,
+    rebateOwed: 6850,
+  },
+};
+
+// Duplicate pair mapping for duplicate exceptions
+export const exceptionDuplicates: Record<string, string> = {
+  "EX-002": "DUP-001",
+  "EX-008": "DUP-002",
+};
 
 // ─── DUPLICATE PAIRS ──────────────────────────────────────────────────────────
 
@@ -411,7 +675,7 @@ export const contracts: Contract[] = [
     rebateRate: 7.25,
     rebateThreshold: 80000,
     rebateApplied: 0,
-    rebateMissed: 6840,
+    rebateMissed: 6850,
     status: "compliant",
     category: "GPO — General",
   },
@@ -422,11 +686,11 @@ export const contracts: Contract[] = [
 export const kpiSummary = {
   totalInvoicesProcessed: 1847,
   totalExceptions: 10,
-  openExceptions: 7,
-  totalFlagged: 392720,
-  totalRecovered: 56670, // resolved exceptions
+  openExceptions: 5,
+  totalFlagged: 396810,
+  totalRecovered: 12640, // resolved exceptions: EX-008 ($8,750) + EX-010 ($3,890)
   duplicatesBlocked: 2,
-  contractsAtRisk: 2,
+  contractsAtRisk: 3, // 1 breached + 2 warning
   avgProcessingTime: 2.4, // hours
   vendorsScanned: 5,
 };
@@ -434,14 +698,14 @@ export const kpiSummary = {
 // ─── CHART DATA ───────────────────────────────────────────────────────────────
 
 export const exceptionsByMonth = [
-  { month: "Jan", duplicate: 2, match_exception: 1, missing_rebate: 0, suspicious: 1, tier_pricing: 0 },
-  { month: "Feb", duplicate: 0, match_exception: 2, missing_rebate: 0, suspicious: 0, tier_pricing: 1 },
-  { month: "Mar", duplicate: 1, match_exception: 1, missing_rebate: 2, suspicious: 0, tier_pricing: 2 },
+  { month: "Jan", duplicate: 2, match_exception: 0, missing_rebate: 0, suspicious: 0, tier_pricing: 0, contract_overage: 0 },
+  { month: "Feb", duplicate: 0, match_exception: 2, missing_rebate: 0, suspicious: 1, tier_pricing: 0, contract_overage: 0 },
+  { month: "Mar", duplicate: 0, match_exception: 1, missing_rebate: 2, suspicious: 0, tier_pricing: 1, contract_overage: 1 },
 ];
 
 export const flaggedByType = [
   { name: "Contract Overage", value: 123890, color: "#ef4444" },
-  { name: "Missing Rebate", value: 89430, color: "#f59e0b" },
+  { name: "Missing Rebate", value: 96280, color: "#f59e0b" },
   { name: "Tier Pricing", value: 52680, color: "#8b5cf6" },
   { name: "Suspicious Invoice", value: 45200, color: "#ef4444" },
   { name: "Duplicate Billing", value: 56070, color: "#f97316" },
@@ -452,9 +716,9 @@ export const spendTrend = [
   { month: "Oct '25", spend: 187400, exceptions: 18200 },
   { month: "Nov '25", spend: 214300, exceptions: 22100 },
   { month: "Dec '25", spend: 198700, exceptions: 19800 },
-  { month: "Jan '26", spend: 312400, exceptions: 55870 },
-  { month: "Feb '26", spend: 289100, exceptions: 63950 },
-  { month: "Mar '26", spend: 334200, exceptions: 272900 },
+  { month: "Jan '26", spend: 312400, exceptions: 56070 },
+  { month: "Feb '26", spend: 289100, exceptions: 53690 },
+  { month: "Mar '26", spend: 334200, exceptions: 287050 },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -475,6 +739,78 @@ export function formatDate(iso: string): string {
     year: "numeric",
   });
 }
+
+// ─── VENDOR SCORING ──────────────────────────────────────────────────────────
+
+export interface VendorScore {
+  id: string;
+  name: string;
+  totalInvoices: number;
+  totalSpend: number;
+  discrepancyAmount: number;
+  discrepancyPct: number;
+  score: number;
+  rating: "Critical" | "High Risk" | "Medium Risk" | "Low Risk";
+  exceptions: { id: string; type: string; amount: number; date: string; description: string }[];
+}
+
+export const vendorScores: VendorScore[] = [
+  {
+    id: "VS-001", name: "MedTech Solutions LLC", totalInvoices: 1, totalSpend: 45200, discrepancyAmount: 45200, discrepancyPct: 100.0, score: 5, rating: "Critical",
+    exceptions: [
+      { id: "EX-003", type: "Suspicious Invoice", amount: 45200, date: "2026-02-14", description: "No PO found. Vendor not in approved master. Bank account differs from known vendor records." },
+    ],
+  },
+  {
+    id: "VS-002", name: "MedSupply Corp", totalInvoices: 12, totalSpend: 94440, discrepancyAmount: 47320, discrepancyPct: 50.1, score: 22, rating: "Critical",
+    exceptions: [
+      { id: "EX-002", type: "Duplicate Billing", amount: 47320, date: "2026-01-21", description: "Near-duplicate of MS-2026-0847 ($47,120). Amount altered by $200 (0.42%)." },
+    ],
+  },
+  {
+    id: "VS-003", name: "BioMed Equipment Inc.", totalInvoices: 23, totalSpend: 623890, discrepancyAmount: 123890, discrepancyPct: 19.9, score: 30, rating: "High Risk",
+    exceptions: [
+      { id: "EX-001", type: "Contract Overage", amount: 123890, date: "2026-03-28", description: "Spend exceeded $500K annual cap by $123,890. Contract CTR-2024-BIO-009 expired." },
+    ],
+  },
+  {
+    id: "VS-004", name: "Cardinal Health", totalInvoices: 47, totalSpend: 892400, discrepancyAmount: 142110, discrepancyPct: 15.9, score: 35, rating: "High Risk",
+    exceptions: [
+      { id: "EX-004", type: "Missing Rebate", amount: 89430, date: "2026-03-31", description: "Q1 rebate of $26,554 not applied. Volume discount adjustments of $62,876 outstanding." },
+      { id: "EX-005", type: "Tier Pricing Error", amount: 52680, date: "2026-03-15", description: "Billed at $85/unit (Tier 1) instead of $72/unit (Tier 2) for 2,340 units." },
+    ],
+  },
+  {
+    id: "VS-005", name: "Henry Schein", totalInvoices: 8, totalSpend: 70000, discrepancyAmount: 8750, discrepancyPct: 12.5, score: 55, rating: "Medium Risk",
+    exceptions: [
+      { id: "EX-008", type: "Duplicate Billing", amount: 8750, date: "2026-01-30", description: "Exact duplicate invoice. Same amount, same line items, submitted 4 days apart." },
+    ],
+  },
+  {
+    id: "VS-006", name: "Vizient Inc.", totalInvoices: 12, totalSpend: 94200, discrepancyAmount: 6850, discrepancyPct: 7.3, score: 65, rating: "Low Risk",
+    exceptions: [
+      { id: "EX-009", type: "Missing Rebate", amount: 6850, date: "2026-03-31", description: "7.25% rebate on $14,200 excess ($1,030) plus 3% early payment discount on $194K ($5,820)." },
+    ],
+  },
+  {
+    id: "VS-007", name: "Steris Corporation", totalInvoices: 23, totalSpend: 228750, discrepancyAmount: 4600, discrepancyPct: 2.0, score: 72, rating: "Low Risk",
+    exceptions: [
+      { id: "EX-006", type: "Match Exception", amount: 4600, date: "2026-02-28", description: "Price mismatch on STE-4821-A. PO: $2.10/unit, Invoice: $2.50/unit. 23 occurrences." },
+    ],
+  },
+  {
+    id: "VS-008", name: "Owens & Minor", totalInvoices: 15, totalSpend: 84000, discrepancyAmount: 3890, discrepancyPct: 4.6, score: 75, rating: "Low Risk",
+    exceptions: [
+      { id: "EX-010", type: "Match Exception", amount: 3890, date: "2026-02-05", description: "UOM mismatch. PO ordered 'cases', invoice billed 'cartons' at higher per-unit price." },
+    ],
+  },
+  {
+    id: "VS-009", name: "Medline Industries", totalInvoices: 18, totalSpend: 156000, discrepancyAmount: 14200, discrepancyPct: 9.1, score: 58, rating: "Medium Risk",
+    exceptions: [
+      { id: "EX-007", type: "Match Exception", amount: 14200, date: "2026-03-10", description: "Multiple line item quantity mismatches across 3 invoices. Total variance: $14,200." },
+    ],
+  },
+];
 
 export const severityConfig: Record<Severity, { label: string; color: string; bg: string; dot: string }> = {
   critical: { label: "Critical", color: "#ef4444", bg: "#fef2f2", dot: "bg-red-500" },

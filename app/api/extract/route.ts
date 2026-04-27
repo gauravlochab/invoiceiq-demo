@@ -83,7 +83,149 @@ For the flags array, include any of these that apply:
   return `Extract all structured data from this document and return it as valid JSON.`;
 }
 
+// Generic invoice prompt for uploaded files (we don't know the doc type)
+const UPLOAD_PROMPT = `Extract this document into the following JSON structure exactly:
+{
+  "documentType": "invoice",
+  "vendor": { "name": "", "address": "", "email": "", "phone": "" },
+  "billTo": { "name": "", "address": "" },
+  "invoiceNumber": "",
+  "invoiceDate": "",
+  "poReference": "",
+  "paymentTerms": "",
+  "dueDate": "",
+  "submittedVia": "",
+  "lineItems": [
+    { "itemCode": "", "description": "", "quantity": 0, "unit": "", "unitPrice": 0, "total": 0 }
+  ],
+  "subtotal": 0,
+  "tax": 0,
+  "handlingFee": 0,
+  "totalAmount": 0,
+  "flags": []
+}
+
+For the flags array, include any of these that apply:
+- "no_po_reference" if no PO number is found
+- "non_standard_payment_terms" if payment terms are not Net 30
+- "vendor_not_standard" if the vendor address looks like a suite/virtual office
+- "mixed_product_and_services" if line items mix physical products and consulting/services
+
+If this is not an invoice but another type of document (purchase order, packing slip, etc.), adapt the structure accordingly but always return valid JSON.`;
+
+const SYSTEM_PROMPT =
+  "You are a document extraction AI for a hospital accounts payable system. " +
+  "Extract all structured data from the provided document and return ONLY valid JSON with no markdown, no explanation.";
+
+async function extractWithClaude(pdfBase64: string, userPrompt: string) {
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 2048,
+    system: SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "document",
+            source: {
+              type: "base64",
+              media_type: "application/pdf",
+              data: pdfBase64,
+            },
+          },
+          {
+            type: "text",
+            text: userPrompt,
+          },
+        ],
+      },
+    ],
+  });
+
+  const firstBlock = response.content[0];
+  if (firstBlock.type !== "text") {
+    throw new Error("Unexpected response type from Claude");
+  }
+  return firstBlock.text;
+}
+
+function parseClaudeResponse(claudeText: string) {
+  // Strip markdown code fences if Claude wrapped the JSON despite instructions
+  const stripped = claudeText
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+
+  try {
+    return { data: JSON.parse(stripped), rawText: null };
+  } catch {
+    // Return raw text so the caller can still inspect what Claude produced
+    return { data: null, rawText: claudeText };
+  }
+}
+
 export async function POST(req: NextRequest) {
+  const contentType = req.headers.get("content-type") || "";
+
+  // ─── Path A: FormData file upload ─────────────────────────────────────────
+  if (contentType.includes("multipart/form-data")) {
+    let formData: FormData;
+    try {
+      formData = await req.formData();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Failed to parse form data" },
+        { status: 400 }
+      );
+    }
+
+    const file = formData.get("file") as File | null;
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: "No file provided" },
+        { status: 400 }
+      );
+    }
+
+    let pdfBase64: string;
+    try {
+      const bytes = await file.arrayBuffer();
+      pdfBase64 = Buffer.from(bytes).toString("base64");
+    } catch (err) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to read uploaded file: ${err instanceof Error ? err.message : String(err)}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    try {
+      const claudeText = await extractWithClaude(pdfBase64, UPLOAD_PROMPT);
+      const { data, rawText } = parseClaudeResponse(claudeText);
+
+      return NextResponse.json({
+        success: true,
+        document: file.name,
+        data,
+        ...(rawText ? { rawText } : {}),
+        extractedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Claude API error: ${err instanceof Error ? err.message : String(err)}`,
+        },
+        { status: 500 }
+      );
+    }
+  }
+
+  // ─── Path B: JSON body (pre-loaded document name) ──────────────────────────
   let document: string;
 
   try {
@@ -128,43 +270,17 @@ export async function POST(req: NextRequest) {
 
   const userPrompt = getPromptForDocument(safeDocument);
 
-  let claudeText: string;
   try {
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
-      system:
-        "You are a document extraction AI for a hospital accounts payable system. " +
-        "Extract all structured data from the provided document and return ONLY valid JSON with no markdown, no explanation.",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: pdfBase64,
-              },
-            },
-            {
-              type: "text",
-              text: userPrompt,
-            },
-          ],
-        },
-      ],
-    });
+    const claudeText = await extractWithClaude(pdfBase64, userPrompt);
+    const { data, rawText } = parseClaudeResponse(claudeText);
 
-    const firstBlock = response.content[0];
-    if (firstBlock.type !== "text") {
-      return NextResponse.json(
-        { success: false, error: "Unexpected response type from Claude" },
-        { status: 500 }
-      );
-    }
-    claudeText = firstBlock.text;
+    return NextResponse.json({
+      success: true,
+      document: safeDocument,
+      data,
+      ...(rawText ? { rawText } : {}),
+      extractedAt: new Date().toISOString(),
+    });
   } catch (err) {
     return NextResponse.json(
       {
@@ -174,28 +290,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-
-  // Strip markdown code fences if Claude wrapped the JSON despite instructions
-  const stripped = claudeText.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-
-  let parsedData: unknown;
-  try {
-    parsedData = JSON.parse(stripped);
-  } catch {
-    // Return raw text so the caller can still inspect what Claude produced
-    return NextResponse.json({
-      success: true,
-      document: safeDocument,
-      data: null,
-      rawText: claudeText,
-      extractedAt: new Date().toISOString(),
-    });
-  }
-
-  return NextResponse.json({
-    success: true,
-    document: safeDocument,
-    data: parsedData,
-    extractedAt: new Date().toISOString(),
-  });
 }

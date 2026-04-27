@@ -42,48 +42,30 @@ function SpendBar({
 }) {
   const p = pct(spend, cap);
   const fillColor =
-    p >= 100 ? "#DC2626" : p >= 70 ? "#B45309" : "#1C1917";
+    p >= 100 ? "#DC2626" : p >= 70 ? "#B45309" : "#0065cb";
 
   return (
     <div>
       {label && (
-        <div
-          className="section-label mb-1"
-          style={{ color: "#A8A29E" }}
-        >
+        <div className="section-label mb-1 text-[#9ca3af]">
           {label}
         </div>
       )}
       <div className="flex items-center justify-between mb-1">
         <span className="section-label">SPEND VS CAP</span>
-        <span
-          style={{
-            fontSize: 12,
-            fontVariantNumeric: "tabular-nums",
-            color: "#78716C",
-          }}
-        >
+        <span className="text-xs tabular-nums text-[#4b5563]">
           {formatCurrency(spend)}{" "}
-          <span style={{ color: "#A8A29E" }}>/</span>{" "}
+          <span className="text-[#9ca3af]">/</span>{" "}
           {formatCurrency(cap)}
         </span>
       </div>
       <div className="progress-track mt-2">
         <div
           className="progress-fill"
-          style={{
-            width: `${Math.min(p, 100)}%`,
-            background: fillColor,
-          }}
+          style={{ width: `${Math.min(p, 100)}%`, background: fillColor }}
         />
       </div>
-      <div
-        style={{
-          fontSize: 11,
-          marginTop: 4,
-          color: p >= 100 ? "#DC2626" : "#78716C",
-        }}
-      >
+      <div className={`text-xs mt-1 ${p >= 100 ? "text-red-600" : "text-[#4b5563]"}`}>
         {p >= 100
           ? `${p.toFixed(1)}% of cap — ${formatCurrency(spend - cap)} over limit`
           : `${p.toFixed(1)}% of cap`}
@@ -104,7 +86,7 @@ function ContractCard({ contract }: { contract: Contract }) {
       ? "#DC2626"
       : contract.status === "warning"
       ? "#B45309"
-      : "#E7E5E4";
+      : "#e5e7eb";
 
   const statusBadgeClass =
     isBreached
@@ -128,58 +110,37 @@ function ContractCard({ contract }: { contract: Contract }) {
       style={{ borderLeft: `2px solid ${leftBorderColor}` }}
     >
       {/* Card header */}
-      <div
-        className="flex items-start justify-between"
-        style={{ padding: "16px 20px 12px" }}
-      >
+      <div className="flex items-start justify-between px-5 pt-4 pb-3">
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#1C1917" }}>
+          <div className="text-sm font-semibold text-[#111827]">
             {contract.vendor}
           </div>
-          <div
-            style={{
-              fontSize: 11,
-              fontFamily: "monospace",
-              color: "#A8A29E",
-              marginTop: 2,
-            }}
-          >
+          <div className="text-xs font-mono text-[#9ca3af] mt-0.5">
             {contract.contractNumber}
           </div>
-          <div style={{ marginTop: 6 }}>
+          <div className="mt-1.5">
             <span className="badge neutral">{contract.category}</span>
           </div>
         </div>
         <div className="text-right">
           <span className={statusBadgeClass}>{statusLabel}</span>
-          <div style={{ fontSize: 11, color: "#A8A29E", marginTop: 4 }}>
+          <div className="text-xs text-[#9ca3af] mt-1">
             {fmtPeriod(contract.startDate, contract.endDate)}
           </div>
         </div>
       </div>
 
       {/* Spend section */}
-      <div
-        style={{
-          padding: "0 20px 12px",
-          borderBottom: "1px solid #F5F5F4",
-        }}
-      >
+      <div className="px-5 pb-3 border-b border-[#f0f2f5]">
         {hasQuantityCap ? (
           <div className="flex flex-col gap-4">
             {/* Value bar */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="section-label">VALUE SPEND VS CAP</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontVariantNumeric: "tabular-nums",
-                    color: "#78716C",
-                  }}
-                >
+                <span className="text-xs tabular-nums text-[#4b5563]">
                   {formatCurrency(contract.currentSpend)}{" "}
-                  <span style={{ color: "#A8A29E" }}>/</span>{" "}
+                  <span className="text-[#9ca3af]">/</span>{" "}
                   {formatCurrency(contract.capValue)}
                 </span>
               </div>
@@ -193,11 +154,11 @@ function ContractCard({ contract }: { contract: Contract }) {
                         ? "#DC2626"
                         : valuePct >= 70
                         ? "#B45309"
-                        : "#1C1917",
+                        : "#0065cb",
                   }}
                 />
               </div>
-              <div style={{ fontSize: 11, marginTop: 4, color: "#78716C" }}>
+              <div className="text-xs mt-1 text-[#4b5563]">
                 {valuePct.toFixed(1)}% of cap
               </div>
             </div>
@@ -209,15 +170,9 @@ function ContractCard({ contract }: { contract: Contract }) {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="section-label">QUANTITY VS CAP</span>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontVariantNumeric: "tabular-nums",
-                          color: "#78716C",
-                        }}
-                      >
+                      <span className="text-xs tabular-nums text-[#4b5563]">
                         {contract.currentQuantity.toLocaleString()}{" "}
-                        <span style={{ color: "#A8A29E" }}>/</span>{" "}
+                        <span className="text-[#9ca3af]">/</span>{" "}
                         {contract.capQuantity.toLocaleString()} units
                       </span>
                     </div>
@@ -231,11 +186,11 @@ function ContractCard({ contract }: { contract: Contract }) {
                               ? "#DC2626"
                               : qp >= 70
                               ? "#B45309"
-                              : "#1C1917",
+                              : "#0065cb",
                         }}
                       />
                     </div>
-                    <div style={{ fontSize: 11, marginTop: 4, color: "#78716C" }}>
+                    <div className="text-xs mt-1 text-[#4b5563]">
                       {qp.toFixed(1)}% of cap
                     </div>
                   </div>
@@ -249,17 +204,9 @@ function ContractCard({ contract }: { contract: Contract }) {
 
       {/* Rebate alert */}
       {contract.rebateMissed !== undefined && contract.rebateMissed > 0 && (
-        <div
-          style={{
-            padding: "10px 20px",
-            borderBottom: "1px solid #F5F5F4",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
+        <div className="px-5 py-2.5 border-b border-[#f0f2f5] flex items-center gap-2">
           <span className="section-label">UNCLAIMED REBATE</span>
-          <span style={{ fontSize: 12, color: "#B45309" }}>
+          <span className="text-xs text-amber-700">
             {formatCurrency(contract.rebateMissed)} not received — No credit
             memo for Q1 2026
           </span>
@@ -268,23 +215,16 @@ function ContractCard({ contract }: { contract: Contract }) {
 
       {/* Tier pricing */}
       {contract.tieredPricing && (
-        <div
-          style={{
-            padding: "10px 20px",
-            borderBottom: "1px solid #F5F5F4",
-          }}
-        >
-          <div className="section-label" style={{ marginBottom: 6 }}>
-            TIERED PRICING
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <div style={{ fontSize: 12, color: "#78716C" }}>
-              Tier 1: ≤ 1,000 units/month → $85.00/unit
+        <div className="px-5 py-2.5 border-b border-[#f0f2f5]">
+          <div className="section-label mb-1.5">TIERED PRICING</div>
+          <div className="flex flex-col gap-1">
+            <div className="text-xs text-[#4b5563]">
+              Tier 1: ≤ 1,000 units/month &rarr; $85.00/unit
             </div>
-            <div style={{ fontSize: 12, color: "#78716C" }}>
-              Tier 2: &gt; 1,000 units/month → $72.00/unit{" "}
-              <span style={{ color: "#B45309" }}>
-                ← should apply (2,340 units in Mar)
+            <div className="text-xs text-[#4b5563]">
+              Tier 2: &gt; 1,000 units/month &rarr; $72.00/unit{" "}
+              <span className="text-amber-700">
+                &larr; should apply (2,340 units in Mar)
               </span>
             </div>
           </div>
@@ -293,71 +233,28 @@ function ContractCard({ contract }: { contract: Contract }) {
 
       {/* BioMed breach block */}
       {isBreached && (
-        <div
-          style={{
-            margin: "0 20px 12px",
-            background: "#FEF2F2",
-            border: "1px solid #FECACA",
-            borderRadius: 6,
-            padding: "12px 16px",
-          }}
-        >
-          <div
-            className="section-label"
-            style={{ color: "#DC2626", marginBottom: 4 }}
-          >
+        <div className="mx-5 mb-3 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+          <div className="section-label text-red-600 mb-1">
             CONTRACT BREACHED
           </div>
-          <div style={{ fontSize: 12, color: "#991B1B" }}>
-            23 invoices processed after cap exceeded ·{" "}
+          <div className="text-xs text-red-900">
+            23 invoices processed after cap exceeded &middot;{" "}
             {formatCurrency(contract.currentSpend - contract.capValue)} overspend
-            · Contract expired{" "}
+            &middot; Contract expired{" "}
             {new Date(contract.endDate).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "numeric",
             })}
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button
-              style={{
-                background: "#DC2626",
-                color: "#FFFFFF",
-                fontSize: 12,
-                fontWeight: 500,
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
+          <div className="flex gap-2 mt-2">
+            <button className="bg-red-600 text-white text-xs font-medium px-3 py-1.5 rounded-md border-none cursor-pointer hover:bg-red-700 transition-colors">
               Pause Vendor Payments
             </button>
-            <button
-              style={{
-                background: "#FFFFFF",
-                color: "#DC2626",
-                fontSize: 12,
-                fontWeight: 500,
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid #FECACA",
-                cursor: "pointer",
-              }}
-            >
+            <button className="bg-white text-red-600 text-xs font-medium px-3 py-1.5 rounded-md border border-red-200 cursor-pointer hover:bg-red-50 transition-colors">
               Contact Vendor
             </button>
-            <button
-              style={{
-                background: "#FFFFFF",
-                color: "#78716C",
-                fontSize: 12,
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid #D6D3D1",
-                cursor: "pointer",
-              }}
-            >
+            <button className="bg-white text-[#4b5563] text-xs px-3 py-1.5 rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
               Notify CFO
             </button>
           </div>
@@ -366,33 +263,11 @@ function ContractCard({ contract }: { contract: Contract }) {
 
       {/* Cardinal Health warning actions */}
       {isCardinalWarning && (
-        <div style={{ padding: "0 20px 16px", display: "flex", gap: 8 }}>
-          <button
-            style={{
-              background: "#FFFFFF",
-              color: "#1C1917",
-              fontSize: 12,
-              fontWeight: 500,
-              padding: "6px 12px",
-              borderRadius: 6,
-              border: "1px solid #D6D3D1",
-              cursor: "pointer",
-            }}
-          >
+        <div className="px-5 pb-4 flex gap-2">
+          <button className="bg-white text-[#111827] text-xs font-medium px-3 py-1.5 rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
             Request Rebate Credit Memo
           </button>
-          <button
-            style={{
-              background: "#FFFFFF",
-              color: "#1C1917",
-              fontSize: 12,
-              fontWeight: 500,
-              padding: "6px 12px",
-              borderRadius: 6,
-              border: "1px solid #D6D3D1",
-              cursor: "pointer",
-            }}
-          >
+          <button className="bg-white text-[#111827] text-xs font-medium px-3 py-1.5 rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
             Submit Pricing Correction
           </button>
         </div>
@@ -417,180 +292,86 @@ export default function ContractCompliancePage() {
   ).length;
 
   return (
-    <div style={{ background: "#FAFAF9", minHeight: "100%" }}>
+    <div className="bg-[#f7f8fa] min-h-full">
       {/* ── Header ── */}
-      <div style={{ padding: "32px 32px 24px" }}>
+      <div className="px-8 pt-8 pb-6">
         <div className="flex items-start justify-between">
           <div>
-            <div style={{ fontSize: 20, fontWeight: 600, color: "#1C1917" }}>
+            <div className="text-xl font-semibold text-[#111827]">
               Contract Compliance
             </div>
-            <div style={{ fontSize: 12, color: "#78716C", marginTop: 4 }}>
-              {contracts.length} active contracts · {atRiskCount} at risk ·{" "}
+            <div className="text-xs text-[#4b5563] mt-1">
+              {contracts.length} active contracts &middot; {atRiskCount} at risk &middot;{" "}
               {breachedCount} breached
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button
-              style={{
-                fontSize: 13,
-                color: "#1C1917",
-                background: "#FFFFFF",
-                border: "1px solid #E7E5E4",
-                borderRadius: 6,
-                padding: "7px 14px",
-                cursor: "pointer",
-              }}
-            >
+          <div className="flex gap-2 items-center">
+            <button className="text-sm text-[#111827] bg-white border border-[#e5e7eb] rounded-md px-3.5 py-[7px] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
               Download Report
             </button>
-            <button
-              style={{
-                fontSize: 13,
-                color: "#FFFFFF",
-                background: "#1C1917",
-                border: "none",
-                borderRadius: 6,
-                padding: "7px 14px",
-                cursor: "pointer",
-                fontWeight: 500,
-              }}
-            >
+            <button className="text-sm text-white bg-[#0065cb] border-none rounded-md px-3.5 py-[7px] cursor-pointer font-medium hover:bg-[#0057ad] transition-colors">
               Add Contract
             </button>
           </div>
         </div>
-        <hr
-          style={{
-            border: "none",
-            borderTop: "1px solid #E7E5E4",
-            marginTop: 20,
-          }}
-        />
+        <hr className="border-none border-t border-[#e5e7eb] mt-5" />
       </div>
 
       {/* ── Summary strip ── */}
-      <div style={{ padding: "0 32px 24px" }}>
-        <div
-          style={{
-            background: "#FFFFFF",
-            border: "1px solid #E7E5E4",
-            borderRadius: 8,
-            display: "flex",
-          }}
-        >
+      <div className="px-8 pb-6">
+        <div className="bg-white border border-[#e5e7eb] rounded-lg flex">
           {/* Cell 1 */}
-          <div
-            style={{
-              flex: 1,
-              padding: "16px 20px",
-              borderRight: "1px solid #E7E5E4",
-            }}
-          >
-            <div className="section-label" style={{ marginBottom: 6 }}>
-              TOTAL CONTRACT VALUE
-            </div>
-            <div
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: "#1C1917",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+          <div className="flex-1 px-5 py-4 border-r border-[#e5e7eb]">
+            <div className="section-label mb-1.5">TOTAL CONTRACT VALUE</div>
+            <div className="text-xl font-semibold text-[#111827] tabular-nums">
               {formatCurrency(totalValue)}
             </div>
-            <div style={{ fontSize: 12, color: "#78716C", marginTop: 2 }}>
+            <div className="text-xs text-[#4b5563] mt-0.5">
               {contracts.length} contracts
             </div>
           </div>
 
           {/* Cell 2 */}
-          <div
-            style={{
-              flex: 1,
-              padding: "16px 20px",
-              borderRight: "1px solid #E7E5E4",
-            }}
-          >
-            <div className="section-label" style={{ marginBottom: 6 }}>
-              CURRENT SPEND
-            </div>
-            <div
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: "#1C1917",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+          <div className="flex-1 px-5 py-4 border-r border-[#e5e7eb]">
+            <div className="section-label mb-1.5">CURRENT SPEND</div>
+            <div className="text-xl font-semibold text-[#111827] tabular-nums">
               {formatCurrency(totalSpend)}
             </div>
-            <div style={{ fontSize: 12, color: "#78716C", marginTop: 2 }}>
-              Q1 2026
-            </div>
+            <div className="text-xs text-[#4b5563] mt-0.5">Q1 2026</div>
           </div>
 
           {/* Cell 3 */}
-          <div
-            style={{
-              flex: 1,
-              padding: "16px 20px",
-              borderRight: "1px solid #E7E5E4",
-            }}
-          >
-            <div className="section-label" style={{ marginBottom: 6 }}>
-              UNCLAIMED REBATES
-            </div>
-            <div
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: "#B45309",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+          <div className="flex-1 px-5 py-4 border-r border-[#e5e7eb]">
+            <div className="section-label mb-1.5">UNCLAIMED REBATES</div>
+            <div className="text-xl font-semibold text-amber-700 tabular-nums">
               {formatCurrency(totalUnclaimed)}
             </div>
-            <div style={{ fontSize: 12, color: "#78716C", marginTop: 2 }}>
+            <div className="text-xs text-[#4b5563] mt-0.5">
               {vendorsWithRebates} vendors
             </div>
           </div>
 
           {/* Cell 4 */}
-          <div style={{ flex: 1, padding: "16px 20px" }}>
-            <div className="section-label" style={{ marginBottom: 6 }}>
-              CONTRACTS BREACHED
-            </div>
-            <div
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: "#DC2626",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+          <div className="flex-1 px-5 py-4">
+            <div className="section-label mb-1.5">CONTRACTS BREACHED</div>
+            <div className="text-xl font-semibold text-red-600 tabular-nums">
               {breachedCount}
             </div>
-            <div style={{ fontSize: 12, color: "#78716C", marginTop: 2 }}>
-              Immediate action
-            </div>
+            <div className="text-xs text-[#4b5563] mt-0.5">Immediate action</div>
           </div>
         </div>
       </div>
 
       {/* ── Contract cards ── */}
-      <div style={{ padding: "0 32px" }}>
+      <div className="px-8">
         {sortedContracts.map((contract) => (
           <ContractCard key={contract.id} contract={contract} />
         ))}
       </div>
 
       {/* ── Renewal timeline ── */}
-      <div style={{ padding: "8px 32px 32px" }}>
-        <div className="section-label" style={{ marginBottom: 8 }}>
-          UPCOMING RENEWALS
-        </div>
+      <div className="px-8 pt-2 pb-8">
+        <div className="section-label mb-2">UPCOMING RENEWALS</div>
         <div className="card">
           <table className="data-table">
             <thead>
@@ -604,71 +385,35 @@ export default function ContractCompliancePage() {
             </thead>
             <tbody>
               <tr>
-                <td style={{ fontSize: 13, color: "#1C1917" }}>
-                  BioMed Equipment Inc.
-                </td>
+                <td className="text-sm text-[#111827]">BioMed Equipment Inc.</td>
                 <td className="mono">CTR-2024-BIO-009</td>
-                <td style={{ fontSize: 13, color: "#1C1917" }}>Dec 31, 2025</td>
+                <td className="text-sm text-[#111827]">Dec 31, 2025</td>
+                <td><span className="badge critical">Expired</span></td>
                 <td>
-                  <span className="badge critical">Expired</span>
-                </td>
-                <td>
-                  <a
-                    href="#"
-                    style={{
-                      fontSize: 12,
-                      color: "#1C1917",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Renew →
+                  <a href="#" className="text-xs text-[#0065cb] no-underline font-medium hover:underline">
+                    Renew &rarr;
                   </a>
                 </td>
               </tr>
               <tr>
-                <td style={{ fontSize: 13, color: "#1C1917" }}>
-                  Cardinal Health
-                </td>
+                <td className="text-sm text-[#111827]">Cardinal Health</td>
                 <td className="mono">CTR-2025-CAR-003</td>
-                <td style={{ fontSize: 13, color: "#1C1917" }}>Mar 31, 2026</td>
+                <td className="text-sm text-[#111827]">Mar 31, 2026</td>
+                <td><span className="badge warning">Expiring</span></td>
                 <td>
-                  <span className="badge warning">Expiring</span>
-                </td>
-                <td>
-                  <a
-                    href="#"
-                    style={{
-                      fontSize: 12,
-                      color: "#1C1917",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Renew →
+                  <a href="#" className="text-xs text-[#0065cb] no-underline font-medium hover:underline">
+                    Renew &rarr;
                   </a>
                 </td>
               </tr>
               <tr>
-                <td style={{ fontSize: 13, color: "#1C1917" }}>
-                  Steris Corporation
-                </td>
+                <td className="text-sm text-[#111827]">Steris Corporation</td>
                 <td className="mono">CTR-2025-STE-007</td>
-                <td style={{ fontSize: 13, color: "#1C1917" }}>May 31, 2026</td>
+                <td className="text-sm text-[#111827]">May 31, 2026</td>
+                <td><span className="badge neutral">Active</span></td>
                 <td>
-                  <span className="badge neutral">Active</span>
-                </td>
-                <td>
-                  <a
-                    href="#"
-                    style={{
-                      fontSize: 12,
-                      color: "#1C1917",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Renew →
+                  <a href="#" className="text-xs text-[#0065cb] no-underline font-medium hover:underline">
+                    Renew &rarr;
                   </a>
                 </td>
               </tr>
