@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Upload, LayoutDashboard, AlertTriangle, Shield, ShieldAlert, Pill } from "lucide-react";
+import { Upload, LayoutDashboard, AlertTriangle, Shield, ShieldAlert, Pill, ShieldCheck } from "lucide-react";
 
 // Healthcare AP (existing demo)
 const navHealthcare = [
@@ -15,6 +15,7 @@ const navHealthcare = [
 // Drug Distributor (SOM) — added per plan §5.1 (flat-nav addition).
 const navPharma = [
   { href: "/som", label: "SOM Analyst", icon: ShieldAlert, badge: 4, critical: true },
+  { href: "/som/pharmacy-scoring", label: "Pharmacy Scoring", icon: ShieldCheck },
   { href: "/som/manufacturers", label: "Manufacturers", icon: Pill },
 ];
 
