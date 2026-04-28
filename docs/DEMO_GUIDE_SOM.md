@@ -71,8 +71,7 @@ The page loads and the workflow auto-starts. 4 cards stack vertically:
    - Resolves to ✓ Verified
    - *"Permit NC-PH-018472 active until 2027-06-30; NPI Registry confirmed."*
    - Evidence: NC Board of Pharmacy + **NPI Registry · live** with millisecond latency
-   - **Talk track:** *"NC Board of Pharmacy lookup confirms the permit. And here's the live one — we just hit the actual NPI Registry, public US government endpoint, no auth needed. That latency you see is real network roundtrip."*
-   - *(Click the NC Board of Pharmacy evidence — it deep-links to the real public lookup site.)*
+   - **Talk track:** *"NC Board of Pharmacy lookup confirms the permit. And here's the live one — we just hit the actual NPI Registry, public US government endpoint, no auth needed. That latency you see is real network roundtrip — proxied through our Next.js server because the registry doesn't send CORS headers."*
 
 3. **Price Deviation** (icon: dollar)
    - Resolves to ✓ Verified
