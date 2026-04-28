@@ -250,7 +250,7 @@ export const exceptions: Exception[] = [
     amount: 684,
     flaggedAmount: 684,
     description:
-      "Address verification failed. Pharmacy declared 417 Glenwood Ave, Raleigh NC, but Google Maps geocode resolves to Charlotte (~265 km away). Permit on file is active, but coordinates suggest filing fraud or stale records.",
+      "Address verification failed. Pharmacy declared 417 Glenwood Ave, Raleigh NC, but Google Maps geocode resolves to Charlotte (~209 km away). Permit on file is active, but coordinates suggest filing fraud or stale records.",
     detectedAt: "2026-04-28T08:42:00Z",
     assignee: "SOM Analyst",
   },
