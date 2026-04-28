@@ -38,11 +38,16 @@ export interface PharmacyRecord {
 
 export const pharmacies: PharmacyRecord[] = [
   // ── Canonical demo pharmacy (Rajesh's example, transcript 3, t=14:20) ──────
+  // Note: NPI 1174077168 is a real, active NPI Registry record (Walgreens NC,
+  // org-type pharmacy). Used so the live NPI Registry call in the License
+  // Verification card actually resolves to "Active" during the demo. The
+  // *display* identity of the pharmacy stays as Joseph's — only the NPI is
+  // borrowed from a real record so the live-API wow-factor lands.
   {
     id: "PH-001",
     name: "Joseph's Pharmacy",
     dba: "Joseph's Family Pharmacy",
-    npi: "1538291647",
+    npi: "1174077168",
     deaNumber: "BJ4521987",
     permitNumber: "NC-PH-018472",
     state: "NC",
