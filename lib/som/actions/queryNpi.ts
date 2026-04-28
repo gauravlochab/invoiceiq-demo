@@ -1,8 +1,12 @@
 // ─── Action: Query NPI Registry (LIVE network call) ──────────────────────────
 //
 // The one genuine live API hit in the SOM demo (per plan §4.3). NPI Registry
-// is public, no auth, no key, CORS-friendly:
-//   https://npiregistry.cms.hhs.gov/api/?version=2.1&number=<NPI>
+// is public, no auth, no key, but its responses do NOT include CORS headers
+// — direct browser fetch fails. We proxy through our own Next.js route
+// handler at /api/som/npi which does the server-side fetch.
+//
+//   browser → /api/som/npi?number=<NPI>   (same origin, no CORS)
+//   server  → npiregistry.cms.hhs.gov     (server-to-server, no CORS)
 //
 // Strict timeout + graceful fallback to mock so the demo never breaks if
 // offline.
@@ -20,8 +24,9 @@ export interface NpiRegistryResponse {
   latencyMs: number;
 }
 
-const NPI_BASE = "https://npiregistry.cms.hhs.gov/api/?version=2.1";
-const TIMEOUT_MS = 3500;
+// Same-origin proxy that forwards to npiregistry.cms.hhs.gov server-side.
+const NPI_PROXY = "/api/som/npi";
+const TIMEOUT_MS = 10_000;   // proxy itself caps upstream at 8s; give us 2s slack
 
 export async function queryNpi(npi: string | undefined): Promise<NpiRegistryResponse> {
   const startedAt = Date.now();
@@ -40,7 +45,7 @@ export async function queryNpi(npi: string | undefined): Promise<NpiRegistryResp
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const url = `${NPI_BASE}&number=${encodeURIComponent(npi)}`;
+    const url = `${NPI_PROXY}?number=${encodeURIComponent(npi)}`;
     const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
     clearTimeout(timeoutId);
 
