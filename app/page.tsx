@@ -32,7 +32,10 @@ import { useToast } from "@/components/Toast";
 
 const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-const topExceptions = [...exceptions]
+// Healthcare AP dashboard scopes "Recent Exceptions" to non-SOM types.
+// SOM exceptions surface on /som and /exceptions (unified inbox).
+const topExceptions = exceptions
+  .filter((e) => !e.type.startsWith("som_"))
   .sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
   .slice(0, 6);
 
