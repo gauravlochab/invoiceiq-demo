@@ -1783,6 +1783,10 @@ const typeLabels: Record<string, string> = {
   contract_overage: "Contract Overage",
   suspicious_invoice: "Suspicious Invoice",
   tier_pricing: "Tier Pricing Error",
+  som_address_mismatch: "Address Mismatch",
+  som_license_invalid: "License Invalid",
+  som_price_deviation: "Price Deviation",
+  som_quantity_outlier: "Volume Outlier",
 };
 
 const severityColors: Record<string, string> = {
@@ -1959,6 +1963,209 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
   );
 }
 
+// ─── Template: SOM exception detail (drug-distributor vertical) ─────────────
+//
+// Handles all 4 som_* types. Renders a check-specific evidence panel and
+// deep-links back to the SOM workflow runner at /som/order/[orderId]. Action
+// buttons mirror the runner's Approve/Hold/Escalate (NOT the hospital flow's
+// Approve / Request Correction / Escalate).
+
+function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [decision, setDecision] = useState<"approved" | "held" | "escalated" | null>(
+    ex.status === "escalated" ? "escalated" : null,
+  );
+
+  // The SOM exception's invoiceNumber field holds the order ID (ORD-*).
+  const orderId = ex.invoiceNumber;
+
+  // Per-type evidence rendering.
+  function CheckSpecificEvidence() {
+    if (ex.type === "som_address_mismatch") {
+      return (
+        <>
+          <EvidenceField label="Check that flagged" value="Address Verification" />
+          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+          <EvidenceField label="Outcome" value="Declared coordinates do not match the geocoded address" />
+          <EvidenceField label="Data sources" value="Pharmacy Address Database + Google Maps geocode" />
+        </>
+      );
+    }
+    if (ex.type === "som_license_invalid") {
+      return (
+        <>
+          <EvidenceField label="Check that flagged" value="License Verification" />
+          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+          <EvidenceField label="Outcome" value="State Board permit not in active status" />
+          <EvidenceField label="Data sources" value="State Board of Pharmacy + NPI Registry (live)" />
+        </>
+      );
+    }
+    if (ex.type === "som_price_deviation") {
+      return (
+        <>
+          <EvidenceField label="Check that flagged" value="Price Deviation" />
+          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+          <EvidenceField label="Outcome" value="One or more line items priced outside contract tolerance" />
+          <EvidenceField label="Data source" value="Manufacturer contract pricing" />
+        </>
+      );
+    }
+    if (ex.type === "som_quantity_outlier") {
+      return (
+        <>
+          <EvidenceField label="Check that flagged" value="Volume Outliers" />
+          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+          <EvidenceField label="Outcome" value="Controlled-substance volume anomalous for catchment population" />
+          <EvidenceField label="Data source" value="City demographics dataset" />
+        </>
+      );
+    }
+    return null;
+  }
+
+  function handleDecision(kind: "approved" | "held" | "escalated") {
+    setDecision(kind);
+    showToast(
+      kind === "approved"
+        ? "Order approved — released to fulfilment."
+        : kind === "held"
+        ? "Order placed on hold."
+        : "Order escalated to compliance manager.",
+      kind === "approved" ? "success" : kind === "held" ? "warning" : "info",
+    );
+  }
+
+  return (
+    <div className="bg-[#f7f8fa] min-h-screen">
+      {/* Breadcrumb */}
+      <div className="pt-6 px-8">
+        <button
+          onClick={() => router.back()}
+          className="text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline p-0"
+        >
+          &larr; Back
+        </button>
+      </div>
+
+      {/* Header */}
+      <div className="px-8 pt-3 pb-6">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="font-mono text-[11px] text-[#9ca3af]">{ex.id}</span>
+          <span className="text-[10px] uppercase tracking-wide font-semibold text-[#0065cb]">
+            SOM · Drug Distributor
+          </span>
+          <span className={severityColors[ex.severity] || "badge neutral"}>{typeLabels[ex.type] || ex.type}</span>
+          <span className={`badge ${ex.status === "open" ? "critical" : ex.status === "resolved" ? "success" : ex.status === "escalated" ? "blue" : "warning"}`}>
+            {ex.status === "open" ? "Open" : ex.status === "resolved" ? "Resolved" : ex.status === "escalated" ? "Escalated" : "Under Review"}
+          </span>
+        </div>
+        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1.5 leading-tight">
+          {ex.vendor}
+        </h1>
+        <p className="text-xs text-[#4b5563] m-0">
+          Order #{orderId} · Detected {new Date(ex.detectedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · Flagged {formatCurrency(ex.flaggedAmount)}
+        </p>
+      </div>
+
+      {/* Body grid */}
+      <div className="px-8 pb-8 grid grid-cols-[1fr_320px] gap-5 items-start">
+        {/* LEFT: Description + evidence */}
+        <div className="flex flex-col gap-4">
+          <div className="card p-5">
+            <p className="section-label mb-3">Description</p>
+            <p className="text-sm text-[#111827] m-0 leading-relaxed">{ex.description}</p>
+          </div>
+
+          <div className="card p-5">
+            <p className="section-label mb-3">Evidence summary</p>
+            <div className="flex flex-col gap-2.5">
+              <CheckSpecificEvidence />
+            </div>
+            <Link
+              href={`/som/order/${orderId}`}
+              className="inline-flex items-center gap-1.5 mt-4 text-xs font-medium text-[#0065cb] no-underline hover:underline"
+            >
+              View full SOM workflow run →
+            </Link>
+          </div>
+        </div>
+
+        {/* RIGHT: Meta + actions */}
+        <div className="flex flex-col gap-4 sticky top-4">
+          <div className="card p-5">
+            <p className="section-label mb-3">Exception details</p>
+            {[
+              { label: "Order ID", value: orderId, mono: true },
+              { label: "Pharmacy", value: ex.vendor },
+              { label: "Severity", value: ex.severity.charAt(0).toUpperCase() + ex.severity.slice(1) },
+              { label: "Order amount", value: formatCurrency(ex.amount) },
+              { label: "Flagged amount", value: formatCurrency(ex.flaggedAmount) },
+              { label: "Assignee", value: ex.assignee || "Unassigned" },
+            ].map((row, i, arr) => (
+              <div
+                key={row.label}
+                className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""}`}
+              >
+                <span className="text-[11px] text-[#4b5563]">{row.label}</span>
+                <span className={`text-[11px] text-[#111827] font-medium ${row.mono ? "font-mono" : ""}`}>
+                  {row.value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="card p-5">
+            <p className="section-label mb-3">Analyst decision</p>
+            {decision ? (
+              <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
+                decision === "approved" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                decision === "held" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+                "bg-blue-50 text-blue-700 border border-blue-200"
+              }`}>
+                {decision === "approved" && "Approved — released to fulfilment"}
+                {decision === "held" && "On hold — awaiting analyst follow-up"}
+                {decision === "escalated" && "Escalated to compliance manager"}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleDecision("approved")}
+                  className="text-xs font-medium px-3 py-2 rounded-md border border-emerald-600 bg-white text-emerald-700 cursor-pointer hover:bg-emerald-50"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => handleDecision("held")}
+                  className="text-xs font-medium px-3 py-2 rounded-md border border-amber-600 bg-white text-amber-700 cursor-pointer hover:bg-amber-50"
+                >
+                  Hold
+                </button>
+                <button
+                  onClick={() => handleDecision("escalated")}
+                  className="text-xs font-medium px-3 py-2 rounded-md border border-[#0065cb] bg-white text-[#0065cb] cursor-pointer hover:bg-blue-50"
+                >
+                  Escalate
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EvidenceField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-baseline gap-3">
+      <span className="text-[11px] text-[#4b5563] flex-shrink-0">{label}</span>
+      <span className="text-[11px] text-[#111827] font-medium text-right">{value}</span>
+    </div>
+  );
+}
+
 // ─── Router: dispatch by id ───────────────────────────────────────────────────
 
 export default function ExceptionDetailPage() {
@@ -1976,6 +2183,7 @@ export default function ExceptionDetailPage() {
   if (ex.type === "contract_overage") return <ContractOverageDetail exception={ex} />;
   if (ex.type === "missing_rebate") return <MissingRebateDetail exception={ex} />;
   if (ex.type === "tier_pricing") return <TierPricingDetail exception={ex} />;
+  if (ex.type.startsWith("som_")) return <SomExceptionDetail exception={ex} />;
 
   return <GenericExceptionPage exceptionId={id} />;
 }
