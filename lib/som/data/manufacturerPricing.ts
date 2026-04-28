@@ -80,6 +80,136 @@ export const manufacturerPricing: ManufacturerContractPrice[] = [
     isControlled: false,
     highRisk: false,
   },
+
+  // ── Pfizer (additional NDCs) ──────────────────────────────────────────────
+  {
+    ndc: "00069-0080-30",
+    manufacturer: "Pfizer",
+    productName: "Norvasc",
+    form: "5mg tablet",
+    contractPrice: 1.85,
+    tolerancePct: 6,
+    isControlled: false,
+    highRisk: false,
+  },
+  {
+    ndc: "00069-1750-66",
+    manufacturer: "Pfizer",
+    productName: "Zoloft",
+    form: "50mg tablet",
+    contractPrice: 2.10,
+    tolerancePct: 6,
+    isControlled: false,
+    highRisk: false,
+  },
+  {
+    ndc: "00069-2238-30",
+    manufacturer: "Pfizer",
+    productName: "Lyrica",
+    form: "75mg capsule",
+    contractPrice: 6.40,
+    tolerancePct: 5,
+    isControlled: true,    // Schedule V
+    highRisk: true,
+  },
+
+  // ── Johnson & Johnson (additional NDCs) ───────────────────────────────────
+  {
+    ndc: "50458-0578-01",
+    manufacturer: "Johnson & Johnson",
+    productName: "Concerta",
+    form: "36mg ER tablet",
+    contractPrice: 7.85,
+    tolerancePct: 5,
+    isControlled: true,    // Schedule II
+    highRisk: true,
+  },
+  {
+    ndc: "50458-0610-30",
+    manufacturer: "Johnson & Johnson",
+    productName: "Invokana",
+    form: "100mg tablet",
+    contractPrice: 14.20,
+    tolerancePct: 5,
+    isControlled: false,
+    highRisk: false,
+  },
+
+  // ── Biogen (additional NDCs) ──────────────────────────────────────────────
+  {
+    ndc: "64406-0008-01",
+    manufacturer: "Biogen",
+    productName: "Vumerity",
+    form: "231mg capsule",
+    contractPrice: 88.10,
+    tolerancePct: 4,
+    isControlled: false,
+    highRisk: false,
+  },
+  {
+    ndc: "64406-0042-01",
+    manufacturer: "Biogen",
+    productName: "Spinraza",
+    form: "12mg/5mL injection",
+    contractPrice: 12_5000.00,    // specialty drug — high unit price
+    tolerancePct: 2,
+    isControlled: false,
+    highRisk: true,
+  },
+
+  // ── Mylan (generics) ──────────────────────────────────────────────────────
+  {
+    ndc: "00378-2042-77",
+    manufacturer: "Mylan",
+    productName: "Lisinopril (generic)",
+    form: "10mg tablet",
+    contractPrice: 0.18,
+    tolerancePct: 10,
+    isControlled: false,
+    highRisk: false,
+  },
+  {
+    ndc: "00378-3145-93",
+    manufacturer: "Mylan",
+    productName: "Metformin (generic)",
+    form: "500mg tablet",
+    contractPrice: 0.12,
+    tolerancePct: 10,
+    isControlled: false,
+    highRisk: false,
+  },
+  {
+    ndc: "00378-7058-93",
+    manufacturer: "Mylan",
+    productName: "Hydrocodone/APAP (generic)",
+    form: "5mg/325mg tablet",
+    contractPrice: 0.42,
+    tolerancePct: 6,
+    isControlled: true,    // Schedule II
+    highRisk: true,
+  },
+
+  // ── Teva (generics) ───────────────────────────────────────────────────────
+  {
+    ndc: "00093-7159-56",
+    manufacturer: "Teva",
+    productName: "Atorvastatin (generic)",
+    form: "20mg tablet",
+    contractPrice: 0.22,
+    tolerancePct: 10,
+    isControlled: false,
+    highRisk: false,
+  },
+  {
+    ndc: "00093-3147-19",
+    manufacturer: "Teva",
+    productName: "Sertraline (generic)",
+    form: "50mg tablet",
+    contractPrice: 0.31,
+    tolerancePct: 10,
+    isControlled: false,
+    highRisk: false,
+  },
 ];
 
 // ─── Lookup ───────────────────────────────────────────────────────────────────

@@ -6,8 +6,9 @@
 // open the workflow runner.
 
 import Link from "next/link";
-import { ShieldAlert, Pill, MapPin, Clock, ArrowRight } from "lucide-react";
+import { ShieldAlert, Pill, MapPin, Clock, ArrowRight, ShieldCheck, AlertTriangle, DollarSign, Activity } from "lucide-react";
 import { sampleOrders } from "@/lib/som/data/orders";
+import { exceptions } from "@/lib/data";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
@@ -25,6 +26,16 @@ function formatCurrency(n: number) {
 export default function SomQueuePage() {
   const totalValue = sampleOrders.reduce((sum, o) => sum + o.totalAmount, 0);
   const controlledCount = sampleOrders.filter((o) => o.lineItems.some((l) => l.isControlled)).length;
+
+  // SOM-derived metrics from the unified inbox (plan §5.4).
+  const somExceptions = exceptions.filter((e) => e.type.startsWith("som_"));
+  const somBlockedAmount = somExceptions.reduce((sum, e) => sum + e.flaggedAmount, 0);
+
+  // Synthetic processed-orders count for the demo: pretend 247 orders cleared
+  // this quarter; the SOM exception rate is derived from that.
+  const ordersProcessedQ = 247;
+  const flaggedOrdersQ = new Set(somExceptions.map((e) => e.invoiceNumber)).size + 18; // 18 historical
+  const suspicionRate = ((flaggedOrdersQ / ordersProcessedQ) * 100).toFixed(1);
 
   return (
     <div className="bg-[#f7f8fa] min-h-screen">
@@ -45,21 +56,41 @@ export default function SomQueuePage() {
       </div>
 
       {/* Stats strip */}
-      <div className="px-8 py-4 grid grid-cols-3 gap-4">
+      <div className="px-8 py-4 grid grid-cols-4 gap-4">
         <div className="card p-4">
-          <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0 mb-1.5">Pending review</p>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Orders processed</p>
+            <Activity className="w-3.5 h-3.5 text-[#9ca3af]" />
+          </div>
+          <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{ordersProcessedQ}</p>
+          <p className="text-[10px] text-[#4b5563] m-0 mt-1">this quarter</p>
+        </div>
+
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Suspicion rate</p>
+            <ShieldCheck className="w-3.5 h-3.5 text-[#9ca3af]" />
+          </div>
+          <p className="text-2xl font-semibold text-amber-700 m-0 tabular-nums">{suspicionRate}%</p>
+          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{flaggedOrdersQ} of {ordersProcessedQ} flagged</p>
+        </div>
+
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Blocked exposure</p>
+            <DollarSign className="w-3.5 h-3.5 text-[#9ca3af]" />
+          </div>
+          <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{formatCurrency(somBlockedAmount)}</p>
+          <p className="text-[10px] text-[#4b5563] m-0 mt-1">across {somExceptions.length} SOM exceptions</p>
+        </div>
+
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Pending queue</p>
+            <AlertTriangle className="w-3.5 h-3.5 text-[#9ca3af]" />
+          </div>
           <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{sampleOrders.length}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">incoming orders</p>
-        </div>
-        <div className="card p-4">
-          <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0 mb-1.5">Controlled substances</p>
-          <p className="text-2xl font-semibold text-amber-700 m-0 tabular-nums">{controlledCount}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">orders flagged for SOM</p>
-        </div>
-        <div className="card p-4">
-          <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0 mb-1.5">Total order value</p>
-          <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{formatCurrency(totalValue)}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">awaiting clearance</p>
+          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{controlledCount} controlled · {formatCurrency(totalValue)}</p>
         </div>
       </div>
 

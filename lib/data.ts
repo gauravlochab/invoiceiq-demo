@@ -234,6 +234,71 @@ export const exceptions: Exception[] = [
     detectedAt: "2026-02-06T08:30:00Z",
     assignee: "Rajesh Jaluka",
   },
+
+  // ─── SOM exceptions (drug-distributor vertical) ──────────────────────────
+  // These are flagged from the SOM workflow runs and surface in the unified
+  // inbox per docs/PLAN_SOM_DRUG_DISTRIBUTOR.md §5.4. The "vendor" field is
+  // re-purposed for the pharmacy name; the "invoiceNumber" holds the order ID.
+  {
+    id: "SOM-001",
+    type: "som_address_mismatch",
+    severity: "high",
+    status: "open",
+    vendor: "Carolina Health Pharmacy",
+    invoiceNumber: "ORD-1002",
+    invoiceDate: "2026-04-28",
+    amount: 684,
+    flaggedAmount: 684,
+    description:
+      "Address verification failed. Pharmacy declared 417 Glenwood Ave, Raleigh NC, but Google Maps geocode resolves to Charlotte (~265 km away). Permit on file is active, but coordinates suggest filing fraud or stale records.",
+    detectedAt: "2026-04-28T08:42:00Z",
+    assignee: "SOM Analyst",
+  },
+  {
+    id: "SOM-002",
+    type: "som_license_invalid",
+    severity: "critical",
+    status: "open",
+    vendor: "Tarheel Drugs",
+    invoiceNumber: "ORD-1003",
+    invoiceDate: "2026-04-28",
+    amount: 291,
+    flaggedAmount: 291,
+    description:
+      "License verification failed. NC Board of Pharmacy reports permit NC-PH-009847 is EXPIRED (expiry 2025-08-15). Order includes Schedule III controlled substance (Tylenol with Codeine 30mg/300mg, 300 tablets). Block fulfilment pending board contact.",
+    detectedAt: "2026-04-28T07:58:00Z",
+    assignee: "SOM Analyst",
+  },
+  {
+    id: "SOM-003",
+    type: "som_price_deviation",
+    severity: "high",
+    status: "open",
+    vendor: "Westside Pharmacy",
+    invoiceNumber: "ORD-1004",
+    invoiceDate: "2026-04-28",
+    amount: 7100,
+    flaggedAmount: 1100,
+    description:
+      "Price deviation +18% on Pfizer Xanax 0.5mg (Schedule IV controlled). Ordered $1.42/unit vs contract $1.20/unit (5% tolerance). Compounded with suspended pharmacy license (CA-PHY-19384) and high-volume controlled-substance order — escalate to compliance.",
+    detectedAt: "2026-04-28T06:31:00Z",
+    assignee: "Compliance Team",
+  },
+  {
+    id: "SOM-004",
+    type: "som_quantity_outlier",
+    severity: "critical",
+    status: "escalated",
+    vendor: "Westside Pharmacy",
+    invoiceNumber: "ORD-1004",
+    invoiceDate: "2026-04-28",
+    amount: 7100,
+    flaggedAmount: 7100,
+    description:
+      "Volume outlier: 5,000 controlled-substance units (Xanax 0.5mg) on a single order — 0.5× monthly baseline for the entire Los Angeles catchment from a single pharmacy. Triggers DEA-style suspicious-order reporting threshold.",
+    detectedAt: "2026-04-28T06:31:00Z",
+    assignee: "Compliance Team",
+  },
 ];
 
 // ─── THREE-WAY MATCH DETAIL (for EX-006 Steris) ──────────────────────────────

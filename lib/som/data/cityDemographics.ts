@@ -60,6 +60,13 @@ export const cityDemographics: CityDemographics[] = [
     medianAge: 36.5,
     controlledSubstanceMonthlyBaseline: 9_800,
   },
+  {
+    city: "Sacramento, CA",
+    state: "CA",
+    catchmentPopulation: 525_000,
+    medianAge: 35.1,
+    controlledSubstanceMonthlyBaseline: 2_700,
+  },
 ];
 
 export function findDemographicsByCity(city: string): CityDemographics | undefined {

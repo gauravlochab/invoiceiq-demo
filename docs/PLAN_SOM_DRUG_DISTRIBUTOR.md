@@ -3,15 +3,23 @@
 **Vertical:** Pharmaceutical Distributor (Emery Source–style middleware)
 **Source:** `cto_call_transcript_3_timestamps.txt` (28 Apr 2026) + scope diagram
 **Author:** Gaurav Lochab → for review by Rajesh Jaluka
-**Status:** IN_PROGRESS — Phase 2 (scaffolding + Joseph's Pharmacy end-to-end) shipped 28 Apr 2026
-**Repo:** to be pushed to GitHub; collaborator: **@rjaluka**
+**Status:** PHASES 2–5 SHIPPED — 28 Apr 2026 (awaiting Rajesh review)
+**Repo:** https://github.com/gauravlochab/invoiceiq-demo (collaborator: **@rjaluka**)
+
+**Phase status:**
+- [x] Phase 0 — Repo + plan pushed
+- [x] Phase 1 — Hospital polish (H1–H8) — partially already in place; deferred per maintainer call (SOM-only meeting)
+- [x] Phase 2 — Scaffolding + Joseph's Pharmacy end-to-end (commit `3e66e6e`)
+- [x] Phase 3 — Real data expansion (16 pharmacies, 14 NDCs, 5 manufacturers, SOM exceptions wired into inbox)
+- [x] Phase 4 — SOM dashboard widgets on /som (orders processed, suspicion rate, blocked exposure)
+- [x] Phase 5 — `docs/DEMO_GUIDE_SOM.md` runbook for Bala's customer meeting
 
 **Decisions taken (open Qs from §8):**
-- States: NC + CA (Durham/Raleigh/Charlotte + San Diego/LA)
+- States: NC + CA (Durham/Raleigh/Charlotte + San Diego/LA/Sacramento)
 - "ARCOS" genericized to "Pharmacy Address Database"
 - Sidebar: flat addition with "Healthcare AP" + "Drug Distributor" group labels
 - Outliers: implemented in Phase 2 (data is small, demo benefits from showing all 4 checks)
-- Customer footprint: still pending Bala — current cities are placeholder
+- Customer footprint: still pending Bala — current cities are placeholder, refresh is one-day data swap
 
 ---
 
