@@ -3,8 +3,15 @@
 **Vertical:** Pharmaceutical Distributor (Emery Source–style middleware)
 **Source:** `cto_call_transcript_3_timestamps.txt` (28 Apr 2026) + scope diagram
 **Author:** Gaurav Lochab → for review by Rajesh Jaluka
-**Status:** DRAFT — awaiting Rajesh's feedback before implementation
+**Status:** IN_PROGRESS — Phase 2 (scaffolding + Joseph's Pharmacy end-to-end) shipped 28 Apr 2026
 **Repo:** to be pushed to GitHub; collaborator: **@rjaluka**
+
+**Decisions taken (open Qs from §8):**
+- States: NC + CA (Durham/Raleigh/Charlotte + San Diego/LA)
+- "ARCOS" genericized to "Pharmacy Address Database"
+- Sidebar: flat addition with "Healthcare AP" + "Drug Distributor" group labels
+- Outliers: implemented in Phase 2 (data is small, demo benefits from showing all 4 checks)
+- Customer footprint: still pending Bala — current cities are placeholder
 
 ---
 

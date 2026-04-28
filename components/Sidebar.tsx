@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Upload, LayoutDashboard, AlertTriangle, Shield } from "lucide-react";
+import { Upload, LayoutDashboard, AlertTriangle, Shield, ShieldAlert, Pill } from "lucide-react";
 
-const nav = [
+// Healthcare AP (existing demo)
+const navHealthcare = [
   { href: "/extract", label: "Extract", icon: Upload },
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/exceptions", label: "Exceptions", icon: AlertTriangle, badge: 10, critical: true },
   { href: "/vendor-scoring", label: "Vendor Scoring", icon: Shield, badge: 3, critical: true },
+];
+
+// Drug Distributor (SOM) — added per plan §5.1 (flat-nav addition).
+const navPharma = [
+  { href: "/som", label: "SOM Analyst", icon: ShieldAlert, badge: 4, critical: true },
+  { href: "/som/manufacturers", label: "Manufacturers", icon: Pill },
 ];
 
 export default function Sidebar() {
@@ -29,8 +36,49 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-1">
-        {nav.map(({ href, label, icon: Icon, badge, critical }) => {
+        {/* Healthcare AP group */}
+        <div className="px-4 pt-1 pb-1.5">
+          <span className="text-[9px] uppercase tracking-[0.08em] font-semibold text-[#5a6878]">
+            Healthcare AP
+          </span>
+        </div>
+        {navHealthcare.map(({ href, label, icon: Icon, badge, critical }) => {
           const active = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-2.5 mx-1.5 rounded-md transition-all duration-150 px-3 py-2 text-[13px] no-underline ${
+                active
+                  ? "bg-[#0065cb] text-white font-medium shadow-sm shadow-[#0065cb]/20"
+                  : "text-[#7a8a9a] hover:text-[#c8d0d8] hover:bg-white/[0.04]"
+              }`}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{label}</span>
+              {badge ? (
+                <span
+                  className={`ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                    critical
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-white/[0.1] text-[#7a8a9a]"
+                  }`}
+                >
+                  {badge}
+                </span>
+              ) : null}
+            </Link>
+          );
+        })}
+
+        {/* Drug Distributor group */}
+        <div className="px-4 pt-4 pb-1.5">
+          <span className="text-[9px] uppercase tracking-[0.08em] font-semibold text-[#5a6878]">
+            Drug Distributor
+          </span>
+        </div>
+        {navPharma.map(({ href, label, icon: Icon, badge, critical }) => {
+          const active = pathname === href || (href !== "/som" && pathname.startsWith(href + "/")) || (href === "/som" && pathname === "/som");
           return (
             <Link
               key={href}

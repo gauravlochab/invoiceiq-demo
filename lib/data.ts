@@ -9,7 +9,13 @@ export type ExceptionType =
   | "missing_rebate"
   | "contract_overage"
   | "suspicious_invoice"
-  | "tier_pricing";
+  | "tier_pricing"
+  // SOM (Suspicious Order Monitoring) exception types — flow into unified inbox.
+  // Source: docs/PLAN_SOM_DRUG_DISTRIBUTOR.md §5.4
+  | "som_address_mismatch"
+  | "som_license_invalid"
+  | "som_price_deviation"
+  | "som_quantity_outlier";
 export type Status = "open" | "under_review" | "resolved" | "escalated";
 
 export interface Exception {
@@ -833,4 +839,9 @@ export const typeConfig: Record<ExceptionType, { label: string; icon: string }> 
   contract_overage: { label: "Contract Overage", icon: "AlertTriangle" },
   suspicious_invoice: { label: "Suspicious Invoice", icon: "ShieldAlert" },
   tier_pricing: { label: "Tier Pricing Error", icon: "Layers" },
+  // SOM types — flow into unified inbox per plan §5.4
+  som_address_mismatch: { label: "Address Mismatch", icon: "MapPin" },
+  som_license_invalid: { label: "License Invalid", icon: "ScrollText" },
+  som_price_deviation: { label: "Price Deviation", icon: "DollarSign" },
+  som_quantity_outlier: { label: "Volume Outlier", icon: "BarChart3" },
 };
