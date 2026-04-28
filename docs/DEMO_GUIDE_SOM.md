@@ -19,7 +19,7 @@ Tell the customer:
 - **Persona:** SOM Analyst at a pharmaceutical distributor (Emery Source-style middleware)
 - **Today's pain:** every controlled-substance order from a pharmacy needs manual checks — is the pharmacy real? Is its license valid? Is the price within contract? Is the volume reasonable?
 - **What we automated:** all four checks, in a single 4-second pipeline, with one genuine live API call to the NPI Registry for credibility
-- **Demo data:** 16 mock pharmacies across NC + CA, 5 manufacturers (Pfizer, J&J, Biogen, Mylan, Teva), 14 NDCs on contract
+- **Demo data:** 16 pharmacies across NC + CA — **12 of 16 backed by real NPI Registry records** (status verified live via cms.hhs.gov), 4 synthetic for state-board edge cases (suspended/expired/inactive — those portals aren't programmatically queryable). 5 manufacturers (Pfizer, J&J, Biogen, Mylan, Teva), 14 NDCs on contract.
 - **Source of the spec:** Rajesh Jaluka's call (28 Apr 2026), captured in `docs/cto_call_transcript_3_timestamps.txt`
 
 ---
@@ -48,15 +48,15 @@ Top row — 4 metrics:
 3. **Blocked exposure:** ~$58,375 across 4 SOM exceptions in current queue
 4. **Pending queue:** 4 orders awaiting verification
 
-Below — the queue. Point to it: *"Four incoming orders right now. Three involve controlled substances (the warning chip). The top one — Joseph's Pharmacy in Durham, NC — is fresh, just arrived seconds ago."*
+Below — the queue. Point to it: *"Four incoming orders right now. Three involve controlled substances (the warning chip). The top one — Gurleys Pharmacy in Durham, NC — is fresh, just arrived seconds ago. Real pharmacy, real NPI, real address."*
 
 Pause for one beat. *"Let's run the SOM pipeline on it."*
 
 ---
 
-## Screen 2 — Joseph's Pharmacy: clean order — 90 seconds
+## Screen 2 — Gurleys Pharmacy: clean order — 90 seconds
 
-**Click:** "Run checks" on **ORD-1001 — Joseph's Pharmacy**.
+**Click:** "Run checks" on **ORD-1001 — Gurleys Pharmacy**.
 
 The page loads and the workflow auto-starts. 4 cards stack vertically:
 
@@ -91,15 +91,15 @@ Click **Approve**. Toast: *"Order approved — released to fulfilment."*
 
 ---
 
-## Screen 3 — Carolina Health: address mismatch — 60 seconds
+## Screen 3 — Apex Family Pharmacy: address mismatch — 60 seconds
 
-**Back to** `/som`. **Click "Run checks"** on **ORD-1002 — Carolina Health Pharmacy**.
+**Back to** `/som`. **Click "Run checks"** on **ORD-1002 — Apex Family Pharmacy Inc**.
 
 The pipeline runs. This time:
 
 1. **Address Verification** → ✗ Failed
-   - *"Address mismatch — declared coordinates 208.55 km from actual address geocode."*
-   - **Talk track:** *"Pharmacy declared a Raleigh address. But the geocode on the address actually resolves in Charlotte — over 200 km away. That's either a data lag, a moved branch, or someone trying to redirect a controlled-substance shipment. Either way — auditor's job to find out, not the analyst's job to chase."*
+   - *"Address mismatch — declared coordinates ~215 km from actual address geocode."*
+   - **Talk track:** *"This is a real pharmacy in Raleigh — Apex Family Pharmacy, NC permit 09471, NPI 1114065513. But the geocode on the declared address resolves over 200 km away in Charlotte. In production this would be a data-lag, a moved branch, or someone trying to redirect a controlled-substance shipment. The system flags it; the auditor decides which."*
 
 2. License + Price + Outliers all run anyway (the workflow doesn't short-circuit — every check produces audit evidence). They pass.
 
