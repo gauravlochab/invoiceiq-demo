@@ -102,13 +102,13 @@ export const sampleOrders: IncomingOrder[] = [
         ndc: "00069-1080-04",
         manufacturer: "Pfizer",
         description: "Xanax 0.5mg tablet",
-        quantity: 5_000,     // huge controlled-substance volume → outlier
+        quantity: 35_000,    // 3.6× LA monthly baseline (9,800) → fail
         unit: "tablet",
         unitPrice: 1.42,     // 18% over $1.20 contract → price deviation
         isControlled: true,
       },
     ],
-    totalAmount: 5_000 * 1.42,
+    totalAmount: 35_000 * 1.42,
   },
 ];
 

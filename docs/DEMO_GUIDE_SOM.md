@@ -44,8 +44,8 @@ Page header: *"Suspicious Order Monitoring."*
 
 Top row — 4 metrics:
 1. **Orders processed:** 247 this quarter
-2. **Suspicion rate:** ~9% (22 of 247 flagged)
-3. **Blocked exposure:** ~$9,175 across 4 SOM exceptions in current queue
+2. **Suspicion rate:** ~8.5% (21 of 247 flagged)
+3. **Blocked exposure:** ~$58,375 across 4 SOM exceptions in current queue
 4. **Pending queue:** 4 orders awaiting verification
 
 Below — the queue. Point to it: *"Four incoming orders right now. Three involve controlled substances (the warning chip). The top one — Joseph's Pharmacy in Durham, NC — is fresh, just arrived seconds ago."*
@@ -99,8 +99,8 @@ Click **Approve**. Toast: *"Order approved — released to fulfilment."*
 The pipeline runs. This time:
 
 1. **Address Verification** → ✗ Failed
-   - *"Address mismatch — declared coordinates 265 km from actual address geocode."*
-   - **Talk track:** *"Pharmacy declared a Raleigh address. But the geocode on the address actually resolves in Charlotte. That's either a data lag, a moved branch, or someone trying to redirect a controlled-substance shipment. Either way — auditor's job to find out, not the analyst's job to chase."*
+   - *"Address mismatch — declared coordinates 208.55 km from actual address geocode."*
+   - **Talk track:** *"Pharmacy declared a Raleigh address. But the geocode on the address actually resolves in Charlotte — over 200 km away. That's either a data lag, a moved branch, or someone trying to redirect a controlled-substance shipment. Either way — auditor's job to find out, not the analyst's job to chase."*
 
 2. License + Price + Outliers all run anyway (the workflow doesn't short-circuit — every check produces audit evidence). They pass.
 
@@ -121,7 +121,7 @@ Click **Hold**. Toast confirms.
    - *"Permit NC-PH-009847 is expired (expired 2025-08-15)."*
    - **Talk track:** *"This is a real-world catch. Their license expired in August. They're still placing orders — and importantly, they're trying to order Schedule III Tylenol with Codeine. Without this check, those 300 controlled tablets ship to a pharmacy with no current authority to dispense them."*
 
-3. Price + Outliers run (price passes, outlier warns since this is a small controlled-substance order from a normal-baseline city).
+3. Price + Outliers run — both pass. The 300-tablet order is well under Charlotte's 3,100/month controlled-substance baseline (~10%), so volume isn't the issue. The license is.
 
 Click **Escalate**. Toast: *"Order escalated to compliance manager."*
 
@@ -136,9 +136,9 @@ This one trips multiple checks. Walk through each:
 1. **Address Verification** → ✓ pass (declared = geocoded)
 2. **License Verification** → ✗ Failed (suspended permit, no NPI on file)
 3. **Price Deviation** → ✗ Failed (Xanax 0.5mg ordered at $1.42 vs contract $1.20 = +18%, way over the 5% tolerance band)
-4. **Volume Outliers** → ✗ Failed (5,000 controlled units = 0.5× the entire LA monthly baseline from a single pharmacy in a single order)
+4. **Volume Outliers** → ✗ Failed (35,000 controlled units = 3.6× the entire LA monthly baseline from a single pharmacy in a single order)
 
-**Talk track:** *"This is the order that gets you on the front page of the Wall Street Journal. Suspended pharmacy. Schedule IV controlled substance. Price spike. Volume that would cover half a city for a month. Manually, an analyst might catch one of these on a busy day. Probably not all four. The system catches all four in 4 seconds."*
+**Talk track:** *"This is the order that gets you on the front page of the Wall Street Journal. Suspended pharmacy. Schedule IV controlled substance. Price spike. Volume 3.6× LA's entire monthly controlled-substance baseline from a single pharmacy in a single order. The address checks out — they're brazen, not stupid. Manually, an analyst might catch one of these three red flags on a busy day. Probably not all three. The system catches all three in under 4 seconds."*
 
 Bottom row: only **Hold** and **Escalate** are enabled. **Approve** is disabled.
 
