@@ -28,13 +28,25 @@ type FilterKey =
   | "duplicate"
   | "match_exception";
 
+// Filter-chip labels include LIVE counts derived from `exceptions[]` so they
+// stay correct as SOM rows (or any other vertical's rows) are added / removed.
+// Previous version hardcoded "All (10)" etc. and went stale silently.
+const counts = {
+  all: exceptions.length,
+  open: exceptions.filter((e) => e.status === "open" || e.status === "under_review" || e.status === "escalated").length,
+  critical: exceptions.filter((e) => e.severity === "critical").length,
+  high: exceptions.filter((e) => e.severity === "high").length,
+  duplicate: exceptions.filter((e) => e.type === "duplicate").length,
+  match_exception: exceptions.filter((e) => e.type === "match_exception").length,
+};
+
 const filterOptions: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "All (10)" },
-  { key: "open", label: "Open (7)" },
-  { key: "critical", label: "Critical (3)" },
-  { key: "high", label: "High (3)" },
-  { key: "duplicate", label: "Duplicate" },
-  { key: "match_exception", label: "Match Exception" },
+  { key: "all", label: `All (${counts.all})` },
+  { key: "open", label: `Open (${counts.open})` },
+  { key: "critical", label: `Critical (${counts.critical})` },
+  { key: "high", label: `High (${counts.high})` },
+  { key: "duplicate", label: `Duplicate (${counts.duplicate})` },
+  { key: "match_exception", label: `Match Exception (${counts.match_exception})` },
 ];
 
 function applyFilter(filter: FilterKey) {
