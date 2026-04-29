@@ -27,15 +27,21 @@ export default function SomQueuePage() {
   const totalValue = sampleOrders.reduce((sum, o) => sum + o.totalAmount, 0);
   const controlledCount = sampleOrders.filter((o) => o.lineItems.some((l) => l.isControlled)).length;
 
-  // SOM-derived metrics from the unified inbox (plan §5.4).
+  // SOM-derived metrics — all numbers below derive directly from the running
+  // dataset (sampleOrders + somExceptions). No hardcoded fudges.
   const somExceptions = exceptions.filter((e) => e.type.startsWith("som_"));
   const somBlockedAmount = somExceptions.reduce((sum, e) => sum + e.flaggedAmount, 0);
 
-  // Synthetic processed-orders count for the demo: pretend 247 orders cleared
-  // this quarter; the SOM exception rate is derived from that.
-  const ordersProcessedQ = 247;
-  const flaggedOrdersQ = new Set(somExceptions.map((e) => e.invoiceNumber)).size + 18; // 18 historical
-  const suspicionRate = ((flaggedOrdersQ / ordersProcessedQ) * 100).toFixed(1);
+  // Unique orders that have produced at least one SOM exception.
+  // (Two SOM exceptions can fire against the same order — e.g. price + volume
+  // on Westside ORD-1004 — so we deduplicate by invoiceNumber.)
+  const flaggedOrderIds = new Set(somExceptions.map((e) => e.invoiceNumber));
+  const flaggedOrdersCount = flaggedOrderIds.size;
+
+  const ordersInBatch = sampleOrders.length;
+  const suspicionRate = ordersInBatch > 0
+    ? ((flaggedOrdersCount / ordersInBatch) * 100).toFixed(0)
+    : "0";
 
   return (
     <div className="bg-[#f7f8fa] min-h-screen">
@@ -55,24 +61,24 @@ export default function SomQueuePage() {
         </p>
       </div>
 
-      {/* Stats strip */}
+      {/* Stats strip — every number below derives from the actual queue + SOM exceptions */}
       <div className="px-8 py-4 grid grid-cols-4 gap-4">
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Orders processed</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Orders in queue</p>
             <Activity className="w-3.5 h-3.5 text-[#9ca3af]" />
           </div>
-          <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{ordersProcessedQ}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">this quarter</p>
+          <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{ordersInBatch}</p>
+          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{controlledCount} with controlled substances</p>
         </div>
 
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Suspicion rate</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Flagged this batch</p>
             <ShieldCheck className="w-3.5 h-3.5 text-[#9ca3af]" />
           </div>
           <p className="text-2xl font-semibold text-amber-700 m-0 tabular-nums">{suspicionRate}%</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{flaggedOrdersQ} of {ordersProcessedQ} flagged</p>
+          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{flaggedOrdersCount} of {ordersInBatch} orders flagged</p>
         </div>
 
         <div className="card p-4">
@@ -86,11 +92,11 @@ export default function SomQueuePage() {
 
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Pending queue</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Total order value</p>
             <AlertTriangle className="w-3.5 h-3.5 text-[#9ca3af]" />
           </div>
-          <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{sampleOrders.length}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{controlledCount} controlled · {formatCurrency(totalValue)}</p>
+          <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{formatCurrency(totalValue)}</p>
+          <p className="text-[10px] text-[#4b5563] m-0 mt-1">awaiting analyst review</p>
         </div>
       </div>
 

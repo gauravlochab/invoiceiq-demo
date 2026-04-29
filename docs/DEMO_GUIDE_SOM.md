@@ -42,11 +42,11 @@ Say: *"Same shell, same exception inbox, same engineering team — but now we've
 
 Page header: *"Suspicious Order Monitoring."*
 
-Top row — 4 metrics:
-1. **Orders processed:** 247 this quarter
-2. **Suspicion rate:** ~8.5% (21 of 247 flagged)
-3. **Blocked exposure:** ~$58,375 across 4 SOM exceptions in current queue
-4. **Pending queue:** 4 orders awaiting verification
+Top row — 4 metrics, all derived live from the loaded data:
+1. **Orders in queue:** 4 (3 with controlled substances)
+2. **Flagged this batch:** 75% (3 of 4 orders flagged) — every number here is real, no fudges
+3. **Blocked exposure:** $58,375 across 4 SOM exceptions
+4. **Total order value:** $51,032 (real `sampleOrders` sum) awaiting analyst review
 
 Below — the queue. Point to it: *"Four incoming orders right now. Three involve controlled substances (the warning chip). The top one — Gurleys Pharmacy in Durham, NC — is fresh, just arrived seconds ago. Real pharmacy, real NPI, real address."*
 
