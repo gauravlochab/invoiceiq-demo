@@ -213,4 +213,52 @@ export const stateBoardResponsesByPharmacyId: Record<string, StateBoardResponse>
     },
     searchUrl: "https://portal.ncbop.org/verification?type=Pharmacy",
   },
+  "PH-017": {
+    source: "NC Board of Pharmacy",
+    record: {
+      legalName: "Apotheco Pharmacy Durham LLC",
+      permitNumber: "NC-PH-031055",
+      status: "active",
+      expiry: "2028-06-30",
+      licensee: "Anush Amin",
+      address: "4900 NC-55 Suite 160, Durham, NC 27713",
+    },
+    searchUrl: "https://portal.ncbop.org/verification?type=Pharmacy",
+  },
+  "PH-018": {
+    source: "NC Board of Pharmacy",
+    record: {
+      legalName: "A Plus Pharmacy Inc",
+      permitNumber: "NC 10227",
+      status: "active",
+      expiry: "2027-12-31",
+      licensee: "Astrik Ivanova",
+      address: "3010 Monroe Rd Ste 101, Charlotte, NC 28205",
+    },
+    searchUrl: "https://portal.ncbop.org/verification?type=Pharmacy",
+  },
+  "PH-019": {
+    source: "CA Board of Pharmacy",
+    record: {
+      legalName: "321 Pharmacy Inc",
+      permitNumber: "CA PHY22971",
+      status: "active",
+      expiry: "2027-10-31",
+      licensee: "Tom Hayata",
+      address: "310 E 2nd St, Los Angeles, CA 90012",
+    },
+    searchUrl: "https://search.dca.ca.gov/?BD=10",
+  },
+  "PH-020": {
+    source: "CA Board of Pharmacy",
+    record: {
+      legalName: "B & B Pharmacy",
+      permitNumber: "CA PHY22907",
+      status: "active",
+      expiry: "2028-02-28",
+      licensee: "Myung Seo, RPh D",
+      address: "2655 Balboa St, San Francisco, CA 94121",
+    },
+    searchUrl: "https://search.dca.ca.gov/?BD=10",
+  },
 };

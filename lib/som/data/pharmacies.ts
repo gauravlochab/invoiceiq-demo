@@ -441,6 +441,103 @@ export const pharmacies: PharmacyRecord[] = [
     owner: "Ketul Chaudhary, RPh",
     demographicsCity: "Durham, NC",
   },
+
+  // ── PH-017: REAL — Apotheco Pharmacy Durham (Parkwest) ───────────────────
+  // NPI 1609409564, status "A", taxonomy "Pharmacy, Community/Retail" — clean
+  // Durham retail pharmacy (Phase 6.3 expansion to 20). Permit not on NPI
+  // taxonomy; synthetic permit number assigned.
+  {
+    id: "PH-017",
+    name: "Apotheco Pharmacy Durham LLC",
+    dba: "Parkwest Pharmacy",
+    npi: "1609409564",
+    deaNumber: "FA9981234",          // synthetic
+    permitNumber: "NC-PH-031055",    // synthetic (not on NPI taxonomy)
+    state: "NC",
+    city: "Durham",
+    address: "4900 NC-55 Suite 160",
+    zip: "27713",
+    declaredLat: 35.898804,
+    declaredLng: -78.896685,
+    geocodedLat: 35.898804,
+    geocodedLng: -78.896685,
+    licenseStatus: "active",
+    licenseExpiry: "2028-06-30",
+    owner: "Anush Amin",
+    demographicsCity: "Durham, NC",
+  },
+
+  // ── PH-018: REAL — A Plus Pharmacy, Charlotte ────────────────────────────
+  // NPI 1548420912, status "A", real NC permit 10227 from NPI taxonomy.
+  {
+    id: "PH-018",
+    name: "A Plus Pharmacy Inc",
+    dba: "A Plus Pharmacy",
+    npi: "1548420912",
+    deaNumber: "FA1145782",          // synthetic
+    permitNumber: "NC 10227",        // REAL — from NPI taxonomy.license
+    state: "NC",
+    city: "Charlotte",
+    address: "3010 Monroe Rd Ste 101",
+    zip: "28205",
+    declaredLat: 35.204205,
+    declaredLng: -80.804732,
+    geocodedLat: 35.204205,
+    geocodedLng: -80.804732,
+    licenseStatus: "active",
+    licenseExpiry: "2027-12-31",
+    owner: "Astrik Ivanova",
+    demographicsCity: "Charlotte, NC",
+  },
+
+  // ── PH-019: REAL — 321 Pharmacy, Los Angeles ─────────────────────────────
+  // NPI 1598801102, status "A", real CA permit PHY22971 from NPI taxonomy.
+  // Downtown LA Little Tokyo neighborhood.
+  {
+    id: "PH-019",
+    name: "321 Pharmacy Inc",
+    dba: "321 Pharmacy",
+    npi: "1598801102",
+    deaNumber: "FT4427891",          // synthetic
+    permitNumber: "CA PHY22971",     // REAL — from NPI taxonomy.license
+    state: "CA",
+    city: "Los Angeles",
+    address: "310 E 2nd St",
+    zip: "90012",
+    declaredLat: 34.049098,
+    declaredLng: -118.241531,
+    geocodedLat: 34.049098,
+    geocodedLng: -118.241531,
+    licenseStatus: "active",
+    licenseExpiry: "2027-10-31",
+    owner: "Tom Hayata",
+    demographicsCity: "Los Angeles, CA",
+  },
+
+  // ── PH-020: REAL — B & B Pharmacy, San Francisco ─────────────────────────
+  // NPI 1043345952, status "A", real CA permit PHY22907 from NPI taxonomy.
+  // Outer Richmond neighborhood. New SF entry → also requires SF entry in
+  // cityDemographics.ts.
+  {
+    id: "PH-020",
+    name: "B & B Pharmacy",
+    dba: "B & B Pharmacy",
+    npi: "1043345952",
+    deaNumber: "FB7723891",          // synthetic
+    permitNumber: "CA PHY22907",     // REAL — from NPI taxonomy.license
+    state: "CA",
+    city: "San Francisco",
+    address: "2655 Balboa St",
+    zip: "94121",
+    declaredLat: 37.776122,
+    declaredLng: -122.487178,
+    geocodedLat: 37.776122,
+    geocodedLng: -122.487178,
+    licenseStatus: "active",
+    licenseExpiry: "2028-02-28",
+    owner: "Myung Seo, RPh D",
+    demographicsCity: "San Francisco, CA",
+  },
 ];
 
 // ─── Lookup helpers ───────────────────────────────────────────────────────────

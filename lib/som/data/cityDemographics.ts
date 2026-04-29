@@ -67,6 +67,13 @@ export const cityDemographics: CityDemographics[] = [
     medianAge: 35.1,
     controlledSubstanceMonthlyBaseline: 2_700,
   },
+  {
+    city: "San Francisco, CA",
+    state: "CA",
+    catchmentPopulation: 815_000,
+    medianAge: 38.4,
+    controlledSubstanceMonthlyBaseline: 3_600,
+  },
 ];
 
 export function findDemographicsByCity(city: string): CityDemographics | undefined {
