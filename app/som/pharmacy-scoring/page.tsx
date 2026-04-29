@@ -331,7 +331,7 @@ function ExpandablePharmacyRow({
                     <ScoreBar icon={ScrollText} label="License (40%)" value={p.components.license} />
                     <ScoreBar icon={MapPin} label="Address (20%)" value={p.components.address} />
                     <ScoreBar icon={DollarSign} label="Price (15%)" value={p.components.price} />
-                    <ScoreBar icon={BarChart3} label="Volume (15%)" value={p.components.volume} />
+                    <ScoreBar icon={BarChart3} label="Pattern (15%)" value={p.components.volume} />
                     <ScoreBar icon={Fingerprint} label="Identity (10%)" value={p.components.identity} />
                   </div>
                 </div>

@@ -31,7 +31,7 @@ const TASK_ICONS: Record<string, typeof MapPin> = {
   verify_address: MapPin,
   verify_license: ScrollText,
   check_price_deviation: DollarSign,
-  detect_outliers: BarChart3,
+  detect_pattern_outlier: BarChart3,
 };
 
 const STATUS_COLORS: Record<TaskStatus, { text: string; bg: string; border: string; label: string }> = {
@@ -447,31 +447,58 @@ function TaskEvidence({
     );
   }
 
-  if (taskId === "detect_outliers") {
-    const baseline = evidence.baseline as number | undefined;
-    const ratio = evidence.ratio as number | undefined;
-    const controlledVolume = evidence.controlledVolume as number | undefined;
-    const demo = evidence.demographics as { record?: { city?: string; catchmentPopulation?: number } } | undefined;
-    if (controlledVolume === 0) return null;
+  if (taskId === "detect_pattern_outlier") {
+    // 5 sub-checks: demographics, population, history, quota, raw_material.
+    // Each is rendered as its own mini-row with status pill + 1-line message.
+    type SubCheck = {
+      id: string;
+      label: string;
+      status: "pass" | "warn" | "fail" | "error";
+      message: string;
+    };
+    const subChecks = (evidence.subChecks as SubCheck[] | undefined) ?? [];
+    if (subChecks.length === 0) return null;
     return (
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <EvidenceRow
-          icon={BarChart3}
-          label="Order controlled volume"
-          value={controlledVolume != null ? `${controlledVolume.toLocaleString()} units` : "—"}
-        />
-        {baseline != null && (
-          <EvidenceRow
-            icon={FileText}
-            label={`${demo?.record?.city ?? "City"} monthly baseline`}
-            value={`${baseline.toLocaleString()} units · this order = ${ratio}× baseline`}
-          />
-        )}
+      <div className="mt-3 flex flex-col gap-1.5">
+        {subChecks.map((sc) => (
+          <PatternSubCheckRow key={sc.id} subCheck={sc} />
+        ))}
       </div>
     );
   }
 
   return null;
+}
+
+// ─── Pattern Outlier sub-check row ────────────────────────────────────────────
+
+function PatternSubCheckRow({
+  subCheck,
+}: {
+  subCheck: { id: string; label: string; status: "pass" | "warn" | "fail" | "error"; message: string };
+}) {
+  const dotColor =
+    subCheck.status === "pass" ? "bg-emerald-500"
+    : subCheck.status === "warn" ? "bg-amber-500"
+    : subCheck.status === "fail" ? "bg-red-500"
+    : "bg-[#9ca3af]";
+  const labelColor = STATUS_COLORS[subCheck.status]?.text ?? "text-[#4b5563]";
+  return (
+    <div className="flex items-start gap-2.5 bg-[#f7f8fa] rounded px-2.5 py-2">
+      <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide font-semibold text-[#4b5563]">
+            {subCheck.label}
+          </span>
+          <span className={`text-[9px] uppercase tracking-wide font-semibold ${labelColor}`}>
+            {STATUS_COLORS[subCheck.status]?.label ?? subCheck.status}
+          </span>
+        </div>
+        <p className="text-[11px] text-[#111827] m-0 leading-snug mt-0.5">{subCheck.message}</p>
+      </div>
+    </div>
+  );
 }
 
 function EvidenceRow({

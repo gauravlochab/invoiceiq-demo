@@ -22,12 +22,12 @@ import type {
 import { verifyAddress } from "../tasks/verifyAddress";
 import { verifyLicense } from "../tasks/verifyLicense";
 import { checkPriceDeviation } from "../tasks/checkPriceDeviation";
-import { detectOutliers } from "../tasks/detectOutliers";
+import { detectPatternOutlier } from "../tasks/detectPatternOutlier";
 
 export const suspiciousOrderMonitoring: Workflow = {
   id: "suspicious_order_monitoring",
   name: "Suspicious Order Monitoring",
-  tasks: [verifyAddress, verifyLicense, checkPriceDeviation, detectOutliers],
+  tasks: [verifyAddress, verifyLicense, checkPriceDeviation, detectPatternOutlier],
 };
 
 // ─── Status combination ──────────────────────────────────────────────────────
