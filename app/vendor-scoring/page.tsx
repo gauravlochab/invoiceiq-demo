@@ -30,7 +30,13 @@ function rowRiskBg(discrepancyPct: number): string {
   return "";
 }
 
-type VendorSortKey = "score" | "discrepancyPct" | "discrepancyAmount" | "totalSpend" | null;
+function recoveryColor(pct: number): string {
+  if (pct >= 80) return "text-emerald-600";
+  if (pct >= 40) return "text-amber-600";
+  return "text-red-600";
+}
+
+type VendorSortKey = "score" | "discrepancyPct" | "discrepancyAmount" | "totalSpend" | "recoveryPct" | null;
 
 export default function VendorScoringPage() {
   const { showToast } = useToast();
@@ -58,6 +64,7 @@ export default function VendorScoringPage() {
   const totalDiscrepancy = sorted.reduce((s, v) => s + v.discrepancyAmount, 0);
   const highRiskCount = sorted.filter((v) => v.score < 40).length;
   const avgScore = Math.round(sorted.reduce((s, v) => s + v.score, 0) / sorted.length);
+  const avgRecovery = Math.round(sorted.reduce((s, v) => s + v.recoveryPct, 0) / sorted.length);
 
   const handleFlag = (vendorId: string, action: string) => {
     setFlaggedVendors((prev) => ({ ...prev, [vendorId]: action }));
@@ -100,8 +107,8 @@ export default function VendorScoringPage() {
       {loading ? (
         <div className="px-8 py-6">
           <div className="flex border border-[#e5e7eb] rounded-lg bg-white">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`flex-1 px-6 py-4 ${i < 4 ? "border-r border-[#e5e7eb]" : ""}`}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className={`flex-1 px-6 py-4 ${i < 5 ? "border-r border-[#e5e7eb]" : ""}`}>
                 <div className="h-3 w-20 bg-[#e5e7eb] rounded animate-pulse mb-3" />
                 <div className="h-7 w-14 bg-[#e5e7eb] rounded animate-pulse" />
               </div>
@@ -123,9 +130,13 @@ export default function VendorScoringPage() {
               <p className="section-label">Total Discrepancy</p>
               <p className="text-2xl font-bold text-amber-600 mt-1 m-0">{formatCurrency(totalDiscrepancy)}</p>
             </div>
-            <div className="flex-1 px-6 py-4">
+            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
               <p className="section-label">Avg Score</p>
               <p className={`text-2xl font-bold mt-1 m-0 ${scoreColor(avgScore)}`}>{avgScore}/100</p>
+            </div>
+            <div className="flex-1 px-6 py-4">
+              <p className="section-label">Avg Recovery</p>
+              <p className={`text-2xl font-bold mt-1 m-0 ${recoveryColor(avgRecovery)}`}>{avgRecovery}%</p>
             </div>
           </div>
         </div>
@@ -133,8 +144,8 @@ export default function VendorScoringPage() {
 
       {/* Vendor Table */}
       <div className="px-8 pb-8">
-        <div className="card overflow-hidden">
-          <table className="data-table">
+        <div className="card overflow-x-auto">
+          <table className="data-table" style={{ minWidth: 900 }}>
             <thead>
               <tr>
                 <th style={{ width: 28 }}></th>
@@ -166,6 +177,14 @@ export default function VendorScoringPage() {
                 </th>
                 <th
                   className="right cursor-pointer hover:text-[#111827] transition-colors select-none"
+                  onClick={() => handleSortClick("recoveryPct")}
+                >
+                  <span className="inline-flex items-center gap-1 justify-end">
+                    Recovery % <ArrowUpDown className="w-3 h-3" />
+                  </span>
+                </th>
+                <th
+                  className="right cursor-pointer hover:text-[#111827] transition-colors select-none"
                   onClick={() => handleSortClick("score")}
                 >
                   <span className="inline-flex items-center gap-1 justify-end">
@@ -173,7 +192,7 @@ export default function VendorScoringPage() {
                   </span>
                 </th>
                 <th>Rating</th>
-                <th>Actions</th>
+                <th style={{ minWidth: 100 }}>Actions</th>
               </tr>
             </thead>
             {loading ? (
@@ -185,6 +204,7 @@ export default function VendorScoringPage() {
                     <td className="right"><div className="h-3.5 w-8 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
                     <td className="right"><div className="h-3.5 w-16 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
                     <td className="right"><div className="h-3.5 w-14 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
+                    <td className="right"><div className="h-3.5 w-10 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
                     <td className="right"><div className="h-3.5 w-10 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
                     <td className="right"><div className="h-3.5 w-8 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
                     <td><div className="h-5 w-20 bg-[#e5e7eb] rounded animate-pulse" /></td>
@@ -230,6 +250,11 @@ export default function VendorScoringPage() {
                           </span>
                         </td>
                         <td className="right">
+                          <span className={`text-xs tabular-nums font-semibold ${recoveryColor(vendor.recoveryPct)}`}>
+                            {vendor.recoveryPct}%
+                          </span>
+                        </td>
+                        <td className="right">
                           <span className={`text-sm font-bold tabular-nums ${scoreColor(vendor.score)}`}>
                             {vendor.score}
                           </span>
@@ -239,27 +264,25 @@ export default function VendorScoringPage() {
                         </td>
                         <td onClick={(e) => e.stopPropagation()}>
                           {!flagAction ? (
-                            <div className="flex gap-1">
+                            <div className="flex items-center gap-0.5">
                               <button
                                 onClick={() => { if (confirm("Flag " + vendor.name + " as high-risk vendor?")) { handleFlag(vendor.id, "Flagged"); showToast(vendor.name + " flagged as high-risk", "warning"); } }}
-                                className="p-1 rounded hover:bg-amber-50 text-[#9ca3af] hover:text-amber-600 transition-colors cursor-pointer bg-transparent border-none text-[10px] gap-0.5 flex items-center"
-                                title="Red Flag Vendor"
+                                className="p-1.5 rounded hover:bg-amber-50 text-[#9ca3af] hover:text-amber-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
+                                title="Flag as high-risk"
                               >
                                 <Flag className="w-3.5 h-3.5" />
-                                Flag
                               </button>
                               <button
                                 onClick={() => { if (confirm("Recommend penalty for " + vendor.name + "?")) { handleFlag(vendor.id, "Penalized"); showToast(vendor.name + " recommended for penalty", "error"); } }}
-                                className="p-1 rounded hover:bg-red-50 text-[#9ca3af] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none text-[10px] gap-0.5 flex items-center"
-                                title="Recommend for Penalty"
+                                className="p-1.5 rounded hover:bg-red-50 text-[#9ca3af] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
+                                title="Recommend for penalty"
                               >
                                 <AlertTriangle className="w-3.5 h-3.5" />
-                                Penalize
                               </button>
                               <button
                                 onClick={() => { if (confirm("Remove " + vendor.name + " as supplier?")) { handleFlag(vendor.id, "Removed"); showToast(vendor.name + " removed from approved suppliers", "error"); } }}
-                                className="p-1 rounded hover:bg-red-50 text-[#9ca3af] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none text-[10px] gap-0.5 flex items-center"
-                                title="Remove as Supplier"
+                                className="p-1.5 rounded hover:bg-red-50 text-[#9ca3af] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
+                                title="Remove as supplier"
                               >
                                 <XCircle className="w-3.5 h-3.5" />
                                 Remove
@@ -274,7 +297,7 @@ export default function VendorScoringPage() {
                       {/* Expanded exception history */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={9} className="bg-[#f0f2f5] px-8 py-4 border-t border-[#e5e7eb]">
+                          <td colSpan={10} className="bg-[#f0f2f5] px-8 py-4 border-t border-[#e5e7eb]">
                             <p className="section-label mb-2">Exception History</p>
                             <div className="space-y-2">
                               {vendor.exceptions.map((ex) => (

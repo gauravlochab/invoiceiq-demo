@@ -368,9 +368,16 @@ function TaskEvidence({
     const db = evidence.db as { source?: string; record?: { address?: string; city?: string; state?: string; zip?: string } };
     const geo = evidence.geocode as { query?: string; declaredVsGeocodedKm?: number; lat?: number; lng?: number };
     if (!db) return null;
+    const fullAddress = db.record ? `${db.record.address}, ${db.record.city}, ${db.record.state} ${db.record.zip}` : "";
+    const mapsUrl = fullAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}` : undefined;
     return (
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <EvidenceRow icon={Database} label={db.source ?? "Database"} value={db.record ? `${db.record.address}, ${db.record.city}, ${db.record.state} ${db.record.zip}` : "Not found"} />
+        <EvidenceRow
+          icon={Database}
+          label={db.source ?? "Database"}
+          value={db.record ? fullAddress : "Not found"}
+          link={mapsUrl}
+        />
         {geo && (
           <EvidenceRow
             icon={MapPin}
@@ -383,19 +390,20 @@ function TaskEvidence({
   }
 
   if (taskId === "verify_license") {
-    const board = evidence.stateBoard as { source?: string; record?: { permitNumber?: string; status?: string; expiry?: string } };
+    const board = evidence.stateBoard as { source?: string; searchUrl?: string; record?: { permitNumber?: string; status?: string; expiry?: string } };
     const npi = evidence.npi as { source?: string; isLive?: boolean; found?: boolean; status?: string; rawError?: string; latencyMs?: number };
     return (
       <div className="mt-3 grid grid-cols-2 gap-2">
         {board && (
-          // Note: state-board cards are intentionally NON-clickable. The
-          // upstream sites (ncbop.org, search.dca.ca.gov) only expose
-          // search-portal entry pages, not stable per-pharmacy URLs, so a
-          // deep-link would dump the user on a generic landing page.
+          // Links to the upstream state-board search portal (NC: portal.ncbop.org,
+          // CA: search.dca.ca.gov). Stable per-pharmacy URLs aren't exposed, so
+          // the link drops the user on the search portal where they can paste
+          // the permit number to verify.
           <EvidenceRow
             icon={ScrollText}
             label={board.source ?? "State board"}
             value={board.record ? `Permit ${board.record.permitNumber} · ${board.record.status} · expires ${board.record.expiry}` : "No record"}
+            link={board.searchUrl}
           />
         )}
         {npi && (

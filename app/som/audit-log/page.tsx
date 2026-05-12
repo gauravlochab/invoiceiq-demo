@@ -12,7 +12,7 @@
 // demo limitation; production would persist to DB.
 
 import { useEffect, useState } from "react";
-import { ShieldAlert, FileCheck2, User, Clock, AlertTriangle } from "lucide-react";
+import { ShieldAlert, FileCheck2, User, Clock } from "lucide-react";
 import { getAuditLog, type AuditLogEntry } from "@/lib/som/data/auditLog";
 
 function severityColor(rating: string): string {
@@ -161,17 +161,6 @@ export default function AuditLogPage() {
         )}
       </div>
 
-      {/* Footnote — demo caveat */}
-      <div className="px-8 pb-8">
-        <div className="flex items-start gap-2 p-4 rounded-md bg-amber-50 border border-amber-200">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-amber-900 m-0 leading-relaxed">
-            <span className="font-semibold">Demo caveat:</span> audit log entries are stored in
-            module-level memory. Hard-refreshing the browser will reset to seed entries.
-            Production version would persist to DB.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

@@ -14,6 +14,9 @@
 // those portals are JS-rendered search-only. Names + permits for those four
 // are fictional; do not treat as real-pharmacy claims.
 //
+// PH-021 through PH-035 are SYNTHETIC clean-record entries added to pad out
+// the scoring table with realistic active pharmacies across NC and CA.
+//
 // Every row's `notes` comment indicates provenance.
 //
 // Sources:
@@ -537,6 +540,321 @@ export const pharmacies: PharmacyRecord[] = [
     licenseExpiry: "2028-02-28",
     owner: "Myung Seo, RPh D",
     demographicsCity: "San Francisco, CA",
+  },
+
+  // ── PH-021: SYNTHETIC — Triangle Pharmacy, Durham NC ────────────────────
+  {
+    id: "PH-021",
+    name: "Triangle Pharmacy",
+    npi: "1234567891",               // synthetic
+    deaNumber: "BT2291837",          // synthetic
+    permitNumber: "NC-PH-034201",    // synthetic
+    state: "NC",
+    city: "Durham",
+    address: "3800 Guess Rd Ste 105",
+    zip: "27705",
+    declaredLat: 36.041200,
+    declaredLng: -78.927400,
+    geocodedLat: 36.041200,
+    geocodedLng: -78.927400,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Priya Ramachandran, RPh",
+    demographicsCity: "Durham, NC",
+  },
+
+  // ── PH-022: SYNTHETIC — Cape Fear Drugs, Raleigh NC ─────────────────────
+  {
+    id: "PH-022",
+    name: "Cape Fear Drugs",
+    npi: "1234567892",               // synthetic
+    deaNumber: "BC3312745",          // synthetic
+    permitNumber: "NC-PH-034202",    // synthetic
+    state: "NC",
+    city: "Raleigh",
+    address: "4401 Lake Boone Trl Ste 200",
+    zip: "27607",
+    declaredLat: 35.818300,
+    declaredLng: -78.720600,
+    geocodedLat: 35.818300,
+    geocodedLng: -78.720600,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Carlos Mendez, RPh",
+    demographicsCity: "Raleigh, NC",
+  },
+
+  // ── PH-023: SYNTHETIC — Yadkin Valley Pharmacy, Charlotte NC ────────────
+  {
+    id: "PH-023",
+    name: "Yadkin Valley Pharmacy",
+    npi: "1234567893",               // synthetic
+    deaNumber: "BY4423651",          // synthetic
+    permitNumber: "NC-PH-034203",    // synthetic
+    state: "NC",
+    city: "Charlotte",
+    address: "5601 Executive Center Dr Ste 101",
+    zip: "28212",
+    declaredLat: 35.214900,
+    declaredLng: -80.771800,
+    geocodedLat: 35.214900,
+    geocodedLng: -80.771800,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Linda Torres, RPh",
+    demographicsCity: "Charlotte, NC",
+  },
+
+  // ── PH-024: SYNTHETIC — Research Triangle Rx, Durham NC ─────────────────
+  {
+    id: "PH-024",
+    name: "Research Triangle Rx",
+    npi: "1234567894",               // synthetic
+    deaNumber: "BR5534562",          // synthetic
+    permitNumber: "NC-PH-034204",    // synthetic
+    state: "NC",
+    city: "Durham",
+    address: "1821 Hillandale Rd Ste 1A",
+    zip: "27705",
+    declaredLat: 36.032700,
+    declaredLng: -78.948100,
+    geocodedLat: 36.032700,
+    geocodedLng: -78.948100,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "James Okafor, RPh",
+    demographicsCity: "Durham, NC",
+  },
+
+  // ── PH-025: SYNTHETIC — Piedmont Family Pharmacy, Raleigh NC ────────────
+  {
+    id: "PH-025",
+    name: "Piedmont Family Pharmacy",
+    npi: "1234567895",               // synthetic
+    deaNumber: "BP6645473",          // synthetic
+    permitNumber: "NC-PH-034205",    // synthetic
+    state: "NC",
+    city: "Raleigh",
+    address: "6300 Creedmoor Rd Ste 115",
+    zip: "27612",
+    declaredLat: 35.873500,
+    declaredLng: -78.698200,
+    geocodedLat: 35.873500,
+    geocodedLng: -78.698200,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Sarah Kim, PharmD",
+    demographicsCity: "Raleigh, NC",
+  },
+
+  // ── PH-026: SYNTHETIC — Catawba River Pharmacy, Charlotte NC ────────────
+  {
+    id: "PH-026",
+    name: "Catawba River Pharmacy",
+    npi: "1234567896",               // synthetic
+    deaNumber: "BC7756384",          // synthetic
+    permitNumber: "NC-PH-034206",    // synthetic
+    state: "NC",
+    city: "Charlotte",
+    address: "7900 Providence Rd Ste 400",
+    zip: "28277",
+    declaredLat: 35.094800,
+    declaredLng: -80.822500,
+    geocodedLat: 35.094800,
+    geocodedLng: -80.822500,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "David Chen, RPh",
+    demographicsCity: "Charlotte, NC",
+  },
+
+  // ── PH-027: SYNTHETIC — Coastal Health Pharmacy, Raleigh NC ─────────────
+  {
+    id: "PH-027",
+    name: "Coastal Health Pharmacy",
+    npi: "1234567897",               // synthetic
+    deaNumber: "BC8867295",          // synthetic
+    permitNumber: "NC-PH-034207",    // synthetic
+    state: "NC",
+    city: "Raleigh",
+    address: "3100 Duraleigh Rd Ste 135",
+    zip: "27612",
+    declaredLat: 35.821900,
+    declaredLng: -78.737400,
+    geocodedLat: 35.821900,
+    geocodedLng: -78.737400,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Angela Patel, PharmD",
+    demographicsCity: "Raleigh, NC",
+  },
+
+  // ── PH-028: SYNTHETIC — Pacific Coast Pharmacy, Los Angeles CA ──────────
+  {
+    id: "PH-028",
+    name: "Pacific Coast Pharmacy",
+    npi: "1234567898",               // synthetic
+    deaNumber: "FP9978106",          // synthetic
+    permitNumber: "CA-PHY-73401",    // synthetic
+    state: "CA",
+    city: "Los Angeles",
+    address: "11211 Venice Blvd",
+    zip: "90066",
+    declaredLat: 34.002700,
+    declaredLng: -118.424300,
+    geocodedLat: 34.002700,
+    geocodedLng: -118.424300,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Maria Flores, RPh",
+    demographicsCity: "Los Angeles, CA",
+  },
+
+  // ── PH-029: SYNTHETIC — Bay Area Community Rx, San Francisco CA ─────────
+  {
+    id: "PH-029",
+    name: "Bay Area Community Rx",
+    npi: "1234567899",               // synthetic
+    deaNumber: "FB1089017",          // synthetic
+    permitNumber: "CA-PHY-73402",    // synthetic
+    state: "CA",
+    city: "San Francisco",
+    address: "2200 Market St",
+    zip: "94114",
+    declaredLat: 37.764800,
+    declaredLng: -122.434500,
+    geocodedLat: 37.764800,
+    geocodedLng: -122.434500,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Kevin Nguyen, PharmD",
+    demographicsCity: "San Francisco, CA",
+  },
+
+  // ── PH-030: SYNTHETIC — Sunset Health Pharmacy, Los Angeles CA ──────────
+  {
+    id: "PH-030",
+    name: "Sunset Health Pharmacy",
+    npi: "1234567900",               // synthetic
+    deaNumber: "FS2190928",          // synthetic
+    permitNumber: "CA-PHY-73403",    // synthetic
+    state: "CA",
+    city: "Los Angeles",
+    address: "4620 Hollywood Blvd Ste 101",
+    zip: "90027",
+    declaredLat: 34.101500,
+    declaredLng: -118.301200,
+    geocodedLat: 34.101500,
+    geocodedLng: -118.301200,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Rachel Park, RPh",
+    demographicsCity: "Los Angeles, CA",
+  },
+
+  // ── PH-031: SYNTHETIC — Golden Gate Pharmacy, San Francisco CA ──────────
+  {
+    id: "PH-031",
+    name: "Golden Gate Pharmacy",
+    npi: "1234567901",               // synthetic
+    deaNumber: "FG3201839",          // synthetic
+    permitNumber: "CA-PHY-73404",    // synthetic
+    state: "CA",
+    city: "San Francisco",
+    address: "1801 Fillmore St",
+    zip: "94115",
+    declaredLat: 37.784700,
+    declaredLng: -122.432900,
+    geocodedLat: 37.784700,
+    geocodedLng: -122.432900,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Steven Lam, PharmD",
+    demographicsCity: "San Francisco, CA",
+  },
+
+  // ── PH-032: SYNTHETIC — Harbor View Pharmacy, San Diego CA ──────────────
+  {
+    id: "PH-032",
+    name: "Harbor View Pharmacy",
+    npi: "1234567902",               // synthetic
+    deaNumber: "FH4312750",          // synthetic
+    permitNumber: "CA-PHY-73405",    // synthetic
+    state: "CA",
+    city: "San Diego",
+    address: "3420 Midway Dr Ste 1B",
+    zip: "92110",
+    declaredLat: 32.749600,
+    declaredLng: -117.204800,
+    geocodedLat: 32.749600,
+    geocodedLng: -117.204800,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Diane Ortiz, RPh",
+    demographicsCity: "San Diego, CA",
+  },
+
+  // ── PH-033: SYNTHETIC — Miramar Health Rx, San Diego CA ─────────────────
+  {
+    id: "PH-033",
+    name: "Miramar Health Rx",
+    npi: "1234567903",               // synthetic
+    deaNumber: "FM5423661",          // synthetic
+    permitNumber: "CA-PHY-73406",    // synthetic
+    state: "CA",
+    city: "San Diego",
+    address: "8910 Miramar Rd Ste 220",
+    zip: "92126",
+    declaredLat: 32.894100,
+    declaredLng: -117.146300,
+    geocodedLat: 32.894100,
+    geocodedLng: -117.146300,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Brian Tran, PharmD",
+    demographicsCity: "San Diego, CA",
+  },
+
+  // ── PH-034: SYNTHETIC — Valley Medical Pharmacy, Sacramento CA ──────────
+  {
+    id: "PH-034",
+    name: "Valley Medical Pharmacy",
+    npi: "1234567904",               // synthetic
+    deaNumber: "FV6534572",          // synthetic
+    permitNumber: "CA-PHY-73407",    // synthetic
+    state: "CA",
+    city: "Sacramento",
+    address: "5750 Stockton Blvd Ste 10",
+    zip: "95824",
+    declaredLat: 38.519300,
+    declaredLng: -121.453700,
+    geocodedLat: 38.519300,
+    geocodedLng: -121.453700,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Melissa Wong, RPh",
+    demographicsCity: "Sacramento, CA",
+  },
+
+  // ── PH-035: SYNTHETIC — Oak Park Pharmacy, Sacramento CA ────────────────
+  {
+    id: "PH-035",
+    name: "Oak Park Pharmacy",
+    npi: "1234567905",               // synthetic
+    deaNumber: "FO7645483",          // synthetic
+    permitNumber: "CA-PHY-73408",    // synthetic
+    state: "CA",
+    city: "Sacramento",
+    address: "3415 35th Ave",
+    zip: "95820",
+    declaredLat: 38.535400,
+    declaredLng: -121.434600,
+    geocodedLat: 38.535400,
+    geocodedLng: -121.434600,
+    licenseStatus: "active",
+    licenseExpiry: "2027-06-30",
+    owner: "Thomas Bradley, PharmD",
+    demographicsCity: "Sacramento, CA",
   },
 ];
 

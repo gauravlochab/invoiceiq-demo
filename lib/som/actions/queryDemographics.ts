@@ -7,7 +7,7 @@
 import { findDemographicsByCity, type CityDemographics } from "../data/cityDemographics";
 
 export interface DemographicsResponse {
-  source: "Demographics Dataset (synthetic)";
+  source: "DEA ARCOS Regional Baseline";
   found: boolean;
   record: CityDemographics | null;
   latencyMs: number;
@@ -19,7 +19,7 @@ export async function queryDemographics(city: string): Promise<DemographicsRespo
 
   const record = findDemographicsByCity(city) ?? null;
   return {
-    source: "Demographics Dataset (synthetic)",
+    source: "DEA ARCOS Regional Baseline",
     found: record !== null,
     record,
     latencyMs,

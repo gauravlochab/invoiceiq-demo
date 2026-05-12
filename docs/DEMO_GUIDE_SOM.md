@@ -19,7 +19,7 @@ Tell the customer:
 - **Persona:** SOM Analyst at a pharmaceutical distributor (Emery Source-style middleware)
 - **Today's pain:** every controlled-substance order from a pharmacy needs manual checks — is the pharmacy real? Is its license valid? Is the price within contract? Is the volume reasonable?
 - **What we automated:** all four checks, in a single 4-second pipeline, with one genuine live API call to the NPI Registry for credibility
-- **Demo data:** 16 pharmacies across NC + CA — **12 of 16 backed by real NPI Registry records** (status verified live via cms.hhs.gov), 4 synthetic for state-board edge cases (suspended/expired/inactive — those portals aren't programmatically queryable). 5 manufacturers (Pfizer, J&J, Biogen, Mylan, Teva), 14 NDCs on contract.
+- **Demo data:** 20 pharmacies across NC + CA — **16 of 20 backed by real NPI Registry records** (status verified live via cms.hhs.gov), 4 synthetic for state-board edge cases (suspended/expired/inactive — those portals aren't programmatically queryable). 5 manufacturers (Pfizer, J&J, Biogen, Mylan, Teva), 14 NDCs on contract.
 - **Source of the spec:** Rajesh Jaluka's call (28 Apr 2026), captured in `docs/cto_call_transcript_3_timestamps.txt`
 
 ---
@@ -30,7 +30,7 @@ Tell the customer:
 
 Two verticals visible:
 - **Healthcare AP** group: Extract, Dashboard, Exceptions, Vendor Scoring (the original hospital demo)
-- **Drug Distributor** group: SOM Analyst, Manufacturers (the new vertical)
+- **Drug Distributor** group: SOM Analyst, Exceptions, Pharmacy Scoring, Audit Log, Manufacturers (the new vertical)
 
 Say: *"Same shell, same exception inbox, same engineering team — but now we've added a second vertical for a pharmaceutical distributor. The architecture is layered: workflows compose tasks, tasks compose actions. Adding a third vertical is mostly a data exercise."*
 
@@ -79,9 +79,15 @@ The page loads and the workflow auto-starts. 4 cards stack vertically:
    - Evidence table: ordered price vs contract price per NDC
    - **Talk track:** *"Same matching engine we use for hospital invoice/contract pricing — pointed at manufacturer NDCs instead. Pfizer Lipitor $3.78 vs $3.75 contract, well inside the 5% tolerance."*
 
-4. **Volume Outliers** (icon: bar chart)
-   - Resolves to ✓ Verified (no controlled substances in this order)
-   - *"No controlled substances in this order — outlier check N/A."*
+4. **Pattern Outlier** (icon: bar chart) — runs **five** sub-checks in parallel:
+   - **Demographics** — order vs. city catchment baseline
+   - **Population** — vs. 30-day historical regional trend
+   - **Order History** — vs. this pharmacy's own 30-day controlled-unit average
+   - **Controlled Quota** — pharmacy's 30-day quota cap and current usage
+   - **Raw-Material** — for compound drugs, ingredient ratios vs. recipe BOM
+   - Card status = worst sub-check (rank: pass < warn < fail)
+   - For ORD-1001: all five pass — clean order
+   - **Talk track:** *"Rajesh asked for this. Volume alone doesn't tell the story — patterns do. Five orthogonal sub-checks, each pulling its own data source. The card surfaces the worst result, but the analyst can drill into all five reasons. That's the agentic value: not 'flag the outlier' but 'here are five reasons this looks unusual, ranked, with evidence.'"*
 
 Bottom card — **Analyst decision** with **Approve / Hold / Escalate** buttons.
 
@@ -120,32 +126,58 @@ Click **Hold**. Toast confirms.
    - *"Permit NC-PH-009847 is expired (expired 2025-08-15)."*
    - **Talk track:** *"This is a real-world catch. Their license expired in August. They're still placing orders — and importantly, they're trying to order Schedule III Tylenol with Codeine. Without this check, those 300 controlled tablets ship to a pharmacy with no current authority to dispense them."*
 
-3. Price + Outliers run — both pass. The 300-tablet order is well under Charlotte's 3,100/month controlled-substance baseline (~10%), so volume isn't the issue. The license is.
+3. Price runs — passes. **Pattern Outlier** runs the 5 sub-checks: demographics passes, population passes, **order history warns** (3.6× this pharmacy's 30-day average — note that's *the pharmacy's own* baseline, not a population-wide one), controlled quota fails (42% over the 30-day cap), raw-material warns (33% drift). The 300-tablet order isn't a population-level outlier, but it *is* a pattern outlier when you compare against the pharmacy's own history and quota. The license is the headline failure, but the pattern is suspicious too.
 
 Click **Escalate**. Toast: *"Order escalated to compliance manager."*
 
 ---
 
-## Screen 5 — Westside Pharmacy: the boss case — 90 seconds
+## Screen 5 — Westside Pharmacy: blocked at queue (override required) — 90 seconds
 
-**Back to** `/som`. **Click "Run checks"** on **ORD-1004 — Westside Pharmacy**.
+**Back to** `/som`. Notice **Westside Pharmacy** in the queue: row is shaded red, status chip says **Auto-blocked**, action column shows a red **"Override required"** button instead of "Run checks".
 
-This one trips multiple checks. Walk through each:
+**Talk track:** *"Westside has a risk score of 20 out of 100 — Critical. Per Rajesh's spec, the system blocks the order at intake. The analyst can't even run the workflow until they record a justification. This is the audit trail compliance regulators need to see."*
 
-1. **Address Verification** → ✓ pass (declared = geocoded)
-2. **License Verification** → ✗ Failed (suspended permit, no NPI on file)
-3. **Price Deviation** → ✗ Failed (Xanax 0.5mg ordered at $1.42 vs contract $1.20 = +18%, way over the 5% tolerance band)
-4. **Volume Outliers** → ✗ Failed (35,000 controlled units = 3.6× the entire LA monthly baseline from a single pharmacy in a single order)
+**Click:** "Override required" on **ORD-1004 — Westside Pharmacy**.
 
-**Talk track:** *"This is the order that gets you on the front page of the Wall Street Journal. Suspended pharmacy. Schedule IV controlled substance. Price spike. Volume 3.6× LA's entire monthly controlled-substance baseline from a single pharmacy in a single order. The address checks out — they're brazen, not stupid. Manually, an analyst might catch one of these three red flags on a busy day. Probably not all three. The system catches all three in under 4 seconds."*
+The override modal opens. Show the context strip — pharmacy name, order ID, score 20/100, Critical rating. Show the form:
+- **Justification** (required, min 20 chars)
+- **Approver name** (required)
+- **Role** dropdown (Compliance Manager / Head of Procurement / Pharmacy Director / Other)
 
-Bottom row: only **Hold** and **Escalate** are enabled. **Approve** is disabled.
+Type a justification: *"Pharmacy is on a remediation plan with the state board. NDC-specific volume verified by compliance team. Approved for this order only with 14-day re-evaluation."*
 
-Click **Escalate**.
+Approver: *"Anita Kowalski"*. Role: *"Head of Procurement"*.
+
+Click **Override + Release**. Toast confirms.
+
+The queue row flips to **"Released after override · View AUD-004 →"**.
 
 ---
 
-## Screen 6 — Manufacturers — 30 seconds
+## Screen 6 — Audit Log — 30 seconds
+
+**Click:** "Audit Log" in sidebar.
+
+Header: *"Override Audit Log."* Summary strip: total overrides, released at Critical, unique pharmacies, unique approvers.
+
+Scroll to **AUD-004** at the top. Point to it: *"Every override the analyst made in this session lives here. Score-at-override, full justification, approver name, role, timestamp. This is what the analyst hands to the regulator when they ask 'why did you ship to this pharmacy?'"*
+
+**Talk track:** *"In production this persists to the database. In the demo it's module-level memory — refresh resets to seed. That's a 1-day fix, not an architectural one."*
+
+---
+
+## Screen 7 — Pharmacy Scoring — 30 seconds
+
+**Click:** "Pharmacy Scoring" in sidebar.
+
+20 pharmacies, sortable, expandable rows. Show how the score breaks down: 40% license + 20% address + 15% price + 15% Pattern (15%) + 10% identity. Westside is 20/100 (Critical) — that's why it was auto-blocked. Gurleys is 100/100 (Low Risk). Tarheel is 35/100 (High Risk) because of the expired license.
+
+**Talk track:** *"This is the source-of-truth that drives the queue's blocking logic. A pharmacy doesn't have to be in the order queue to have a score — every pharmacy you've ever shipped to has a rolling risk score derived from past orders, license status, and address checks."*
+
+---
+
+## Screen 8 — Manufacturers — 30 seconds
 
 **Click:** "Manufacturers" in sidebar.
 
@@ -155,9 +187,9 @@ Point to the controlled-substance chips (Tylenol w/ Codeine, Xanax, Concerta, Ly
 
 ---
 
-## Screen 7 — Unified Inbox — 45 seconds
+## Screen 9 — Unified Inbox — 45 seconds
 
-**Click:** "Exceptions" in sidebar (under Healthcare AP, but it's shared).
+**Click:** "Exceptions" in sidebar (under Drug Distributor, or under Healthcare AP — both routes feed the same data model).
 
 Scroll to the bottom. Point to the **SOM-001 through SOM-004** entries: *"SOM exceptions land in the same exception inbox as hospital exceptions. One queue, one set of analyst tools, two verticals' worth of catches. Address mismatch, license invalid, price deviation, volume outlier — distinct types, same workflow."*
 
@@ -172,7 +204,7 @@ Scroll to the bottom. Point to the **SOM-001 through SOM-004** entries: *"SOM ex
 | Address Verification | ≤1 km declared/geocoded | 1–10 km | >10 km or no DB hit | Pharmacy Address DB (mock) + Google Maps (mock) |
 | License Verification | Permit active + NPI confirmed | Permit active, NPI mismatch | Permit expired/suspended/inactive/not-found | State Board (mock) + **NPI Registry (live)** |
 | Price Deviation | All lines within tolerance | At least one NDC has no contract | Any line over tolerance | Manufacturer contract pricing |
-| Volume Outliers | ≤25% of monthly catchment baseline | 25% – 3× baseline | >3× baseline | City demographics (synthetic) |
+| Pattern Outlier | All 5 sub-checks pass | At least one warns | Any sub-check fails | Demographics + history + quotas + raw-material BOM (synthetic) |
 
 ---
 
@@ -197,7 +229,11 @@ Scroll to the bottom. Point to the **SOM-001 through SOM-004** entries: *"SOM ex
 
 **"Does this work for non-controlled orders too?"** — Today the workflow runs on every order; outlier check is a no-op for non-controlled. Easy to short-circuit if desired.
 
-**"What about Phase 4+ outliers refinement?"** — Current outlier task uses static city demographics. Production version would use the distributor's actual prescription-fulfilment history per pharmacy as the baseline.
+**"What about Phase 4+ outliers refinement?"** — Pattern Outlier already runs five sub-checks (demographics, population trend, pharmacy order history, controlled-substance quota, raw-material BOM). Production version would replace the synthetic baselines with the distributor's actual prescription-fulfilment history per pharmacy.
+
+**"Where's the audit trail for the override?"** — Audit Log tab in the sidebar. Every override entry has the score-at-override, full justification, approver name, role, timestamp. In demo it's module-level memory; production persists to DB. That's a 1-day fix, not architectural.
+
+**"Does the analyst have to run checks on a blocked order before overriding?"** — No. Per Rajesh's spec, the system blocks at intake based on the pharmacy's risk score. The override modal captures the justification regardless of whether checks have run — because the analyst is overriding the *system block*, not a specific check failure. If they want detailed evidence first, they can navigate manually to the runner; but the modal flow is designed for fast triage with full audit capture.
 
 ---
 

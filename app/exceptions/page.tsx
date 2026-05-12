@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { X, ChevronDown, Check, ArrowUpDown } from "lucide-react";
 import {
-  exceptions,
+  allExceptions as exceptions,
   duplicatePairs,
   formatCurrency,
   formatDate,
@@ -479,7 +479,7 @@ export default function ExceptionsPage() {
               Exceptions
             </h1>
             <p className="text-xs text-[#4b5563] mt-1">
-              10 exceptions · 3 duplicate pairs · Q1 2026
+              {exceptions.length} exceptions · {duplicatePairs.length} duplicate pairs · Q1 2026
             </p>
           </div>
           <div className="flex gap-2">
@@ -524,7 +524,7 @@ export default function ExceptionsPage() {
           className={viewMode === "list" ? activeTabClass : inactiveTabClass}
           onClick={() => setViewMode("list")}
         >
-          Exceptions (10)
+          Exceptions ({exceptions.filter(e => !e.type.startsWith("som_")).length})
         </button>
         <button
           className={
@@ -532,7 +532,7 @@ export default function ExceptionsPage() {
           }
           onClick={() => setViewMode("duplicates")}
         >
-          Duplicates (3)
+          Duplicates ({duplicatePairs.length})
         </button>
       </div>
 

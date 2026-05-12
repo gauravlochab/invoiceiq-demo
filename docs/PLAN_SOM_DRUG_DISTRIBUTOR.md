@@ -350,3 +350,47 @@ Rajesh's antigravity sketch had **CrewAI / LangChain + MCP + workflow designer**
 ---
 
 *End of plan. Ready for Rajesh's review. Reply on the PR or ping with feedback.*
+
+---
+
+## 11. Phase 6 — Post-meeting refinements (source: `pharmacy_usecase_transcript.txt`)
+
+Captured after Rajesh's pharmacy use-case walkthrough. Five sub-tasks, all complete.
+
+### 6.1 — Pattern Outlier (rename + 5 sub-checks)
+Renamed "Volume Outlier" → "Pattern Outlier" per Rajesh t=03:47 ("not just volume, it's the pattern"). The single outlier card now runs **five** sub-checks and surfaces them in the workflow runner UI:
+
+1. **City demographics** — order vs. city catchment baseline (carry-over from Phase 4)
+2. **Population growth** — order vs. 30-day historical trend for that pharmacy
+3. **Order history** — current order vs. pharmacy's own 30-day average controlled-unit volume
+4. **Controlled quota** — pharmacy's 30-day controlled-substance quota cap and current usage
+5. **Raw-material correlation** — for compound-drug orders, ingredient ratios vs. recipe BOM
+
+The overall card status is the worst sub-check (rank: pass < warn < fail). Implementation: `lib/som/tasks/detectPatternOutlier.ts` replaces the old `detectOutliers.ts`. Data: `orderHistory.ts`, `regionalAffinity.ts`, `controlledQuotas.ts`, `rawMaterialBOM.ts`.
+
+### 6.2 — Pharmacy-score-driven order blocking + override + audit log
+Per Rajesh t=12:33 ("system blocks the order, then a human justification gets recorded for audit purpose"). Implements his biggest functional ask:
+
+- **Auto-blocking**: orders from pharmacies with risk score < 60 (High/Critical) are blocked at queue intake.
+- **Override modal** (`components/OverrideModal.tsx`): captures justification (min 20 chars), approver name, role (Compliance Manager / Head of Procurement / Pharmacy Director / Other).
+- **Audit log** (`lib/som/data/auditLog.ts`, `app/som/audit-log/page.tsx`): every override appended with timestamp, score-at-override, full justification. 3 seed entries + new entries from override flow.
+- **Demo limitation**: audit log is module-level memory; refreshes reset to seed. Production would persist to DB.
+
+### 6.3 — 20 pharmacies (4 added via NPI lookup)
+Expanded from 16 to 20 pharmacies. PH-017 through PH-020 added via research-agent NPI lookup. 16 of 20 backed by real NPI Registry records; 4 are synthetic for state-board edge cases (suspended/expired/inactive — those state-board portals aren't programmatically queryable).
+
+### 6.4 — Cross-screen number consistency audit
+Verified every number on every screen derives from a single source. Removed all hardcoded fudges (`+18` historical orders, "247 orders" placeholder). All metric cards now derive from `sampleOrders.length` and `exceptions.filter(e => e.type.startsWith("som_"))`.
+
+### 6.5 — Plan + demo guide refresh
+This section, plus updates to `DEMO_GUIDE_SOM.md` covering the Pattern Outlier 5-sub-check walkthrough, the blocked-order override + audit log flow, and the agentic-vs-traditional-analytics talk track per Rajesh t=06:01.
+
+---
+
+## 12. Talk track addendum — agentic vs. traditional analytics (Rajesh t=06:01)
+
+When demoing the Pattern Outlier card with all 5 sub-checks visible, lead with this framing:
+
+> "Traditional rule-based analytics would have one threshold per metric. An agentic system runs all five sub-checks in parallel, and each sub-check is itself a small reasoning step that can pull whatever data source it needs — order history, demographic baselines, controlled-substance quotas, BOM recipes for compound drugs. The output isn't a yes/no; it's a structured rationale that the analyst can read and override on. That's the agentic value: not just 'flag the outlier' but 'here are five orthogonal reasons this looks unusual, ranked, with evidence.'"
+
+This pairs with the override flow: the analyst sees structured evidence and provides structured justification. Both ends are human-readable, audit-ready.

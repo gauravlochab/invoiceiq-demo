@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import {
   exceptions,
+  allExceptions,
   flaggedByType,
   spendTrend,
   formatCurrency,
@@ -38,6 +39,11 @@ const topExceptions = exceptions
   .filter((e) => !e.type.startsWith("som_"))
   .sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
   .slice(0, 6);
+
+const apExceptions = allExceptions.filter((e) => !e.type.startsWith("som_"));
+const openCount = apExceptions.filter(
+  (e) => e.status === "open" || e.status === "under_review" || e.status === "escalated"
+).length;
 
 const totalFlagged = flaggedByType.reduce((s, d) => s + d.value, 0);
 
@@ -203,16 +209,16 @@ export default function DashboardPage() {
             <div className="card card-interactive px-5 py-4">
               <p className="section-label">Exceptions Found</p>
               <p className={`${metricValue} text-[#111827]`}>
-                <NumberTicker value={10} />
+                <NumberTicker value={apExceptions.length} />
               </p>
-              <p className="text-xs text-[#9ca3af] mt-1.5">7 open</p>
+              <p className="text-xs text-[#9ca3af] mt-1.5">{openCount} open</p>
             </div>
 
             {/* 3 — Amount at Risk */}
             <div className="card card-interactive px-5 py-4">
               <p className="section-label">Amount at Risk</p>
               <p className={`${metricValue} text-[#DC2626]`}>
-                <NumberTicker value={396810} prefix="$" delay={0.2} />
+                <NumberTicker value={396390} prefix="$" delay={0.2} />
               </p>
               <p className="text-xs text-[#9ca3af] mt-1.5">22% of period spend</p>
             </div>
@@ -238,32 +244,40 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Invoice Status Counts */}
+      {/* Agent Status Strip */}
       {loading ? (
         <div className="px-8 pb-2 mt-[-8px]">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-md px-3 py-2">
-                <div className="w-2 h-2 rounded-full bg-[#e5e7eb] animate-pulse" />
-                <div className="h-3 bg-[#e5e7eb] rounded animate-pulse" style={{ width: `${50 + i * 12}px` }} />
+              <div key={i} className="flex-1 flex items-center gap-2.5 bg-white border border-[#e5e7eb] rounded-md px-3 py-2.5 min-w-0">
+                <div className="w-2 h-2 rounded-full bg-[#e5e7eb] animate-pulse flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="h-3 bg-[#e5e7eb] rounded animate-pulse mb-1.5" style={{ width: `${50 + i * 12}px` }} />
+                  <div className="h-2.5 bg-[#e5e7eb] rounded animate-pulse" style={{ width: `${40 + i * 8}px` }} />
+                </div>
               </div>
             ))}
           </div>
         </div>
       ) : (
         <div className="px-8 pb-2 mt-[-8px]">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             {[
-              { label: "Pending Review", count: 5, color: "#B45309" },
-              { label: "Waiting on Manager", count: 1, color: "#7c3aed" },
-              { label: "Waiting Correction", count: 1, color: "#0065cb" },
-              { label: "Approved", count: 2, color: "#15803D" },
-              { label: "Resolved", count: 1, color: "#4b5563" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-md px-3 py-2">
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="text-[11px] text-[#4b5563]">{item.label}</span>
-                <span className="text-[11px] font-semibold text-[#111827]">{item.count}</span>
+              { name: "Invoice Agent",    color: "#0065cb", pulse: false, stat: "1,847 processed", last: "0 errors" },
+              { name: "Validation Agent", color: "#7c3aed", pulse: false, stat: "188 exceptions",  last: "6 escalated" },
+              { name: "Compliance Agent", color: "#b45309", pulse: true,  stat: "12 alerts",        last: "reviewing Cardinal" },
+              { name: "Recovery Agent",   color: "#15803d", pulse: true,  stat: "14 in queue",    last: "$470K target" },
+              { name: "Insight Agent",    color: "#0891b2", pulse: false, stat: "9 vendors scored", last: "4 high-risk" },
+            ].map((agent) => (
+              <div key={agent.name} className="flex-1 flex items-center gap-2.5 bg-white border border-[#e5e7eb] rounded-md px-3 py-2.5 min-w-0">
+                <span
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${agent.pulse ? "animate-pulse" : ""}`}
+                  style={{ backgroundColor: agent.pulse ? "#f59e0b" : "#10b981" }}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-semibold text-[#111827] truncate">{agent.name}</div>
+                  <div className="text-[10px] text-[#9ca3af] truncate">{agent.stat} · {agent.last}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -443,7 +457,7 @@ export default function DashboardPage() {
               href="/exceptions"
               className="flex items-center gap-1 text-xs text-[#0065cb] font-medium no-underline hover:underline transition-colors"
             >
-              View all 10 <ArrowUpRight size={12} />
+              View all {allExceptions.length} <ArrowUpRight size={12} />
             </Link>
           </div>
 

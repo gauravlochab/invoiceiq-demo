@@ -14,10 +14,68 @@ import {
   exceptionContracts,
   exceptionDuplicates,
   duplicatePairs,
+  addToRecoveryQueue,
 } from "@/lib/data";
 import type { Exception, InvoiceLineItem } from "@/lib/data";
 import { Check, X, ChevronDown } from "lucide-react";
 import { useToast } from "@/components/Toast";
+
+// ─── Agent timelines per exception ───────────────────────────────────────────
+
+const AGENT_TIMELINES: Record<string, Array<{agent: string; color: string; time: string; msg: string}>> = {
+  "EX-001": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "08:14", msg: "Extracted BME-2026-Q1-047 — 23 line items. Contract CTR-2024-BIO-009 detected." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "08:15", msg: "Three-way match passed on all 23 items. No price or qty discrepancies." },
+    { agent: "Compliance Agent", color: "#b45309", time: "08:16", msg: "Annual cap check: $623,890 vs $500,000 cap. Overage $123,890 — BREACHED." },
+    { agent: "Insight Agent",    color: "#0891b2", time: "08:17", msg: "BioMed score updated: 30/100 High Risk. Recovery % 80%." },
+  ],
+  "EX-002": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "09:21", msg: "Extracted MS-2026-0923 — duplicate fingerprint 99.6% match vs MS-2026-0847." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "09:21", msg: "Duplicate confirmed. Amount delta $200 (0.42%). Same PO, same line items." },
+    { agent: "Compliance Agent", color: "#b45309", time: "09:22", msg: "No contract implications. Flagged for immediate block." },
+    { agent: "Recovery Agent",   color: "#15803d", time: "09:22", msg: "MedSupply Corp notified. Credit memo requested for $47,320." },
+  ],
+  "EX-003": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "10:04", msg: "Extracted MTS-INV-00291 — no PO reference. Vendor not in approved master (847 checked)." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "10:05", msg: "Three-way match failed — no PO. Bank account differs from known vendor records." },
+    { agent: "Compliance Agent", color: "#b45309", time: "10:05", msg: "Services billed outside registered category. Non-standard Net 15 terms flagged." },
+    { agent: "Insight Agent",    color: "#0891b2", time: "10:06", msg: "MedTech score: 5/100 Critical. 0% recovery rate. Escalation recommended." },
+  ],
+  "EX-004": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "08:30", msg: "Extracted CH-Q1-2026-REBATE. Contract CTR-2025-CAR-003 referenced." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "08:31", msg: "47 invoices reviewed. Volume threshold met. Rebate applicable." },
+    { agent: "Compliance Agent", color: "#b45309", time: "08:32", msg: "Rebate shortfall $26,554. Volume discount gap $62,876. Total $89,430 outstanding." },
+    { agent: "Recovery Agent",   color: "#15803d", time: "08:33", msg: "Cardinal Health rebates team contacted. 72% historical recovery rate." },
+  ],
+  "EX-005": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "09:10", msg: "Extracted CH-2026-0341 — 2,340 units at $85/unit." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "09:11", msg: "PO match passed. Unit price discrepancy vs contract schedule detected." },
+    { agent: "Compliance Agent", color: "#b45309", time: "09:12", msg: "Tier 2 at >1,000 units = $72/unit. Billed Tier 1 $85. 3 months × $17,420 = $52,260 overcharge." },
+    { agent: "Recovery Agent",   color: "#15803d", time: "09:13", msg: "Tier pricing dispute initiated. Draft credit memo sent." },
+  ],
+  "EX-006": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "10:32", msg: "Extracted STC-2026-19847 — 6 line items. Flags: price_mismatch (critical), qty_mismatch (warning)." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "10:33", msg: "Three-way match: STE-4821-A PO $2.10 vs Invoice $2.50 (+19%). STE-9940-B qty -20 units." },
+    { agent: "Compliance Agent", color: "#b45309", time: "10:33", msg: "Contract CTR-2025-STE-007 — within annual cap. No rebate clause. Passed." },
+  ],
+  "EX-007": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "11:05", msg: "Extracted MDL-2026-44821 — qty variance on exam gloves." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "11:06", msg: "PO 300 units, PS 300 delivered, Invoice billed 365. Overbilled $14,200." },
+    { agent: "Compliance Agent", color: "#b45309", time: "11:07", msg: "No contract cap issues. Qty dispute flagged for recovery." },
+  ],
+  "EX-010": [
+    { agent: "Invoice Agent",    color: "#0065cb", time: "09:44", msg: "Extracted OM-2026-38920 — UOM mismatch detected on IV tubing." },
+    { agent: "Validation Agent", color: "#7c3aed", time: "09:45", msg: "PO ordered 'cases', invoice billed 'cartons' at higher per-unit rate. Variance $3,890." },
+    { agent: "Compliance Agent", color: "#b45309", time: "09:45", msg: "No contract cap breach. UOM discrepancy only. Credit memo recommended." },
+    { agent: "Recovery Agent",   color: "#15803d", time: "09:46", msg: "Owens & Minor issued credit memo. REC-003 closed — fully recovered." },
+  ],
+};
+
+const DEFAULT_AGENT_TIMELINE = [
+  { agent: "Invoice Agent",    color: "#0065cb", time: "08:00", msg: "Invoice extracted and flagged for review." },
+  { agent: "Validation Agent", color: "#7c3aed", time: "08:01", msg: "Exception validated and confirmed." },
+  { agent: "Insight Agent",    color: "#0891b2", time: "08:02", msg: "Vendor risk profile updated." },
+];
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -439,6 +497,7 @@ function Ex006Page() {
   const [modalNote, setModalNote] = useState("");
   const [selectedManager, setSelectedManager] = useState("");
   const [actionTaken, setActionTaken] = useState<string | null>(null);
+  const [historyOpen006, setHistoryOpen006] = useState(false);
 
   // Invoice status tracking
   const [invoiceStatus, setInvoiceStatus] = useState<"pending_review" | "waiting_manager" | "waiting_correction" | "approved_override">("pending_review");
@@ -915,14 +974,24 @@ function Ex006Page() {
           <p className="section-label mt-5 mb-2.5">Actions</p>
 
           {actionTaken ? (
-            <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-              actionTaken === "correction" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-              actionTaken === "override" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-              "bg-purple-50 text-purple-700 border border-purple-200"
-            }`}>
-              {actionTaken === "correction" ? "Recovery Initiated — Email Sent" :
-               actionTaken === "override" ? "Approved with Override" :
-               "Escalated to Manager"}
+            <div className="flex flex-col gap-2">
+              <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
+                actionTaken === "correction" ? "bg-blue-50 text-blue-700 border border-blue-200" :
+                actionTaken === "override" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                "bg-purple-50 text-purple-700 border border-purple-200"
+              }`}>
+                {actionTaken === "correction" ? "Recovery Initiated — Email Sent" :
+                 actionTaken === "override" ? "Approved with Override" :
+                 "Escalated to Manager"}
+              </div>
+              {actionTaken === "correction" && (
+                <Link
+                  href="/recovery"
+                  className="block text-center text-[11px] text-[#0065cb] no-underline hover:underline"
+                >
+                  View in Recovery Queue →
+                </Link>
+              )}
             </div>
           ) : (
             <>
@@ -968,6 +1037,42 @@ function Ex006Page() {
               </button>
             </>
           )}
+
+          {/* Agent History */}
+          <div className="mt-4 pt-3 border-t border-[#f0f2f5]">
+            <button
+              onClick={() => setHistoryOpen006(!historyOpen006)}
+              className="flex items-center gap-1.5 w-full text-left bg-transparent border-none cursor-pointer p-0"
+            >
+              <ChevronDown className={`w-3 h-3 text-[#9ca3af] flex-shrink-0 transition-transform duration-200 ${historyOpen006 ? "" : "-rotate-90"}`} />
+              <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[#4b5563]">Agent History</span>
+            </button>
+            {historyOpen006 && (
+              <div className="mt-2 space-y-2">
+                {(() => {
+                  const base = AGENT_TIMELINES["EX-006"] ?? DEFAULT_AGENT_TIMELINE;
+                  const timeline = (actionTaken === "correction")
+                    ? [...base, { agent: "Recovery Agent", color: "#15803d", time: "Now", msg: "Recovery initiated. Email sent to ap@steris.com. Awaiting vendor response." }]
+                    : base;
+                  return timeline.map((e, i) => (
+                    <div key={i} className="flex gap-2 text-[11px]">
+                      <div className="w-0.5 rounded-full flex-shrink-0 self-stretch" style={{ backgroundColor: e.color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[9px] uppercase tracking-wide font-semibold px-1 py-0.5 rounded"
+                            style={{ backgroundColor: e.color + "22", color: e.color }}>
+                            {e.agent}
+                          </span>
+                          <span className="text-[9px] text-[#9ca3af]">{e.time}</span>
+                        </div>
+                        <p className="text-[#4b5563] m-0 leading-relaxed">{e.msg}</p>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1004,7 +1109,22 @@ function Ex006Page() {
                 Cancel
               </button>
               <button
-                onClick={() => { setActiveModal(null); setActionTaken("correction"); setInvoiceStatus("waiting_correction"); showToast("Recovery request sent to ap@steris.com", "success"); }}
+                onClick={() => {
+                  const rec = addToRecoveryQueue({
+                    exceptionId: "EX-006",
+                    vendor: "Steris Corporation",
+                    invoiceNumber: "STC-2026-19847",
+                    targetAmount: 4600,
+                    status: "pending",
+                    initiatedAt: new Date().toISOString(),
+                    emailSentTo: "ap@steris.com",
+                    analystNote: "Recovery initiated from EX-006. Price mismatch on STE-4821-A: PO $2.10/unit vs Invoice $2.50/unit. $4,600 at risk.",
+                  });
+                  setActiveModal(null);
+                  setActionTaken("correction");
+                  setInvoiceStatus("waiting_correction");
+                  showToast(`Recovery request sent · ${rec.id} created → Recovery Queue`, "success");
+                }}
                 className="px-4 py-2 text-xs font-medium rounded-md bg-[#0065cb] text-white border-none hover:bg-[#0057ad] transition-colors cursor-pointer"
               >
                 Send Recovery Request
@@ -1028,7 +1148,7 @@ function Ex006Page() {
             <div className="px-5 py-4">
               <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2.5 mb-4">
                 <p className="text-xs text-amber-800 m-0 font-medium">This will approve the invoice despite identified discrepancies.</p>
-                <p className="text-[11px] text-amber-700 m-0 mt-1">Invoice #STC-2026-19847 · Steris Corporation · $28,750.00</p>
+                <p className="text-[11px] text-amber-700 m-0 mt-1">Invoice #STC-2026-19847 · Steris Corporation · $27,750.00</p>
               </div>
 
               <label className="block text-xs font-medium text-[#4b5563] mb-1.5">Override reason (required)</label>
@@ -1124,6 +1244,7 @@ function ActionPanel({
   setActionTaken: (v: string) => void;
 }) {
   const { showToast } = useToast();
+  const [historyOpen, setHistoryOpen] = useState(false);
   const detailRows = [
     { label: "Assigned to", value: ex.assignee || "Unassigned" },
     { label: "Detected", value: new Date(ex.detectedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) },
@@ -1149,23 +1270,46 @@ function ActionPanel({
       <p className="section-label mt-5 mb-2.5">Actions</p>
 
       {actionTaken ? (
-        <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-          actionTaken === "blocked" ? "bg-red-50 text-red-700 border border-red-200" :
-          actionTaken === "recovery" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-          actionTaken === "escalated" ? "bg-purple-50 text-purple-700 border border-purple-200" :
-          "bg-gray-50 text-gray-500 border border-gray-200"
-        }`}>
-          {actionTaken === "blocked" ? "Payment Blocked" :
-           actionTaken === "recovery" ? "Recovery Initiated" :
-           actionTaken === "escalated" ? "Escalated to Manager" :
-           "Dismissed"}
+        <div className="flex flex-col gap-2">
+          <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
+            actionTaken === "blocked" ? "bg-red-50 text-red-700 border border-red-200" :
+            actionTaken === "recovery" ? "bg-blue-50 text-blue-700 border border-blue-200" :
+            actionTaken === "escalated" ? "bg-purple-50 text-purple-700 border border-purple-200" :
+            "bg-gray-50 text-gray-500 border border-gray-200"
+          }`}>
+            {actionTaken === "blocked" ? "Payment Blocked" :
+             actionTaken === "recovery" ? "Recovery Initiated" :
+             actionTaken === "escalated" ? "Escalated to Manager" :
+             "Dismissed"}
+          </div>
+          {actionTaken === "recovery" && (
+            <Link
+              href="/recovery"
+              className="block text-center text-[11px] text-[#0065cb] no-underline hover:underline"
+            >
+              View in Recovery Queue →
+            </Link>
+          )}
         </div>
       ) : (
         <>
           <ActionButton variant="primary-red" onClick={() => { setActionTaken("blocked"); showToast(`Payment blocked for ${ex.invoiceNumber}`, "warning"); }}>
             Block Payment
           </ActionButton>
-          <ActionButton variant="outline-red" onClick={() => { setActionTaken("recovery"); showToast(`Recovery initiated for ${formatCurrency(ex.flaggedAmount)}`, "success"); }}>
+          <ActionButton variant="outline-red" onClick={() => {
+            const rec = addToRecoveryQueue({
+              exceptionId: ex.id,
+              vendor: ex.vendor,
+              invoiceNumber: ex.invoiceNumber,
+              targetAmount: ex.flaggedAmount,
+              status: "pending",
+              initiatedAt: new Date().toISOString(),
+              emailSentTo: `ap@${ex.vendor.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12)}.com`,
+              analystNote: `Recovery initiated from exception ${ex.id}. Amount at risk: ${formatCurrency(ex.flaggedAmount)}.`,
+            });
+            setActionTaken("recovery");
+            showToast(`Recovery initiated · ${rec.id} created → Recovery Queue`, "success");
+          }}>
             Initiate Recovery
           </ActionButton>
           <ActionButton variant="outline-gray" onClick={() => { setActionTaken("escalated"); showToast(`${ex.id} escalated to manager`, "info"); }}>
@@ -1176,6 +1320,44 @@ function ActionPanel({
           </ActionButton>
         </>
       )}
+
+      {/* Agent History */}
+      <div className="mt-4 pt-3 border-t border-[#f0f2f5]">
+        <button
+          onClick={() => setHistoryOpen(!historyOpen)}
+          className="flex items-center gap-1.5 w-full text-left bg-transparent border-none cursor-pointer p-0 mb-0"
+        >
+          <ChevronDown className={`w-3 h-3 text-[#9ca3af] flex-shrink-0 transition-transform duration-200 ${historyOpen ? "" : "-rotate-90"}`} />
+          <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[#4b5563]">Agent History</span>
+        </button>
+        {historyOpen && (
+          <div className="mt-2 space-y-2">
+            {(() => {
+              const base = AGENT_TIMELINES[ex.id] ?? DEFAULT_AGENT_TIMELINE;
+              const timeline = (actionTaken === "correction" || actionTaken === "recovery")
+                ? [...base, { agent: "Recovery Agent", color: "#15803d", time: "Now", msg: "Recovery initiated. Email sent to vendor. Awaiting response." }]
+                : base;
+              return timeline.map((e, i) => (
+                <div key={i} className="flex gap-2 text-[11px]">
+                  <div className="w-0.5 rounded-full flex-shrink-0 self-stretch" style={{ backgroundColor: e.color }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span
+                        className="text-[9px] uppercase tracking-wide font-semibold px-1 py-0.5 rounded"
+                        style={{ backgroundColor: e.color + "22", color: e.color }}
+                      >
+                        {e.agent}
+                      </span>
+                      <span className="text-[9px] text-[#9ca3af]">{e.time}</span>
+                    </div>
+                    <p className="text-[#4b5563] m-0 leading-relaxed">{e.msg}</p>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1591,16 +1773,8 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
                   <span className="text-[#111827] font-medium tabular-nums">$312,400</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Threshold</span>
-                  <span className="text-[#111827] font-medium tabular-nums">- $200,000</span>
-                </div>
-                <div className="flex justify-between text-xs border-t border-[#e5e7eb] pt-2">
-                  <span className="text-[#4b5563]">Excess spend</span>
-                  <span className="text-[#111827] font-medium tabular-nums">= $112,400</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Rebate (8.5% of excess)</span>
-                  <span className="text-amber-700 font-medium tabular-nums">$9,554</span>
+                  <span className="text-[#4b5563]">Quarterly rebate (8.5% × $312,400)</span>
+                  <span className="text-amber-700 font-medium tabular-nums">$26,554</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-[#4b5563]">Volume discounts (47 line items)</span>
@@ -1647,7 +1821,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
           <p className="section-label mb-1.5">AI Recommendation</p>
           <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
             {isEX004
-              ? "Contact Cardinal Health to claim the outstanding rebate credit of $9,554 plus $62,876 in volume discount adjustments. Reference contract #CTR-2025-CAR-003 and Q1 quarterly spend threshold of $200K. No credit memo has been received."
+              ? "Contact Cardinal Health to claim the outstanding rebate credit of $26,554 plus $62,876 in volume discount adjustments (total $89,430). Reference contract #CTR-2025-CAR-003. No credit memo has been received."
               : "Contact Vizient Inc. to claim $1,030 rebate on Q1 excess spend and $5,820 in missed early-payment discounts across 12 invoices. Reference contract #CTR-2025-VZT-002."}
           </p>
         </div>
@@ -1747,16 +1921,20 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
           <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-[#4b5563]">March overcharge</span>
+                <span className="text-[#4b5563]">Jan 2026 overcharge (2,340 units)</span>
                 <span className="text-red-600 font-medium tabular-nums">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#4b5563]">Same error in 3 prior months</span>
-                <span className="text-red-600 font-medium tabular-nums">$35,260</span>
+                <span className="text-[#4b5563]">Feb 2026 overcharge (2,340 units)</span>
+                <span className="text-red-600 font-medium tabular-nums">$17,420</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-[#4b5563]">Mar 2026 overcharge (2,340 units)</span>
+                <span className="text-red-600 font-medium tabular-nums">$17,420</span>
               </div>
               <div className="flex justify-between text-xs border-t border-[#e5e7eb] pt-2">
-                <span className="text-[#111827] font-medium">Total overcharge (4 months)</span>
-                <span className="text-red-600 font-bold tabular-nums text-sm">$52,680</span>
+                <span className="text-[#111827] font-medium">Total overcharge (3 months)</span>
+                <span className="text-red-600 font-bold tabular-nums text-sm">$52,260</span>
               </div>
             </div>
           </div>
@@ -1766,7 +1944,7 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
         <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
           <p className="section-label mb-1.5">AI Recommendation</p>
           <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
-            Request pricing correction from Cardinal Health. Contract #CTR-2025-CAR-003 specifies tiered pricing but all 4 monthly invoices applied the Tier 1 rate ($85/unit) to the entire volume instead of applying Tier 2 ($72/unit) above 1,000 units. Total retroactive adjustment: $52,680.
+            Request pricing correction from Cardinal Health. Contract #CTR-2025-CAR-003 specifies tiered pricing: $85/unit up to 1,000 units, $72/unit above 1,000 units. Jan–Mar 2026: 2,340 units/month all billed at Tier 1. Monthly overcharge: $17,420. Total retroactive adjustment: $52,260 (3 months).
           </p>
         </div>
       </div>
@@ -2018,7 +2196,7 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
           <EvidenceField label="Check that flagged" value="Volume Outliers" />
           <EvidenceField label="Pharmacy on file" value={ex.vendor} />
           <EvidenceField label="Outcome" value="Controlled-substance volume anomalous for catchment population" />
-          <EvidenceField label="Data source" value="City demographics dataset" />
+          <EvidenceField label="Data source" value="DEA ARCOS Regional Baseline" />
         </>
       );
     }

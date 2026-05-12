@@ -8,12 +8,18 @@ import { AnimatedBeam } from "@/components/magicui/animated-beam";
 import { FileText, Bot, BarChart3, AlertTriangle, Upload as UploadIcon, X, Eye, ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
-// Maps each demo document to its corresponding exception ID
+// Maps each invoice to its corresponding exception ID for deep-linking
 const DOC_TO_EXCEPTION: Record<string, string> = {
-  "invoice-STC-2026-19847": "EX-006",   // Steris -- price mismatch
-  "invoice-MS-2026-0923":   "EX-002",   // MedSupply -- duplicate
-  "invoice-MS-2026-0847":   "EX-002",   // MedSupply -- duplicate (original)
-  "invoice-MTS-INV-00291":  "EX-003",   // MedTech -- no PO / suspicious
+  "invoice-STC-2026-19847":   "EX-006",
+  "invoice-MS-2026-0923":     "EX-002",
+  "invoice-MS-2026-0847":     "EX-002",
+  "invoice-MTS-INV-00291":    "EX-003",
+  "invoice-CH-2026-0341":     "EX-005",
+  "invoice-CH-Q1-2026-REBATE":"EX-004",
+  "invoice-BME-2026-Q1-047":  "EX-001",
+  "invoice-MDL-2026-44821":   "EX-007",
+  "invoice-HS-2026-77341":    "EX-008",
+  "invoice-OM-2026-38920":    "EX-010",
 };
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -71,15 +77,26 @@ interface ExtractedData {
 // ── Static data ─────────────────────────────────────────────────────────────
 
 const initialDocuments: Document[] = [
-  { id: "invoice-STC-2026-19847",      label: "Steris Corporation",  sub: "Invoice \u00b7 Feb 28, 2026",       type: "invoice",      badge: "match_exception" },
-  { id: "invoice-MS-2026-0847",         label: "MedSupply Corp",      sub: "Invoice \u00b7 Jan 15, 2026",       type: "invoice",      badge: null },
-  { id: "invoice-MS-2026-0923",         label: "MedSupply Corp",      sub: "Invoice \u00b7 Jan 21, 2026",       type: "invoice",      badge: "duplicate" },
-  { id: "invoice-MTS-INV-00291",        label: "MedTech Solutions",   sub: "Invoice \u00b7 Feb 14, 2026",       type: "invoice",      badge: "suspicious" },
-  { id: "po-NMC-2026-PO-2847",          label: "Northfield Medical",  sub: "Purchase Order",               type: "po",           badge: null },
-  { id: "packingslip-STC-PS-2026-0392", label: "Steris Corporation",  sub: "Packing Slip \u00b7 Feb 25, 2026", type: "packing_slip", badge: null },
+  // \u2500\u2500 Invoices \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  { id: "invoice-STC-2026-19847",      label: "Steris Corporation",       sub: "Invoice \u00b7 Feb 28, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-MS-2026-0847",         label: "MedSupply Corp",           sub: "Invoice \u00b7 Jan 15, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-MS-2026-0923",         label: "MedSupply Corp",           sub: "Invoice \u00b7 Jan 21, 2026",  type: "invoice",      badge: "duplicate" },
+  { id: "invoice-MTS-INV-00291",        label: "MedTech Solutions",        sub: "Invoice \u00b7 Feb 14, 2026",  type: "invoice",      badge: "suspicious" },
+  { id: "invoice-CH-2026-0341",         label: "Cardinal Health",          sub: "Invoice \u00b7 Mar 15, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-CH-2026-0412",         label: "Cardinal Health",          sub: "Invoice \u00b7 Mar 22, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-CH-Q1-2026-REBATE",    label: "Cardinal Health",          sub: "Invoice \u00b7 Mar 31, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-BME-2026-Q1-047",      label: "BioMed Equipment Inc.",    sub: "Invoice \u00b7 Mar 28, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-BME-2026-Q1-031",      label: "BioMed Equipment Inc.",    sub: "Invoice \u00b7 Feb 10, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-MDL-2026-44821",       label: "Medline Industries",       sub: "Invoice \u00b7 Mar 10, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-MDL-2026-44390",       label: "Medline Industries",       sub: "Invoice \u00b7 Feb 18, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-HS-2026-77341",        label: "Henry Schein",             sub: "Invoice \u00b7 Jan 30, 2026",  type: "invoice",      badge: "duplicate" },
+  { id: "invoice-OM-2026-38920",        label: "Owens & Minor",       sub: "Invoice \u00b7 Feb 05, 2026",  type: "invoice",      badge: "match_exception" },
+  // \u2500\u2500 Supporting Documents \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  { id: "po-NMC-2026-PO-2847",          label: "Northfield Medical",       sub: "Purchase Order",               type: "po",           badge: null },
+  { id: "packingslip-STC-PS-2026-0392", label: "Steris Corporation",       sub: "Packing Slip \u00b7 Feb 25, 2026", type: "packing_slip", badge: null },
 ];
 
-// ── Cached extraction results for sample invoices ────────────────────────────
+// ── Cached extraction results ────────────────────────────────────────────────
 
 const CACHED_EXTRACTIONS: Record<string, ExtractedData> = {
   "invoice-STC-2026-19847": {
@@ -90,7 +107,7 @@ const CACHED_EXTRACTIONS: Record<string, ExtractedData> = {
     poReference: "NMC-PO-2026-2847",
     paymentTerms: "Net 30",
     dueDate: "March 30, 2026",
-    totalAmount: 28750.00,
+    totalAmount: 27750.00,
     lineItems: [
       { itemCode: "STE-4821-A", description: "Surgical Draping Kit Pro - Sterile (individually wrapped)", quantity: 500, unit: "ea", unitPrice: 2.50, total: 1250.00 },
       { itemCode: "STE-2200-C", description: "Surgical Isolation Gown AAMI Level 3 XL", quantity: 800, unit: "ea", unitPrice: 8.75, total: 7000.00 },
@@ -601,7 +618,7 @@ export default function ExtractPage() {
             <div className="mb-6">
               <h1 className="text-lg font-semibold text-[#111827]">Extract Invoice</h1>
               <p className="text-sm text-[#4b5563] mt-0.5">
-                Upload your own invoice or select a sample to begin AI-powered extraction.
+                Upload an invoice PDF or select from recent invoices below to begin AI-powered extraction.
               </p>
             </div>
 
@@ -693,7 +710,7 @@ export default function ExtractPage() {
 
             {/* ── Section divider ─────────────────────────────────────────── */}
             <div className="mt-8 mb-5">
-              <div className="section-label">SAMPLE INVOICES &mdash; Try with demo data</div>
+              <div className="section-label">RECENT INVOICES</div>
             </div>
 
             {/* ── Invoice cards grid ──────────────────────────────────────── */}
