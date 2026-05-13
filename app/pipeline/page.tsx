@@ -29,8 +29,8 @@ const AGENTS = [
     shortName: "Invoice",
     role: "Extraction & Triage",
     description: "Reads PDFs, extracts all fields, raises initial flags",
-    color: "#0065cb",
-    bgColor: "#e8f1fc",
+    color: "var(--agent-invoice)",
+    bgColor: "var(--agent-invoice-subtle)",
     Icon: Bot,
     stat: "1,847 processed",
     subStat: "0 errors",
@@ -41,8 +41,8 @@ const AGENTS = [
     shortName: "Validation",
     role: "Three-Way Match",
     description: "Cross-checks invoice vs PO vs packing slip",
-    color: "#7c3aed",
-    bgColor: "#f5f3ff",
+    color: "var(--agent-validation)",
+    bgColor: "var(--agent-validation-subtle)",
     Icon: GitCompare,
     stat: "188 exceptions",
     subStat: "6 escalated",
@@ -53,8 +53,8 @@ const AGENTS = [
     shortName: "Compliance",
     role: "Contract & Rebate Audit",
     description: "Verifies contract caps, rebates, tier pricing",
-    color: "#b45309",
-    bgColor: "#fffbeb",
+    color: "var(--agent-compliance)",
+    bgColor: "var(--agent-compliance-subtle)",
     Icon: ShieldCheck,
     stat: "12 alerts",
     subStat: "3 contracts at risk",
@@ -65,8 +65,8 @@ const AGENTS = [
     shortName: "Recovery",
     role: "Vendor Outreach",
     description: "Initiates recovery, tracks responses, records outcomes",
-    color: "#15803d",
-    bgColor: "#f0fdf4",
+    color: "var(--agent-recovery)",
+    bgColor: "var(--agent-recovery-subtle)",
     Icon: TrendingUp,
     stat: "14 in queue",
     subStat: "$470K target",
@@ -77,8 +77,8 @@ const AGENTS = [
     shortName: "Insight",
     role: "Risk Intelligence",
     description: "Scores vendors, trends, flags escalation paths",
-    color: "#0891b2",
-    bgColor: "#ecfeff",
+    color: "var(--agent-insight)",
+    bgColor: "var(--agent-insight-subtle)",
     Icon: BarChart3,
     stat: "18 vendors scored",
     subStat: "4 high-risk",
@@ -89,30 +89,30 @@ const AGENTS = [
 // ── Seed events ───────────────────────────────────────────────────────────────
 
 const SEED_EVENTS: FeedEvent[] = [
-  { agent: "Insight Agent",    agentColor: "#0891b2", time: "09:51", status: "warn",
+  { agent: "Insight Agent",    agentColor: "var(--agent-insight)", time: "09:51", status: "warn",
     message: "Vendor risk scores recalculated. MedTech Solutions flagged Critical — 0% recovery rate." },
-  { agent: "Recovery Agent",   agentColor: "#15803d", time: "09:42", status: "info",
+  { agent: "Recovery Agent",   agentColor: "var(--agent-recovery)", time: "09:42", status: "info",
     message: "BioMed escalation confirmed. REC-001 target $123,890 — procurement director notified." },
-  { agent: "Compliance Agent", agentColor: "#b45309", time: "09:28", status: "fail",
+  { agent: "Compliance Agent", agentColor: "var(--agent-compliance)", time: "09:28", status: "fail",
     message: "Cardinal Health rebate audit: $26,554 rebate + $62,876 volume discounts = $89,430 outstanding." },
-  { agent: "Validation Agent", agentColor: "#7c3aed", time: "09:03", status: "fail",
+  { agent: "Validation Agent", agentColor: "var(--agent-validation)", time: "09:03", status: "fail",
     message: "EX-006 re-validated. STE-4821-A price delta +19% confirmed. Flagged for recovery." },
-  { agent: "Invoice Agent",    agentColor: "#0065cb", time: "08:31", status: "info",
+  { agent: "Invoice Agent",    agentColor: "var(--agent-invoice)", time: "08:31", status: "info",
     message: "14 invoices ingested from overnight batch. 2 flagged for three-way match review." },
 ];
 
 // ── Run events (one per step) ─────────────────────────────────────────────────
 
 const RUN_EVENTS: Omit<FeedEvent, "time">[] = [
-  { agent: "Invoice Agent",    agentColor: "#0065cb", status: "warn",
+  { agent: "Invoice Agent",    agentColor: "var(--agent-invoice)", status: "warn",
     message: "Extracted STC-2026-19847 — 6 line items, 2 flags: price_mismatch (critical), qty_mismatch (warning)." },
-  { agent: "Validation Agent", agentColor: "#7c3aed", status: "fail",
+  { agent: "Validation Agent", agentColor: "var(--agent-validation)", status: "fail",
     message: "Three-way match failed. STE-4821-A: PO $2.10 vs Invoice $2.50 (+19%). STE-9940-B: qty short 20 units." },
-  { agent: "Compliance Agent", agentColor: "#b45309", status: "pass",
+  { agent: "Compliance Agent", agentColor: "var(--agent-compliance)", status: "pass",
     message: "Contract CTR-2025-STE-007 — within annual cap. No rebate clause applies. Passed." },
-  { agent: "Recovery Agent",   agentColor: "#15803d", status: "info",
+  { agent: "Recovery Agent",   agentColor: "var(--agent-recovery)", status: "info",
     message: "Price mismatch confirmed. Recovery email drafted for ap@steris.com. Awaiting analyst approval." },
-  { agent: "Insight Agent",    agentColor: "#0891b2", status: "info",
+  { agent: "Insight Agent",    agentColor: "var(--agent-insight)", status: "info",
     message: "Steris score unchanged at 72/100. Recovery % 45%. No escalation threshold breached." },
 ];
 
@@ -124,10 +124,10 @@ const RUN_RESULTS: ("done" | "done-warn" | "done-fail")[] = [
 // ── Status icon helper ────────────────────────────────────────────────────────
 
 function StatusIcon({ status }: { status: FeedEvent["status"] }) {
-  if (status === "pass") return <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "#15803d" }} />;
-  if (status === "fail") return <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "#dc2626" }} />;
-  if (status === "warn") return <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "#b45309" }} />;
-  return <FileText className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "#6b7280" }} />;
+  if (status === "pass") return <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--agent-recovery)]" />;
+  if (status === "fail") return <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--critical)]" />;
+  if (status === "warn") return <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--agent-compliance)]" />;
+  return <FileText className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--text-tertiary)]" />;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -181,30 +181,29 @@ export default function PipelinePage() {
   const runningIdx = stepStates.findIndex(s => s === "running");
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f7f8fa" }}>
+    <div className="min-h-screen bg-[var(--bg-base)]">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="px-8 pt-8 pb-5">
+      <div className="px-6 lg:px-8 pt-8 pb-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-1.5 mb-2">
-              <Workflow className="w-3.5 h-3.5" style={{ color: "#0065cb" }} />
-              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold" style={{ color: "#0065cb" }}>
+              <Workflow className="w-3.5 h-3.5 text-[var(--acl-primary)]" />
+              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
                 Healthcare AP · Multi-Agent Pipeline
               </span>
             </div>
-            <h1 className="text-xl font-semibold tracking-tight m-0" style={{ color: "#111827" }}>
+            <h1 className="text-xl font-semibold tracking-tight m-0 text-[var(--text-primary)]">
               Multi-Agent Pipeline
             </h1>
-            <p className="text-xs mt-1 m-0" style={{ color: "#6b7280" }}>
+            <p className="text-xs mt-1 m-0 text-[var(--text-tertiary)]">
               5 specialized agents — each hands off to the next across the full invoice lifecycle
             </p>
           </div>
           <button
             onClick={runPipeline}
             disabled={isRunning}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-md text-white transition-all cursor-pointer border-none flex-shrink-0 mt-1 disabled:opacity-50"
-            style={{ backgroundColor: "#0065cb" }}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-md text-white transition-all cursor-pointer border-none flex-shrink-0 mt-1 disabled:opacity-50 bg-[var(--acl-primary)]"
           >
             {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
             {isRunning ? "Running…" : "Run Pipeline"}
@@ -212,25 +211,25 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      <hr style={{ borderColor: "#e5e7eb", margin: 0 }} />
+      <hr className="border-[var(--border)] m-0" />
 
       {/* ── Pipeline progress bar ─────────────────────────────────────────── */}
       {isRunning || completedCount > 0 ? (
-        <div className="px-8 py-3 bg-white border-b" style={{ borderColor: "#e5e7eb" }}>
+        <div className="px-6 lg:px-8 py-3 bg-white border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
-            <span className="text-[11px] font-medium" style={{ color: "#4b5563" }}>
+            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
               {isRunning ? `Processing — Step ${runningIdx + 1} of 5` : "Pipeline complete"}
             </span>
-            <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "#f3f4f6" }}>
+            <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-[var(--bg-subtle)]">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${(completedCount / 5) * 100}%`,
-                  backgroundColor: isRunning ? "#0065cb" : "#15803d",
+                  backgroundColor: isRunning ? "var(--acl-primary)" : "var(--agent-recovery)",
                 }}
               />
             </div>
-            <span className="text-[11px] tabular-nums font-medium" style={{ color: "#0065cb" }}>
+            <span className="text-[11px] tabular-nums font-medium text-[var(--acl-primary)]">
               {completedCount}/5
             </span>
           </div>
@@ -238,7 +237,7 @@ export default function PipelinePage() {
       ) : null}
 
       {/* ── Agent cards with connecting flow ──────────────────────────────── */}
-      <div className="px-8 py-6">
+      <div className="px-6 lg:px-8 py-6">
         <div className="flex items-stretch gap-0">
           {AGENTS.map((agent, i) => {
             const AgentIcon = agent.Icon;
@@ -251,18 +250,18 @@ export default function PipelinePage() {
             const borderColor = isActive
               ? agent.color
               : isDone
-              ? state === "done-fail" ? "#fca5a5"
-                : state === "done-warn" ? "#fcd34d"
-                : "#86efac"
-              : "#e5e7eb";
+              ? state === "done-fail" ? "var(--pipeline-fail-border)"
+                : state === "done-warn" ? "var(--pipeline-warn-border)"
+                : "var(--pipeline-pass-border)"
+              : "var(--border)";
 
             // Background tint when active or done
             const cardBg = isActive
               ? agent.bgColor
               : isDone
-              ? state === "done-fail" ? "#fff1f2"
-                : state === "done-warn" ? "#fffbeb"
-                : "#f0fdf4"
+              ? state === "done-fail" ? "var(--pipeline-fail-bg)"
+                : state === "done-warn" ? "var(--pipeline-warn-bg)"
+                : "var(--pipeline-pass-bg)"
               : "white";
 
             const card = (
@@ -279,11 +278,11 @@ export default function PipelinePage() {
                     }}
                   >
                     {isActive ? (
-                      <Loader2 className="w-4 h-4 animate-spin" style={{ color: "white" }} />
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
                     ) : isDone && state === "done-fail" ? (
-                      <AlertTriangle className="w-4 h-4" style={{ color: "white", fill: agent.color }} />
+                      <AlertTriangle className="w-4 h-4 text-white" style={{ fill: agent.color }} />
                     ) : isDone ? (
-                      <CheckCircle2 className="w-4 h-4" style={{ color: "white" }} />
+                      <CheckCircle2 className="w-4 h-4 text-white" />
                     ) : (
                       <AgentIcon className="w-4 h-4" style={{ color: agent.color }} />
                     )}
@@ -291,8 +290,8 @@ export default function PipelinePage() {
                   <span
                     className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
                     style={{
-                      backgroundColor: isActive || isDone ? agent.color + "18" : "#f3f4f6",
-                      color: isActive || isDone ? agent.color : "#9ca3af",
+                      backgroundColor: isActive || isDone ? agent.color + "18" : "var(--bg-subtle)",
+                      color: isActive || isDone ? agent.color : "var(--text-muted)",
                     }}
                   >
                     {agent.step}/5
@@ -301,7 +300,7 @@ export default function PipelinePage() {
 
                 {/* Agent name + role */}
                 <div>
-                  <p className="text-[13px] font-semibold m-0 leading-tight" style={{ color: "#111827" }}>
+                  <p className="text-[13px] font-semibold m-0 leading-tight text-[var(--text-primary)]">
                     {agent.name}
                   </p>
                   <p className="text-[10px] m-0 mt-0.5" style={{ color: agent.color }}>
@@ -324,12 +323,12 @@ export default function PipelinePage() {
                     <span
                       className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                       style={{
-                        backgroundColor: state === "done-fail" ? "#fee2e2"
-                          : state === "done-warn" ? "#fef3c7"
-                          : "#dcfce7",
-                        color: state === "done-fail" ? "#dc2626"
-                          : state === "done-warn" ? "#b45309"
-                          : "#15803d",
+                        backgroundColor: state === "done-fail" ? "var(--pipeline-fail-badge)"
+                          : state === "done-warn" ? "var(--pipeline-warn-badge)"
+                          : "var(--pipeline-pass-badge)",
+                        color: state === "done-fail" ? "var(--critical)"
+                          : state === "done-warn" ? "var(--agent-compliance)"
+                          : "var(--agent-recovery)",
                       }}
                     >
                       {state === "done-fail" ? "⚠ Exception found"
@@ -339,10 +338,9 @@ export default function PipelinePage() {
                   )}
                   {!isActive && !isDone && (
                     <span
-                      className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: "#f0fdf4", color: "#15803d" }}
+                      className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--pipeline-pass-bg)] text-[var(--agent-recovery)]"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#15803d" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--agent-recovery)]" />
                       Active
                     </span>
                   )}
@@ -350,8 +348,8 @@ export default function PipelinePage() {
 
                 {/* Stat */}
                 <div className="mt-auto pt-2 border-t" style={{ borderColor: borderColor + "66" }}>
-                  <p className="text-[11px] font-semibold m-0" style={{ color: "#374151" }}>{agent.stat}</p>
-                  <p className="text-[10px] m-0 mt-0.5" style={{ color: "#9ca3af" }}>{agent.subStat}</p>
+                  <p className="text-[11px] font-semibold m-0 text-[var(--neutral-text)]">{agent.stat}</p>
+                  <p className="text-[10px] m-0 mt-0.5 text-[var(--text-muted)]">{agent.subStat}</p>
                 </div>
               </div>
             );
@@ -375,7 +373,7 @@ export default function PipelinePage() {
                       <ArrowRight
                         className="w-4 h-4 transition-colors duration-300"
                         style={{
-                          color: isDone ? agent.color : "#d1d5db",
+                          color: isDone ? agent.color : "var(--border-strong)",
                         }}
                       />
                     </div>
@@ -396,7 +394,7 @@ export default function PipelinePage() {
                 <div className="flex-1" />
                 {!isLast && (
                   <div className="w-8 flex items-start justify-center">
-                    <span className="text-[9px] text-center leading-tight" style={{ color: "#9ca3af", maxWidth: 52 }}>
+                    <span className="text-[9px] text-center leading-tight text-[var(--text-muted)] max-w-[52px]">
                       {labels[i]}
                     </span>
                   </div>
@@ -408,29 +406,27 @@ export default function PipelinePage() {
       </div>
 
       {/* ── Activity Feed ─────────────────────────────────────────────────── */}
-      <div className="px-8 pb-8">
-        <div className="bg-white border rounded-lg overflow-hidden" style={{ borderColor: "#e5e7eb" }}>
+      <div className="px-6 lg:px-8 pb-8">
+        <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden">
           {/* Feed header */}
-          <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "#e5e7eb" }}>
+          <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
             <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5" style={{ color: "#6b7280" }} />
-              <span className="text-sm font-semibold" style={{ color: "#111827" }}>
+              <Clock className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
+              <span className="text-sm font-semibold text-[var(--text-primary)]">
                 Agent Activity Feed
               </span>
             </div>
             <div className="flex items-center gap-2">
               {isRunning && (
                 <span
-                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: "#dbeafe", color: "#1d4ed8" }}
+                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--agent-invoice-subtle)] text-[var(--info)]"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                   Live
                 </span>
               )}
               <span
-                className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: "#f3f4f6", color: "#6b7280" }}
+                className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-tertiary)]"
               >
                 {feedEvents.length} events
               </span>
@@ -438,7 +434,7 @@ export default function PipelinePage() {
           </div>
 
           {/* Feed rows */}
-          <div className="divide-y" style={{ maxHeight: 400, overflowY: "auto" }}>
+          <div className="divide-y max-h-[400px] overflow-y-auto">
             {feedEvents.map((evt, idx) => (
               <div
                 key={`${evt.agent}-${evt.time}-${idx}`}
@@ -454,10 +450,10 @@ export default function PipelinePage() {
                 >
                   {evt.agent}
                 </span>
-                <span className="text-[11px] flex-shrink-0 tabular-nums" style={{ color: "#9ca3af" }}>
+                <span className="text-[11px] flex-shrink-0 tabular-nums text-[var(--text-muted)]">
                   {evt.time}
                 </span>
-                <span className="text-[12px] leading-relaxed flex-1" style={{ color: "#374151" }}>
+                <span className="text-[12px] leading-relaxed flex-1 text-[var(--neutral-text)]">
                   {evt.message}
                 </span>
               </div>

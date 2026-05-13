@@ -31,7 +31,18 @@ export interface Exception {
   description: string;
   detectedAt: string;
   assignee?: string;
+  category?: string;
 }
+
+// ─── CATEGORY COLOR-CODING ──────────────────────────────────────────────────
+
+export const CATEGORY_CONFIG: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  "Medical Equipment": { bg: "#eff6ff", text: "#1e40af", border: "#bfdbfe", label: "Medical Equipment" },
+  "Pharmaceuticals": { bg: "#fef3c7", text: "#92400e", border: "#fde68a", label: "Pharmaceuticals" },
+  "Surgical Supplies": { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0", label: "Surgical Supplies" },
+  "Sterilization": { bg: "#faf5ff", text: "#6b21a8", border: "#d8b4fe", label: "Sterilization" },
+  "GPO — General": { bg: "#f0f2f5", text: "#374151", border: "#d1d5db", label: "GPO — General" },
+};
 
 export interface InvoiceLineItem {
   itemCode: string;
@@ -98,6 +109,7 @@ export const exceptions: Exception[] = [
       "Cumulative Q1 spend of $623,890 exceeds annual contract cap of $500,000 by $123,890. Contract #CTR-2024-BIO-009 has no auto-renewal clause. 23 invoices processed post-cap breach.",
     detectedAt: "2026-03-28T09:14:22Z",
     assignee: "Rajesh Jaluka",
+    category: "Medical Equipment",
   },
   {
     id: "EX-002",
@@ -113,6 +125,7 @@ export const exceptions: Exception[] = [
       "Invoice MS-2026-0923 ($47,320) submitted via email on Jan 21 is a near-duplicate of MS-2026-0847 ($47,120) submitted by postal mail on Jan 15. Amount altered by $200 (0.42%). Same line items, same PO reference.",
     detectedAt: "2026-01-22T08:02:11Z",
     assignee: "Marcus Webb",
+    category: "Surgical Supplies",
   },
   {
     id: "EX-003",
@@ -128,6 +141,7 @@ export const exceptions: Exception[] = [
       "No PO found. Vendor 'MedTech Solutions LLC' not in approved vendor master. Invoice references services (IV Catheter Kits) outside vendor's registered category (Consulting). Bank account differs from any known vendor. Routed to compliance.",
     detectedAt: "2026-02-14T14:33:07Z",
     assignee: "Compliance Team",
+    category: "Medical Equipment",
   },
   {
     id: "EX-004",
@@ -143,6 +157,7 @@ export const exceptions: Exception[] = [
       "Contract #CTR-2025-CAR-003 entitles Northfield to an 8.5% quarterly rebate on pharmaceutical spend exceeding $200K. Q1 spend: $312,400. Expected rebate credit memo: $26,554 (on excess $312,400). No credit memo received. Additionally, $62,876 in volume discount adjustments not applied across 47 line items.",
     detectedAt: "2026-04-01T06:00:00Z",
     assignee: "Rajesh Jaluka",
+    category: "Pharmaceuticals",
   },
   {
     id: "EX-005",
@@ -158,6 +173,7 @@ export const exceptions: Exception[] = [
       "Contract specifies tiered pricing: $85/unit ≤1,000 units/month, $72/unit >1,000 units/month. March order: 2,340 units. Invoice billed all 2,340 units at $85 = $198,900. Correct: 1,000×$85 + 1,340×$72 = $181,480. Overcharge: $17,420. Same error repeated for 3 months (Jan–Mar 2026): total $52,260.",
     detectedAt: "2026-03-16T11:47:33Z",
     assignee: "Marcus Webb",
+    category: "Pharmaceuticals",
   },
   {
     id: "EX-006",
@@ -173,6 +189,7 @@ export const exceptions: Exception[] = [
       "Price mismatch on Sterile Surgical Drape Sets. PO price: $2.10/unit. Invoiced price: $2.50/unit (+19%). 500 units per invoice × 23 invoices = $4,600 total overcharge. Packing slip quantities match. Product description variant detected: 'Sterile Drape Set' vs 'Surgical Draping Kit Pro'.",
     detectedAt: "2026-03-01T09:22:14Z",
     assignee: "James Park",
+    category: "Sterilization",
   },
   {
     id: "EX-007",
@@ -188,6 +205,7 @@ export const exceptions: Exception[] = [
       "Quantity mismatch: PO authorised 300 boxes of exam gloves (Box/200) at $218.46/box, packing slip confirms 300 delivered, but invoice bills 365 boxes. 65 boxes unbilled in PO. 65 × $218.46 = $14,200 overbilled.",
     detectedAt: "2026-03-11T10:15:00Z",
     assignee: "James Park",
+    category: "Surgical Supplies",
   },
   {
     id: "EX-008",
@@ -203,6 +221,7 @@ export const exceptions: Exception[] = [
       "Duplicate invoice detected. HS-2026-77341 and HS-2026-77298 submitted 4 days apart for identical line items totalling $8,750. Second invoice blocked before payment.",
     detectedAt: "2026-01-31T07:44:00Z",
     assignee: "Rajesh Jaluka",
+    category: "Surgical Supplies",
   },
   {
     id: "EX-009",
@@ -218,6 +237,7 @@ export const exceptions: Exception[] = [
       "GPO contract entitles 7.25% rebate on spend above $80K/quarter. Q1 spend: $94,200. Rebate on $14,200 excess: $1,030. Additionally, 3% early-payment discount not applied across 12 invoices totalling $194,000 = $5,820 missed.",
     detectedAt: "2026-04-01T06:00:00Z",
     assignee: "Unassigned",
+    category: "GPO — General",
   },
   {
     id: "EX-010",
@@ -233,6 +253,7 @@ export const exceptions: Exception[] = [
       "Unit of measure mismatch. PO ordered 640 'cases' of IV tubing at $156.00/case. Invoice billed 640 'cartons' at $162.08/carton — a different UOM at a higher price. 640 × ($162.08 − $156.00) = 640 × $6.08 = $3,891 variance (rounded to $3,890). Resolved: vendor issued credit memo CM-OM-0038.",
     detectedAt: "2026-02-06T08:30:00Z",
     assignee: "Rajesh Jaluka",
+    category: "Surgical Supplies",
   },
 
   // ─── SOM exceptions (drug-distributor vertical) ──────────────────────────
@@ -253,6 +274,7 @@ export const exceptions: Exception[] = [
       "Address verification failed. Pharmacy declared 2601 Blue Ridge Rd, Raleigh NC, but the geocode resolves ~215 km away in Charlotte. Permit NC 09471 is active per NPI Registry, but coordinate drift suggests stale records or filing irregularity.",
     detectedAt: "2026-04-28T08:42:00Z",
     assignee: "SOM Analyst",
+    category: "Pharmaceuticals",
   },
   {
     id: "SOM-002",
@@ -268,6 +290,7 @@ export const exceptions: Exception[] = [
       "License verification failed. NC Board of Pharmacy reports permit NC-PH-009847 is EXPIRED (expiry 2025-08-15). Order includes Schedule III controlled substance (Tylenol with Codeine 30mg/300mg, 300 tablets). Block fulfilment pending board contact.",
     detectedAt: "2026-04-28T07:58:00Z",
     assignee: "SOM Analyst",
+    category: "Pharmaceuticals",
   },
   {
     id: "SOM-003",
@@ -283,6 +306,7 @@ export const exceptions: Exception[] = [
       "Price deviation +18% on Pfizer Xanax 0.5mg (Schedule IV controlled). Ordered $1.42/unit vs contract $1.20/unit (5% tolerance). 35,000 units × $0.22 overage = $7,700. Compounded with suspended pharmacy license (CA-PHY-19384) and high-volume controlled-substance order — escalate to compliance.",
     detectedAt: "2026-04-28T06:31:00Z",
     assignee: "Compliance Team",
+    category: "Pharmaceuticals",
   },
   {
     id: "SOM-004",
@@ -298,6 +322,7 @@ export const exceptions: Exception[] = [
       "Volume outlier: 35,000 controlled-substance units (Xanax 0.5mg) on a single order — 3.6× monthly baseline for the entire Los Angeles catchment from a single pharmacy. Triggers DEA-style suspicious-order reporting threshold.",
     detectedAt: "2026-04-28T06:31:00Z",
     assignee: "Compliance Team",
+    category: "Pharmaceuticals",
   },
 ];
 
@@ -752,9 +777,41 @@ export const contracts: Contract[] = [
   },
 ];
 
+// ─── VENDOR → CATEGORY MAP ──────────────────────────────────────────────────
+// Built from the contracts array plus additional known vendor mappings.
+
+export const vendorCategoryMap: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  contracts.forEach((c) => { m[c.vendor] = c.category; });
+  // Additional vendors not in contracts
+  m["MedTech Solutions LLC"] = "Medical Equipment";
+  m["Medline Industries"] = "Surgical Supplies";
+  m["Henry Schein"] = "Surgical Supplies";
+  m["Owens & Minor"] = "Surgical Supplies";
+  m["Stryker Medical"] = "Medical Equipment";
+  m["Baxter Healthcare"] = "Pharmaceuticals";
+  m["Becton Dickinson"] = "Medical Equipment";
+  m["Johnson & Johnson MedTech"] = "Medical Equipment";
+  m["Abbott Laboratories"] = "Pharmaceuticals";
+  m["McKesson Medical-Surgical"] = "Pharmaceuticals";
+  m["Philips Healthcare"] = "Medical Equipment";
+  m["Zimmer Biomet"] = "Medical Equipment";
+  m["Teleflex Medical"] = "Medical Equipment";
+  m["Apex Family Pharmacy Inc"] = "Pharmaceuticals";
+  m["Tarheel Drugs"] = "Pharmaceuticals";
+  m["Westside Pharmacy"] = "Pharmaceuticals";
+  return m;
+})();
+
 // ─── RECOVERY WORKFLOW ───────────────────────────────────────────────────────
 
 export type RecoveryStatus = "pending" | "in_progress" | "recovered" | "partial" | "closed";
+
+export interface StatusHistoryEntry {
+  status: string;
+  date: string;
+  note?: string;
+}
 
 export interface RecoveryRecord {
   id: string;
@@ -768,6 +825,11 @@ export interface RecoveryRecord {
   recoveredAmount?: number;
   closedReason?: string;
   analystNote?: string;
+  // ── Phase 5 additions ─────────────────────────────────────────────────────
+  slaDeadline?: string;
+  lastContactDate?: string;
+  nextFollowupDate?: string;
+  statusHistory?: StatusHistoryEntry[];
 }
 
 let _recoveryCounter = 14;
@@ -784,6 +846,16 @@ export const recoveryQueue: RecoveryRecord[] = [
     initiatedAt: "2026-03-29T09:14:00Z",
     emailSentTo: "ar@biomed-equipment.com",
     analystNote: "Contract overage $123,890. Escalated to procurement director. BioMed acknowledged receipt — awaiting credit memo.",
+    slaDeadline: "2026-05-20",
+    lastContactDate: "2026-05-05",
+    nextFollowupDate: "2026-05-14",
+    statusHistory: [
+      { status: "Identified", date: "2026-03-28", note: "Exception EX-001 flagged by Invoice Agent." },
+      { status: "Vendor Contacted", date: "2026-03-29", note: "Initial email sent to ar@biomed-equipment.com." },
+      { status: "Under Review", date: "2026-04-03", note: "BioMed acknowledged receipt. Finance team reviewing." },
+      { status: "Under Review", date: "2026-04-18", note: "Escalated to procurement director after no credit memo." },
+      { status: "Under Review", date: "2026-05-05", note: "Follow-up call. BioMed committed to credit memo by May 20." },
+    ],
   },
   {
     id: "REC-005",
@@ -795,6 +867,16 @@ export const recoveryQueue: RecoveryRecord[] = [
     initiatedAt: "2026-03-12T14:05:00Z",
     emailSentTo: "billing@medline.com",
     analystNote: "Quantity overbilling 65 units × $218.46. Medline dispute team reviewing. Response expected within 5 business days.",
+    slaDeadline: "2026-05-16",
+    lastContactDate: "2026-05-02",
+    nextFollowupDate: "2026-05-15",
+    statusHistory: [
+      { status: "Identified", date: "2026-03-11", note: "Exception EX-007 flagged by Validation Agent." },
+      { status: "Vendor Contacted", date: "2026-03-12", note: "Recovery email sent to billing@medline.com." },
+      { status: "Under Review", date: "2026-03-18", note: "Medline dispute team assigned case MED-D-2026-0441." },
+      { status: "Under Review", date: "2026-04-15", note: "Medline requested warehouse receipt verification." },
+      { status: "Under Review", date: "2026-05-02", note: "Warehouse sign-off provided. Awaiting Medline response." },
+    ],
   },
   {
     id: "REC-009",
@@ -807,6 +889,16 @@ export const recoveryQueue: RecoveryRecord[] = [
     emailSentTo: "billing@medsupplycorp.com",
     analystNote: "Duplicate invoice MS-2026-0923. MedSupply confirmed duplicate — partial credit $30,000 received. Balance $17,320 under dispute.",
     recoveredAmount: 30000,
+    slaDeadline: "2026-05-10",
+    lastContactDate: "2026-04-28",
+    nextFollowupDate: "2026-05-12",
+    statusHistory: [
+      { status: "Identified", date: "2026-01-22", note: "Duplicate detected by Invoice Agent." },
+      { status: "Vendor Contacted", date: "2026-01-23", note: "Duplicate flagged to billing@medsupplycorp.com." },
+      { status: "Under Review", date: "2026-01-28", note: "MedSupply acknowledged duplicate." },
+      { status: "Credit Pending", date: "2026-02-10", note: "Partial credit $30,000 received. $17,320 balance disputed." },
+      { status: "Escalated", date: "2026-04-28", note: "SLA breached. Escalated to procurement director for $17,320 balance." },
+    ],
   },
   {
     id: "REC-012",
@@ -819,6 +911,16 @@ export const recoveryQueue: RecoveryRecord[] = [
     emailSentTo: "ap@steris.com",
     analystNote: "Price mismatch STE-4821-A: $2.10 contracted vs $2.50 billed. Steris finance team reviewing. 500 units × $0.40 = $200 confirmed; remaining 22 invoices under review.",
     recoveredAmount: 200,
+    slaDeadline: "2026-05-22",
+    lastContactDate: "2026-05-08",
+    nextFollowupDate: "2026-05-19",
+    statusHistory: [
+      { status: "Identified", date: "2026-03-01", note: "Price mismatch flagged by Validation Agent." },
+      { status: "Vendor Contacted", date: "2026-03-01", note: "Dispute sent to ap@steris.com." },
+      { status: "Under Review", date: "2026-03-08", note: "Steris acknowledged price discrepancy on first invoice." },
+      { status: "Credit Pending", date: "2026-04-02", note: "$200 credit memo received for 1 invoice. 22 remaining." },
+      { status: "Under Review", date: "2026-05-08", note: "Follow-up on 22 outstanding invoices. Steris auditing batch." },
+    ],
   },
   // ── Pending ───────────────────────────────────────────────────────────────
   {
@@ -831,6 +933,14 @@ export const recoveryQueue: RecoveryRecord[] = [
     initiatedAt: "2026-04-05T14:20:00Z",
     emailSentTo: "contracts@cardinalhealth.com",
     analystNote: "Tier 2 pricing dispute. Recovery Agent flagged 3-month pattern ($17,420/mo). Awaiting vendor acknowledgement.",
+    slaDeadline: "2026-05-18",
+    lastContactDate: "2026-04-05",
+    nextFollowupDate: "2026-05-13",
+    statusHistory: [
+      { status: "Identified", date: "2026-03-16", note: "Tier pricing error flagged by Invoice Agent." },
+      { status: "Vendor Contacted", date: "2026-04-05", note: "Formal dispute sent to contracts@cardinalhealth.com with 3-month evidence." },
+      { status: "Vendor Contacted", date: "2026-04-22", note: "Follow-up email sent. No response from Cardinal." },
+    ],
   },
   {
     id: "REC-010",
@@ -842,6 +952,13 @@ export const recoveryQueue: RecoveryRecord[] = [
     initiatedAt: "2026-04-02T09:00:00Z",
     emailSentTo: "gpo-rebates@vizient.com",
     analystNote: "GPO rebate shortfall $1,030 + early-payment discount $5,820. Vizient portal claim submitted — confirmation pending.",
+    slaDeadline: "2026-05-25",
+    lastContactDate: "2026-04-02",
+    nextFollowupDate: "2026-05-16",
+    statusHistory: [
+      { status: "Identified", date: "2026-04-01", note: "Q1 rebate shortfall identified by Compliance Agent." },
+      { status: "Vendor Contacted", date: "2026-04-02", note: "Portal claim submitted to Vizient. Reference VZT-CLM-2026-Q1." },
+    ],
   },
   {
     id: "REC-013",
@@ -853,6 +970,15 @@ export const recoveryQueue: RecoveryRecord[] = [
     initiatedAt: "2026-02-16T11:30:00Z",
     emailSentTo: "accounts@medtechsolutions.net",
     analystNote: "Ghost vendor — no PO, not in approved master. Legal hold placed. Compliance referral submitted. Payment blocked pending investigation.",
+    slaDeadline: "2026-05-08",
+    lastContactDate: "2026-03-15",
+    nextFollowupDate: "2026-05-13",
+    statusHistory: [
+      { status: "Identified", date: "2026-02-14", note: "Suspicious invoice flagged by Invoice Agent. No PO, vendor not in master." },
+      { status: "Vendor Contacted", date: "2026-02-16", note: "Inquiry sent to accounts@medtechsolutions.net." },
+      { status: "Escalated", date: "2026-02-20", note: "No vendor response. Compliance referral submitted. Legal hold placed." },
+      { status: "Escalated", date: "2026-03-15", note: "Follow-up to legal department. Bank account investigation ongoing." },
+    ],
   },
   // ── Partial ───────────────────────────────────────────────────────────────
   {
@@ -867,6 +993,16 @@ export const recoveryQueue: RecoveryRecord[] = [
     recoveredAmount: 26554,
     closedReason: "Partially Recovered",
     analystNote: "Q1 rebate $26,554 received (credit memo CH-CM-2026-Q1). Volume discount $62,876 still outstanding — Cardinal disputes calculation methodology.",
+    slaDeadline: "2026-05-28",
+    lastContactDate: "2026-05-06",
+    nextFollowupDate: "2026-05-20",
+    statusHistory: [
+      { status: "Identified", date: "2026-04-01", note: "Missing rebate flagged by Compliance Agent." },
+      { status: "Vendor Contacted", date: "2026-04-02", note: "Rebate claim sent to rebates@cardinalhealth.com." },
+      { status: "Under Review", date: "2026-04-08", note: "Cardinal acknowledged rebate shortfall." },
+      { status: "Credit Pending", date: "2026-04-22", note: "Credit memo CH-CM-2026-Q1 issued for $26,554 (rebate portion)." },
+      { status: "Under Review", date: "2026-05-06", note: "Volume discount $62,876 disputed. Cardinal requested methodology documentation." },
+    ],
   },
   {
     id: "REC-007",
@@ -880,6 +1016,16 @@ export const recoveryQueue: RecoveryRecord[] = [
     recoveredAmount: 39200,
     closedReason: "Partially Recovered",
     analystNote: "Original duplicate pair. $39,200 recovered via credit reversal. $7,920 shipping/handling dispute ongoing with MedSupply legal team.",
+    slaDeadline: "2026-05-15",
+    lastContactDate: "2026-04-30",
+    nextFollowupDate: "2026-05-14",
+    statusHistory: [
+      { status: "Identified", date: "2026-01-15", note: "Duplicate pair detected by Invoice Agent." },
+      { status: "Vendor Contacted", date: "2026-01-18", note: "Credit reversal request sent to ar@medsupplycorp.com." },
+      { status: "Credit Pending", date: "2026-02-05", note: "MedSupply agreed to credit $39,200. Shipping/handling $7,920 disputed." },
+      { status: "Credit Pending", date: "2026-02-15", note: "Credit reversal $39,200 applied to account." },
+      { status: "Under Review", date: "2026-04-30", note: "Legal team reviewing $7,920 shipping dispute. Formal letter sent." },
+    ],
   },
   {
     id: "REC-011",
@@ -893,6 +1039,16 @@ export const recoveryQueue: RecoveryRecord[] = [
     recoveredAmount: 5400,
     closedReason: "Partially Recovered",
     analystNote: "Earlier Medline qty dispute. $5,400 credit received for confirmed short-ships. $3,500 residual pending warehouse sign-off.",
+    slaDeadline: "2026-05-18",
+    lastContactDate: "2026-05-01",
+    nextFollowupDate: "2026-05-16",
+    statusHistory: [
+      { status: "Identified", date: "2026-02-18", note: "Qty mismatch flagged by Validation Agent." },
+      { status: "Vendor Contacted", date: "2026-02-20", note: "Dispute sent to billing@medline.com." },
+      { status: "Under Review", date: "2026-03-01", note: "Medline confirmed short-ship on 3 line items." },
+      { status: "Credit Pending", date: "2026-03-15", note: "$5,400 credit memo received for confirmed items." },
+      { status: "Under Review", date: "2026-05-01", note: "$3,500 residual pending internal warehouse reconciliation." },
+    ],
   },
   // ── Recovered ─────────────────────────────────────────────────────────────
   {
@@ -907,6 +1063,15 @@ export const recoveryQueue: RecoveryRecord[] = [
     recoveredAmount: 8750,
     closedReason: "Fully Recovered",
     analystNote: "Duplicate invoice fully reversed. Credit memo HS-CM-2026-077 received and applied. Case closed.",
+    slaDeadline: "2026-02-20",
+    lastContactDate: "2026-02-10",
+    statusHistory: [
+      { status: "Identified", date: "2026-01-31", note: "Duplicate flagged by Invoice Agent." },
+      { status: "Vendor Contacted", date: "2026-02-01", note: "Reversal request sent to billing@henryschein.com." },
+      { status: "Under Review", date: "2026-02-03", note: "Henry Schein confirmed duplicate." },
+      { status: "Credit Pending", date: "2026-02-07", note: "Credit memo HS-CM-2026-077 issued." },
+      { status: "Resolved", date: "2026-02-10", note: "Credit applied. Case closed. Resolved in 9 business days." },
+    ],
   },
   {
     id: "REC-006",
@@ -920,6 +1085,14 @@ export const recoveryQueue: RecoveryRecord[] = [
     recoveredAmount: 3890,
     closedReason: "Fully Recovered",
     analystNote: "UOM mismatch credit memo OM-CM-0038 received. $3,890 applied to open balance. Resolved in 2 business days.",
+    slaDeadline: "2026-02-25",
+    lastContactDate: "2026-02-09",
+    statusHistory: [
+      { status: "Identified", date: "2026-02-06", note: "UOM mismatch flagged by Validation Agent." },
+      { status: "Vendor Contacted", date: "2026-02-07", note: "Credit request sent to creditmemos@owensandminor.com." },
+      { status: "Credit Pending", date: "2026-02-08", note: "O&M acknowledged mismatch. Credit memo OM-CM-0038 issued." },
+      { status: "Resolved", date: "2026-02-09", note: "$3,890 credit applied. Resolved in 2 business days." },
+    ],
   },
   {
     id: "REC-008",
@@ -933,6 +1106,15 @@ export const recoveryQueue: RecoveryRecord[] = [
     recoveredAmount: 5200,
     closedReason: "Fully Recovered",
     analystNote: "Q4 2025 GPO rebate $5,200 received via Vizient portal payment VZT-PAY-2026-0012.",
+    slaDeadline: "2026-02-10",
+    lastContactDate: "2026-01-28",
+    statusHistory: [
+      { status: "Identified", date: "2026-01-05", note: "Q4 2025 rebate shortfall identified." },
+      { status: "Vendor Contacted", date: "2026-01-10", note: "Portal claim submitted to Vizient." },
+      { status: "Under Review", date: "2026-01-15", note: "Vizient confirmed rebate calculation." },
+      { status: "Credit Pending", date: "2026-01-22", note: "Payment VZT-PAY-2026-0012 scheduled." },
+      { status: "Resolved", date: "2026-01-28", note: "$5,200 received. Case closed." },
+    ],
   },
   // ── Closed ────────────────────────────────────────────────────────────────
   {
@@ -947,6 +1129,15 @@ export const recoveryQueue: RecoveryRecord[] = [
     recoveredAmount: 0,
     closedReason: "Vendor Filed Dispute",
     analystNote: "Prior MedTech suspicious invoice. Vendor disputed all charges. Legal escalation not pursued — amount below litigation threshold. Written off per AP policy.",
+    slaDeadline: "2025-12-15",
+    lastContactDate: "2025-12-10",
+    statusHistory: [
+      { status: "Identified", date: "2025-11-10", note: "Suspicious invoice flagged." },
+      { status: "Vendor Contacted", date: "2025-11-15", note: "Inquiry sent to accounts@medtechsolutions.net." },
+      { status: "Escalated", date: "2025-11-25", note: "No response. Escalated to compliance." },
+      { status: "Under Review", date: "2025-12-05", note: "Vendor filed formal dispute." },
+      { status: "Resolved", date: "2025-12-10", note: "Written off per AP policy. Amount below litigation threshold." },
+    ],
   },
 ];
 
@@ -1006,6 +1197,47 @@ export const spendTrend = [
   { month: "Jan '26", spend: 1590000, exceptions: 48100 },
   { month: "Feb '26", spend: 1471000, exceptions: 38700 },
   { month: "Mar '26", spend: 1680000, exceptions: 57300 },
+];
+
+// ─── DISCREPANCY TREND ──────────────────────────────────────────────────────
+
+export const discrepancyTrend = [
+  { period: "Oct 2025", equipment: 12400, pharma: 8900, surgical: 15200, sterilization: 3100, gpo: 2800, total: 42400 },
+  { period: "Nov 2025", equipment: 9800, pharma: 11200, surgical: 13600, sterilization: 4200, gpo: 3400, total: 42200 },
+  { period: "Dec 2025", equipment: 14100, pharma: 7600, surgical: 11900, sterilization: 5800, gpo: 1900, total: 41300 },
+  { period: "Jan 2026", equipment: 18200, pharma: 14300, surgical: 22100, sterilization: 6400, gpo: 4200, total: 65200 },
+  { period: "Feb 2026", equipment: 21500, pharma: 16800, surgical: 19400, sterilization: 7100, gpo: 5600, total: 70400 },
+  { period: "Mar 2026", equipment: 25800, pharma: 19200, surgical: 24600, sterilization: 8900, gpo: 6700, total: 85200 },
+];
+
+export const discrepancyByDay = [
+  { day: "Mar 1", amount: 3200 },
+  { day: "Mar 5", amount: 4100 },
+  { day: "Mar 8", amount: 2800 },
+  { day: "Mar 12", amount: 5600 },
+  { day: "Mar 15", amount: 7200 },
+  { day: "Mar 18", amount: 4900 },
+  { day: "Mar 22", amount: 8100 },
+  { day: "Mar 25", amount: 6300 },
+  { day: "Mar 28", amount: 3800 },
+  { day: "Mar 31", amount: 5400 },
+];
+
+// ─── RECOVERY TREND ─────────────────────────────────────────────────────────
+
+export const recoveryTrendData = [
+  { month: "Apr '25", target: 42000, recovered: 38200, successRate: 91 },
+  { month: "May '25", target: 28500, recovered: 24100, successRate: 85 },
+  { month: "Jun '25", target: 51200, recovered: 44500, successRate: 87 },
+  { month: "Jul '25", target: 33800, recovered: 27400, successRate: 81 },
+  { month: "Aug '25", target: 45600, recovered: 41000, successRate: 90 },
+  { month: "Sep '25", target: 62100, recovered: 52800, successRate: 85 },
+  { month: "Oct '25", target: 71400, recovered: 59200, successRate: 83 },
+  { month: "Nov '25", target: 58900, recovered: 51300, successRate: 87 },
+  { month: "Dec '25", target: 84200, recovered: 71600, successRate: 85 },
+  { month: "Jan '26", target: 93500, recovered: 78400, successRate: 84 },
+  { month: "Feb '26", target: 67800, recovered: 59600, successRate: 88 },
+  { month: "Mar '26", target: 108300, recovered: 89100, successRate: 82 },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -1157,17 +1389,17 @@ export const vendorScores: VendorScore[] = [
 ];
 
 export const severityConfig: Record<Severity, { label: string; color: string; bg: string; dot: string }> = {
-  critical: { label: "Critical", color: "#ef4444", bg: "#fef2f2", dot: "bg-red-500" },
-  high: { label: "High", color: "#f59e0b", bg: "#fffbeb", dot: "bg-amber-500" },
-  medium: { label: "Medium", color: "#3b82f6", bg: "#eff6ff", dot: "bg-blue-500" },
-  low: { label: "Low", color: "#6b7280", bg: "#f9fafb", dot: "bg-gray-400" },
+  critical: { label: "Critical", color: "var(--critical)", bg: "var(--critical-subtle)", dot: "bg-red-500" },
+  high: { label: "High", color: "var(--warning)", bg: "var(--warning-subtle)", dot: "bg-amber-500" },
+  medium: { label: "Medium", color: "var(--info)", bg: "var(--info-subtle)", dot: "bg-blue-500" },
+  low: { label: "Low", color: "var(--neutral)", bg: "var(--neutral-subtle)", dot: "bg-gray-400" },
 };
 
 export const statusConfig: Record<Status, { label: string; color: string; bg: string }> = {
-  open: { label: "Open", color: "#ef4444", bg: "#fef2f2" },
-  under_review: { label: "Under Review", color: "#f59e0b", bg: "#fffbeb" },
-  escalated: { label: "Escalated", color: "#8b5cf6", bg: "#f5f3ff" },
-  resolved: { label: "Resolved", color: "#10b981", bg: "#ecfdf5" },
+  open: { label: "Open", color: "var(--critical)", bg: "var(--critical-subtle)" },
+  under_review: { label: "Under Review", color: "var(--warning)", bg: "var(--warning-subtle)" },
+  escalated: { label: "Escalated", color: "var(--agent-validation)", bg: "var(--agent-validation-subtle)" },
+  resolved: { label: "Resolved", color: "var(--success)", bg: "var(--success-subtle)" },
 };
 
 export const typeConfig: Record<ExceptionType, { label: string; icon: string }> = {
@@ -1269,7 +1501,13 @@ export const bulkExceptions: Exception[] = Array.from({ length: 174 }, (_, i) =>
     flaggedAmount: flaggedAmt(type, i),
     description: descFor(type, vendor),
     detectedAt: `2026-${String(1 + Math.floor((i % 89) / 30)).padStart(2, "0")}-${String(1 + (i % 28)).padStart(2, "0")}T${String(8 + (i % 10)).padStart(2, "0")}:${String(i % 60).padStart(2, "0")}:00Z`,
+    category: vendorCategoryMap[vendor] || "Surgical Supplies",
   };
 });
 
 export const allExceptions: Exception[] = [...exceptions, ...bulkExceptions];
+
+export function updateExceptionStatus(id: string, status: Status): void {
+  const idx = allExceptions.findIndex((e) => e.id === id);
+  if (idx !== -1) allExceptions[idx].status = status;
+}

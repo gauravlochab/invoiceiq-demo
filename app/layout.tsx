@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import ClientShell from "@/components/ClientShell";
 import { ToastProvider } from "@/components/Toast";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
@@ -19,11 +19,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full`}>
+    <html lang="en" className={`${geistMono.variable} h-full`}>
       <body className="h-full flex" style={{ background: "var(--bg-base)" }}>
         <ToastProvider>
           <Sidebar />
-          <main className="flex-1 min-h-full overflow-auto">{children}</main>
+          <main className="flex-1 min-h-full overflow-auto flex flex-col">
+            <ClientShell>{children}</ClientShell>
+          </main>
         </ToastProvider>
       </body>
     </html>

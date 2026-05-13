@@ -22,34 +22,34 @@ export default function ManufacturersPage() {
   const manufacturers = Object.keys(grouped) as Array<keyof typeof grouped>;
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Header */}
-      <div className="px-8 pt-6 pb-5 border-b border-[#e5e7eb] bg-white">
+      <div className="px-6 lg:px-8 pt-6 pb-5 border-b border-[var(--border)] bg-white">
         <div className="flex items-center gap-2 mb-1.5">
-          <Pill className="w-4 h-4 text-[#0065cb]" />
-          <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[#0065cb]">
+          <Pill className="w-4 h-4 text-[var(--acl-primary)]" />
+          <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
             Drug Distributor · Contract pricing
           </span>
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1">
+        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1">
           Manufacturers
         </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           Contracted unit pricing per NDC, with tolerance bands used by the Price Deviation check.
         </p>
       </div>
 
-      <div className="px-8 py-5 flex flex-col gap-4">
+      <div className="px-6 lg:px-8 py-5 flex flex-col gap-4">
         {manufacturers.map((m) => {
           const rows = grouped[m];
           return (
             <div key={m} className="card overflow-hidden">
-              <div className="px-5 py-3 border-b border-[#e5e7eb] flex items-center justify-between">
+              <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Pill className="w-4 h-4 text-[#0065cb]" />
-                  <p className="text-sm font-semibold text-[#111827] m-0">{m}</p>
+                  <Pill className="w-4 h-4 text-[var(--acl-primary)]" />
+                  <p className="text-sm font-semibold text-[var(--text-primary)] m-0">{m}</p>
                 </div>
-                <span className="text-[11px] text-[#9ca3af]">
+                <span className="text-[11px] text-[var(--text-muted)]">
                   {rows.length} NDC{rows.length === 1 ? "" : "s"} on contract
                 </span>
               </div>
@@ -67,13 +67,13 @@ export default function ManufacturersPage() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.ndc}>
-                      <td className="font-mono text-[11px] text-[#4b5563]">{r.ndc}</td>
-                      <td className="text-xs font-medium text-[#111827]">{r.productName}</td>
-                      <td className="text-xs text-[#4b5563]">{r.form}</td>
-                      <td className="right text-xs tabular-nums font-medium text-[#111827]">
+                      <td className="font-mono text-[11px] text-[var(--text-secondary)]">{r.ndc}</td>
+                      <td className="text-xs font-medium text-[var(--text-primary)]">{r.productName}</td>
+                      <td className="text-xs text-[var(--text-secondary)]">{r.form}</td>
+                      <td className="right text-xs tabular-nums font-medium text-[var(--text-primary)]">
                         ${r.contractPrice.toFixed(2)}
                       </td>
-                      <td className="right text-xs tabular-nums text-[#4b5563]">
+                      <td className="right text-xs tabular-nums text-[var(--text-secondary)]">
                         ± {r.tolerancePct}%
                       </td>
                       <td>
@@ -85,7 +85,7 @@ export default function ManufacturersPage() {
                         ) : r.highRisk ? (
                           <span className="badge blue">High-risk</span>
                         ) : (
-                          <span className="text-[11px] text-[#9ca3af]">Standard</span>
+                          <span className="text-[11px] text-[var(--text-muted)]">Standard</span>
                         )}
                       </td>
                     </tr>

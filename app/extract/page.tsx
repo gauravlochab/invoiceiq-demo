@@ -91,6 +91,28 @@ const initialDocuments: Document[] = [
   { id: "invoice-MDL-2026-44390",       label: "Medline Industries",       sub: "Invoice \u00b7 Feb 18, 2026",  type: "invoice",      badge: null },
   { id: "invoice-HS-2026-77341",        label: "Henry Schein",             sub: "Invoice \u00b7 Jan 30, 2026",  type: "invoice",      badge: "duplicate" },
   { id: "invoice-OM-2026-38920",        label: "Owens & Minor",       sub: "Invoice \u00b7 Feb 05, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-BD-2026-50112",        label: "Becton Dickinson",          sub: "Invoice · Jan 08, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-BD-2026-50287",        label: "Becton Dickinson",          sub: "Invoice · Feb 19, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-STR-2026-61034",       label: "Stryker Medical",           sub: "Invoice · Jan 22, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-STR-2026-61198",       label: "Stryker Medical",           sub: "Invoice · Mar 11, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-BXH-2026-72041",       label: "Baxter Healthcare",         sub: "Invoice · Feb 03, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-BXH-2026-72355",       label: "Baxter Healthcare",         sub: "Invoice · Mar 18, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-JNJ-2026-83019",       label: "Johnson & Johnson MedTech", sub: "Invoice · Jan 14, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-JNJ-2026-83274",       label: "Johnson & Johnson MedTech", sub: "Invoice · Mar 05, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-ABT-2026-90421",       label: "Abbott Laboratories",       sub: "Invoice · Feb 11, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-GEH-2026-10538",       label: "GE Healthcare",             sub: "Invoice · Jan 29, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-GEH-2026-10742",       label: "GE Healthcare",             sub: "Invoice · Mar 24, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-MKS-2026-21093",       label: "McKesson Medical-Surgical",  sub: "Invoice · Feb 07, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-MKS-2026-21340",       label: "McKesson Medical-Surgical",  sub: "Invoice · Mar 14, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-PHL-2026-31587",       label: "Philips Healthcare",        sub: "Invoice · Jan 19, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-ZBM-2026-40219",       label: "Zimmer Biomet",             sub: "Invoice · Feb 26, 2026",  type: "invoice",      badge: "duplicate" },
+  { id: "invoice-TFX-2026-55034",       label: "Teleflex Medical",          sub: "Invoice · Mar 02, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-TFX-2026-55198",       label: "Teleflex Medical",          sub: "Invoice · Jan 11, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-CH-2026-0587",         label: "Cardinal Health",           sub: "Invoice · Feb 14, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-MDL-2026-44952",       label: "Medline Industries",        sub: "Invoice · Jan 27, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-BME-2026-Q1-063",      label: "BioMed Equipment Inc.",     sub: "Invoice · Mar 21, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-HS-2026-77502",        label: "Henry Schein",              sub: "Invoice · Feb 09, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-OM-2026-39104",        label: "Owens & Minor",            sub: "Invoice · Mar 07, 2026",  type: "invoice",      badge: null },
   // \u2500\u2500 Supporting Documents \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   { id: "po-NMC-2026-PO-2847",          label: "Northfield Medical",       sub: "Purchase Order",               type: "po",           badge: null },
   { id: "packingslip-STC-PS-2026-0392", label: "Steris Corporation",       sub: "Packing Slip \u00b7 Feb 25, 2026", type: "packing_slip", badge: null },
@@ -241,9 +263,9 @@ function getFlagCodes(flags: ExtractedData["flags"]): string[] {
 function KVRow({ label, value, revealed }: { label: string; value?: string; revealed: boolean }) {
   if (!revealed) return null;
   return (
-    <div className="flex justify-between py-1.5 border-b border-[#f0f2f5]">
-      <span className="text-xs text-[#9ca3af]">{label}</span>
-      <span className="text-xs text-[#111827] font-medium max-w-[200px] truncate text-right">
+    <div className="flex justify-between py-1.5 border-b border-[var(--bg-subtle)]">
+      <span className="text-xs text-[var(--text-muted)]">{label}</span>
+      <span className="text-xs text-[var(--text-primary)] font-medium max-w-[200px] truncate text-right">
         {value ?? "\u2014"}
       </span>
     </div>
@@ -266,13 +288,13 @@ function SkeletonLoading() {
       <div className="flex items-center gap-2 mb-4">
         <div
           className="w-3 h-3 rounded-full animate-spin"
-          style={{ border: "1px solid #d1d5db", borderTopColor: "#0065cb" }}
+          style={{ border: "1px solid var(--border-strong)", borderTopColor: "var(--acl-primary)" }}
         />
         <span className="section-label">EXTRACTING WITH INVOICE AGENT</span>
       </div>
       <div className="space-y-3">
         {widths.map((w, i) => (
-          <div key={i} className={`${w} h-3 rounded animate-pulse bg-[#f0f2f5]`} />
+          <div key={i} className={`${w} h-3 rounded animate-pulse bg-[var(--bg-subtle)]`} />
         ))}
       </div>
     </div>
@@ -575,8 +597,8 @@ export default function ExtractPage() {
         width: 48,
         height: 48,
         borderRadius: 10,
-        background: "#0065cb",
-        border: "1px solid #0065cb",
+        background: "var(--acl-primary)",
+        border: "1px solid var(--acl-primary)",
         display: "flex" as const,
         alignItems: "center" as const,
         justifyContent: "center" as const,
@@ -601,11 +623,11 @@ export default function ExtractPage() {
   };
 
   const pipelineLabelColor = (nodeIndex: number, defaultColor: string) => {
-    return processingStep >= nodeIndex ? "#0065cb" : defaultColor;
+    return processingStep >= nodeIndex ? "var(--acl-primary)" : defaultColor;
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#f7f8fa]">
+    <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]">
 
       {/* ═══════════════════════════════════════════════════════════════════════
           STAGE 1 -- UPLOAD / SELECT
@@ -616,8 +638,8 @@ export default function ExtractPage() {
 
             {/* Page header */}
             <div className="mb-6">
-              <h1 className="text-lg font-semibold text-[#111827]">Extract Invoice</h1>
-              <p className="text-sm text-[#4b5563] mt-0.5">
+              <h1 className="text-lg font-semibold text-[var(--text-primary)]">Extract Invoice</h1>
+              <p className="text-sm text-[var(--text-secondary)] mt-0.5">
                 Upload an invoice PDF or select from recent invoices below to begin AI-powered extraction.
               </p>
             </div>
@@ -643,41 +665,41 @@ export default function ExtractPage() {
               }}
               className={`card min-h-[200px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
                 isDragOver
-                  ? "border-[#0065cb] bg-[#e8f1fc] border-solid"
+                  ? "border-[var(--acl-primary)] bg-[var(--acl-primary-subtle)] border-solid"
                   : uploadedFile
-                    ? "border-[#0065cb] border-solid bg-white"
-                    : "border-dashed border-[#d1d5db] hover:border-[#9ca3af] hover:bg-[#f0f2f5] bg-white"
+                    ? "border-[var(--acl-primary)] border-solid bg-white"
+                    : "border-dashed border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-subtle)] bg-white"
               }`}
               style={{ borderWidth: 2 }}
             >
               {uploadedFile ? (
                 <div className="flex flex-col items-center gap-3 px-4 py-2">
-                  <div className="w-12 h-12 rounded-full bg-[#e8f1fc] flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-[#0065cb]" />
+                  <div className="w-12 h-12 rounded-full bg-[var(--acl-primary-subtle)] flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-[var(--acl-primary)]" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-[#111827]">{uploadedFile.name}</div>
-                    <div className="text-xs text-[#9ca3af] mt-0.5">
+                    <div className="text-sm font-medium text-[var(--text-primary)]">{uploadedFile.name}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-0.5">
                       {(uploadedFile.size / 1024).toFixed(0)} KB
                     </div>
                   </div>
                   {!uploading && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleUploadAndExtract(); }}
-                      className="px-5 py-2 text-sm font-medium rounded-md bg-[#0065cb] text-white hover:bg-[#0057ad] transition-colors cursor-pointer border-none"
+                      className="px-5 py-2 text-sm font-medium rounded-md bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer border-none"
                     >
                       Upload &amp; Extract
                     </button>
                   )}
                   {uploading && (
                     <div className="w-64">
-                      <div className="flex justify-between text-xs text-[#9ca3af] mb-1">
+                      <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
                         <span>Uploading...</span>
                         <span>{uploadProgress.toFixed(0)}%</span>
                       </div>
-                      <div className="w-full h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-[#0065cb] rounded-full transition-all duration-300"
+                          className="h-full bg-[var(--acl-primary)] rounded-full transition-all duration-300"
                           style={{ width: `${uploadProgress}%` }}
                         />
                       </div>
@@ -686,16 +708,16 @@ export default function ExtractPage() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 px-4 py-4">
-                  <div className="w-12 h-12 rounded-full bg-[#f0f2f5] flex items-center justify-center">
-                    <UploadIcon className="w-6 h-6 text-[#9ca3af]" />
+                  <div className="w-12 h-12 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center">
+                    <UploadIcon className="w-6 h-6 text-[var(--text-muted)]" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-[#111827]">Upload Invoice</div>
-                    <div className="text-xs text-[#9ca3af] mt-1">
+                    <div className="text-sm font-medium text-[var(--text-primary)]">Upload Invoice</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1">
                       Drag and drop your invoice PDF here, or click to browse files
                     </div>
                   </div>
-                  <div className="text-xs text-[#d1d5db]">Supported: PDF up to 10MB</div>
+                  <div className="text-xs text-[var(--border-strong)]">Supported: PDF up to 10MB</div>
                 </div>
               )}
             </div>
@@ -718,15 +740,15 @@ export default function ExtractPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="card p-4">
-                    <div className="w-8 h-8 bg-[#f0f2f5] rounded animate-pulse mb-3" />
+                    <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded animate-pulse mb-3" />
                     <div
-                      className="h-3.5 bg-[#e5e7eb] rounded animate-pulse mb-2"
+                      className="h-3.5 bg-[var(--border)] rounded animate-pulse mb-2"
                       style={{ width: `${60 + i * 8}%` }}
                     />
-                    <div className="h-2.5 w-3/4 bg-[#e5e7eb] rounded animate-pulse mb-3" />
+                    <div className="h-2.5 w-3/4 bg-[var(--border)] rounded animate-pulse mb-3" />
                     <div className="flex gap-2 mt-3">
-                      <div className="h-7 flex-1 bg-[#f0f2f5] rounded animate-pulse" />
-                      <div className="h-7 flex-1 bg-[#f0f2f5] rounded animate-pulse" />
+                      <div className="h-7 flex-1 bg-[var(--bg-subtle)] rounded animate-pulse" />
+                      <div className="h-7 flex-1 bg-[var(--bg-subtle)] rounded animate-pulse" />
                     </div>
                   </div>
                 ))}
@@ -735,13 +757,13 @@ export default function ExtractPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {invoiceDocs.map((doc) => (
                   <div key={doc.id} className="card p-4 flex flex-col">
-                    <div className="w-9 h-9 rounded-lg bg-[#f0f2f5] flex items-center justify-center mb-3">
-                      <FileText className="w-[18px] h-[18px] text-[#4b5563]" />
+                    <div className="w-9 h-9 rounded-lg bg-[var(--bg-subtle)] flex items-center justify-center mb-3">
+                      <FileText className="w-[18px] h-[18px] text-[var(--text-secondary)]" />
                     </div>
-                    <div className="text-sm font-semibold text-[#111827] leading-tight">
+                    <div className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
                       {doc.label}
                     </div>
-                    <div className="text-xs text-[#9ca3af] mt-0.5">{doc.sub}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{doc.sub}</div>
                     {doc.badge && (
                       <div className="mt-2">
                         <DocBadge badge={doc.badge} />
@@ -751,14 +773,14 @@ export default function ExtractPage() {
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => setPreviewDoc(doc)}
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[#f0f2f5] text-[#4b5563] hover:bg-[#e5e7eb] transition-colors cursor-pointer border-none"
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors cursor-pointer border-none"
                       >
                         <Eye className="w-3 h-3" />
                         Preview
                       </button>
                       <button
                         onClick={() => handleExtractDoc(doc.id)}
-                        className="flex-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[#0065cb] text-white hover:bg-[#0057ad] transition-colors cursor-pointer border-none"
+                        className="flex-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer border-none"
                       >
                         Extract
                       </button>
@@ -777,18 +799,18 @@ export default function ExtractPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {supportingDocs.map((doc) => (
                     <div key={doc.id} className="card p-4 flex flex-col">
-                      <div className="w-9 h-9 rounded-lg bg-[#f0f2f5] flex items-center justify-center mb-3">
-                        <FileText className="w-[18px] h-[18px] text-[#9ca3af]" />
+                      <div className="w-9 h-9 rounded-lg bg-[var(--bg-subtle)] flex items-center justify-center mb-3">
+                        <FileText className="w-[18px] h-[18px] text-[var(--text-muted)]" />
                       </div>
-                      <div className="text-sm font-semibold text-[#111827] leading-tight">
+                      <div className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
                         {doc.label}
                       </div>
-                      <div className="text-xs text-[#9ca3af] mt-0.5">{doc.sub}</div>
+                      <div className="text-xs text-[var(--text-muted)] mt-0.5">{doc.sub}</div>
                       <div className="flex-1 min-h-[12px]" />
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={() => setPreviewDoc(doc)}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[#f0f2f5] text-[#4b5563] hover:bg-[#e5e7eb] transition-colors cursor-pointer border-none"
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors cursor-pointer border-none"
                         >
                           <Eye className="w-3 h-3" />
                           Preview
@@ -819,46 +841,46 @@ export default function ExtractPage() {
               padding: "32px 40px",
               background: "white",
               borderRadius: 12,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border)",
               boxShadow: "0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
             }}
           >
             {/* Node 1 - Invoice PDF */}
             <div ref={node1Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(1, "white", "#e5e7eb")}>
-                <FileText size={22} color={pipelineIconColor(1, "#4b5563")} />
+              <div style={pipelineNodeStyle(1, "white", "var(--border)")}>
+                <FileText size={22} color={pipelineIconColor(1, "var(--text-secondary)")} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(1, "#9ca3af"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Invoice PDF</span>
+              <span style={{ fontSize: 11, color: pipelineLabelColor(1, "var(--text-muted)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Invoice PDF</span>
             </div>
             <div style={{ flex: 1, minWidth: 56 }} />
             {/* Node 2 - AI Extraction */}
             <div ref={node2Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(2, "#e8f1fc", "#b0d0f0")}>
-                <Bot size={22} color={pipelineIconColor(2, "#0065cb")} />
+              <div style={pipelineNodeStyle(2, "var(--acl-primary-subtle)", "var(--acl-primary)")}>
+                <Bot size={22} color={pipelineIconColor(2, "var(--acl-primary)")} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(2, "#0065cb"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>AI Extraction</span>
+              <span style={{ fontSize: 11, color: pipelineLabelColor(2, "var(--acl-primary)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>AI Extraction</span>
             </div>
             <div style={{ flex: 1, minWidth: 56 }} />
             {/* Node 3 - Structured Data */}
             <div ref={node3Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(3, "white", "#e5e7eb")}>
-                <BarChart3 size={22} color={pipelineIconColor(3, "#0065cb")} />
+              <div style={pipelineNodeStyle(3, "white", "var(--border)")}>
+                <BarChart3 size={22} color={pipelineIconColor(3, "var(--acl-primary)")} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(3, "#9ca3af"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Structured Data</span>
+              <span style={{ fontSize: 11, color: pipelineLabelColor(3, "var(--text-muted)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Structured Data</span>
             </div>
             <div style={{ flex: 1, minWidth: 56 }} />
             {/* Node 4 - Exception Queue */}
             <div ref={node4Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(4, "#FEF2F2", "#FECACA")}>
-                <AlertTriangle size={22} color={pipelineIconColor(4, "#DC2626")} />
+              <div style={pipelineNodeStyle(4, "var(--critical-subtle)", "var(--critical-border)")}>
+                <AlertTriangle size={22} color={pipelineIconColor(4, "var(--critical)")} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(4, "#DC2626"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Exception Queue</span>
+              <span style={{ fontSize: 11, color: pipelineLabelColor(4, "var(--critical)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Exception Queue</span>
             </div>
 
             {/* Beams */}
-            <AnimatedBeam containerRef={pipelineRef} fromRef={node1Ref} toRef={node2Ref} duration={2} delay={0} colorFrom="#9ca3af" colorTo="#0065cb" />
-            <AnimatedBeam containerRef={pipelineRef} fromRef={node2Ref} toRef={node3Ref} duration={2} delay={0.7} colorFrom="#9ca3af" colorTo="#0065cb" />
-            <AnimatedBeam containerRef={pipelineRef} fromRef={node3Ref} toRef={node4Ref} duration={2} delay={1.4} colorFrom="#0065cb" colorTo="#DC2626" />
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node1Ref} toRef={node2Ref} duration={2} delay={0} colorFrom="var(--text-muted)" colorTo="var(--acl-primary)" />
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node2Ref} toRef={node3Ref} duration={2} delay={0.7} colorFrom="var(--text-muted)" colorTo="var(--acl-primary)" />
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node3Ref} toRef={node4Ref} duration={2} delay={1.4} colorFrom="var(--acl-primary)" colorTo="var(--critical)" />
           </div>
 
           {/* Progress indicator */}
@@ -866,24 +888,24 @@ export default function ExtractPage() {
             <div className="flex items-center gap-2">
               <div
                 className="w-4 h-4 rounded-full animate-spin"
-                style={{ border: "2px solid #e5e7eb", borderTopColor: "#0065cb" }}
+                style={{ border: "2px solid var(--border)", borderTopColor: "var(--acl-primary)" }}
               />
-              <span className="text-sm font-medium text-[#111827]">
+              <span className="text-sm font-medium text-[var(--text-primary)]">
                 {uploading ? "Uploading and extracting..." : (PROCESSING_STEP_LABELS[processingStep] || "Extracting with AI agent...")}
               </span>
             </div>
-            <span className="text-xs text-[#9ca3af]">
+            <span className="text-xs text-[var(--text-muted)]">
               {selectedDocMeta ? selectedDocMeta.label : "Processing document"}
             </span>
             {uploading && (
               <div className="w-64 mt-1">
-                <div className="w-full h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#0065cb] rounded-full transition-all duration-300"
+                    className="h-full bg-[var(--acl-primary)] rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <div className="text-xs text-[#9ca3af] text-center mt-1">
+                <div className="text-xs text-[var(--text-muted)] text-center mt-1">
                   {uploadProgress.toFixed(0)}%
                 </div>
               </div>
@@ -900,17 +922,17 @@ export default function ExtractPage() {
           {/* Left column: PDF preview (60%) */}
           <div className="flex flex-col overflow-hidden" style={{ flex: "0 0 60%", maxWidth: "60%" }}>
             {/* Header bar */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-[#e5e7eb] shrink-0">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-[var(--border)] shrink-0">
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleBackToUpload}
-                  className="flex items-center gap-1.5 text-xs font-medium text-[#4b5563] hover:text-[#111827] transition-colors cursor-pointer bg-transparent border-none px-0"
+                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer bg-transparent border-none px-0"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Upload
                 </button>
-                <div className="w-px h-4 bg-[#e5e7eb]" />
-                <span className="text-xs font-medium text-[#111827]">
+                <div className="w-px h-4 bg-[var(--border)]" />
+                <span className="text-xs font-medium text-[var(--text-primary)]">
                   {selectedDocMeta ? selectedDocMeta.label : "Document"}
                 </span>
                 {selectedDocMeta && <DocBadge badge={selectedDocMeta.badge} />}
@@ -918,25 +940,25 @@ export default function ExtractPage() {
             </div>
 
             {/* PDF embed */}
-            <div className="flex-1 p-4 overflow-hidden min-h-0 bg-[#f0f2f5]">
+            <div className="flex-1 p-4 overflow-hidden min-h-0 bg-[var(--bg-subtle)]">
               {selectedDoc ? (
                 <div className="relative overflow-hidden w-full h-full rounded-lg min-h-[500px]">
                   <iframe
                     src={`/documents/pdfs/${selectedDoc}.pdf`}
-                    className="w-full h-full rounded-lg border border-[#e5e7eb] min-h-[500px] bg-white"
+                    className="w-full h-full rounded-lg border border-[var(--border)] min-h-[500px] bg-white"
                   />
                   {loading && (
                     <BorderBeam
                       duration={3}
-                      colorFrom="#0065cb"
-                      colorTo="#0057ad"
+                      colorFrom="var(--acl-primary)"
+                      colorTo="var(--acl-primary-hover)"
                       borderWidth={2}
                     />
                   )}
                 </div>
               ) : (
-                <div className="w-full h-full rounded-lg flex items-center justify-center bg-white border border-[#e5e7eb] min-h-[500px]">
-                  <span className="text-sm text-[#9ca3af]">No document loaded</span>
+                <div className="w-full h-full rounded-lg flex items-center justify-center bg-white border border-[var(--border)] min-h-[500px]">
+                  <span className="text-sm text-[var(--text-muted)]">No document loaded</span>
                 </div>
               )}
             </div>
@@ -944,7 +966,7 @@ export default function ExtractPage() {
 
           {/* Right column: Extracted data (40%) */}
           <div
-            className="flex flex-col overflow-hidden border-l border-[#e5e7eb] bg-white"
+            className="flex flex-col overflow-hidden border-l border-[var(--border)] bg-white"
             style={{ flex: "0 0 40%", maxWidth: "40%" }}
           >
             <div className="flex-1 overflow-auto">
@@ -954,7 +976,7 @@ export default function ExtractPage() {
                 <div className="flex items-center justify-center h-full px-6">
                   <div className="text-center">
                     <div className="text-xs text-red-600 mb-1 font-medium">Extraction failed</div>
-                    <div className="text-xs text-[#9ca3af]">{extractError}</div>
+                    <div className="text-xs text-[var(--text-muted)]">{extractError}</div>
                   </div>
                 </div>
               )}
@@ -1003,11 +1025,11 @@ export default function ExtractPage() {
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-xs">
                           <thead>
-                            <tr className="bg-[#f0f2f5] border-b border-[#e5e7eb]">
+                            <tr className="bg-[var(--bg-subtle)] border-b border-[var(--border)]">
                               {["ITEM CODE", "DESCRIPTION", "QTY", "UNIT PRICE", "TOTAL"].map((h) => (
                                 <th
                                   key={h}
-                                  className="px-1.5 py-1.5 text-[10px] font-medium tracking-wide uppercase text-[#9ca3af] text-left whitespace-nowrap"
+                                  className="px-1.5 py-1.5 text-[10px] font-medium tracking-wide uppercase text-[var(--text-muted)] text-left whitespace-nowrap"
                                 >
                                   {h}
                                 </th>
@@ -1019,20 +1041,20 @@ export default function ExtractPage() {
                               const rowRevealed = isRevealed();
                               if (!rowRevealed) return null;
                               return (
-                                <tr key={idx} className="border-b border-[#f0f2f5]">
-                                  <td className="px-1.5 py-1.5 font-mono text-[10px] text-[#4b5563] whitespace-nowrap">
+                                <tr key={idx} className="border-b border-[var(--bg-subtle)]">
+                                  <td className="px-1.5 py-1.5 font-mono text-[10px] text-[var(--text-secondary)] whitespace-nowrap">
                                     {String(item.itemCode ?? "")}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-xs text-[#111827] max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
+                                  <td className="px-1.5 py-1.5 text-xs text-[var(--text-primary)] max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
                                     {String(item.description ?? "")}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-[#111827] text-right">
+                                  <td className="px-1.5 py-1.5 text-[var(--text-primary)] text-right">
                                     {String(item.quantity ?? "")}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-[#111827] whitespace-nowrap text-right">
+                                  <td className="px-1.5 py-1.5 text-[var(--text-primary)] whitespace-nowrap text-right">
                                     ${Number(item.unitPrice ?? 0).toFixed(2)}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-[#111827] whitespace-nowrap text-right font-medium">
+                                  <td className="px-1.5 py-1.5 text-[var(--text-primary)] whitespace-nowrap text-right font-medium">
                                     ${Number(item.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                                   </td>
                                 </tr>
@@ -1042,9 +1064,9 @@ export default function ExtractPage() {
                         </table>
                       </div>
                       {isRevealed() && (
-                        <div className="border-t border-[#e5e7eb] mt-1 pt-2 flex justify-between">
-                          <span className="text-xs text-[#9ca3af]">TOTAL AMOUNT</span>
-                          <span className="text-sm font-semibold text-[#111827]">
+                        <div className="border-t border-[var(--border)] mt-1 pt-2 flex justify-between">
+                          <span className="text-xs text-[var(--text-muted)]">TOTAL AMOUNT</span>
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">
                             ${Number(extracted.totalAmount ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -1074,7 +1096,7 @@ export default function ExtractPage() {
 
             {/* Bottom action bar */}
             {!loading && extracted && allRevealed && (
-              <div className="px-4 py-3 flex flex-col gap-2 border-t border-[#e5e7eb] bg-white shrink-0">
+              <div className="px-4 py-3 flex flex-col gap-2 border-t border-[var(--border)] bg-white shrink-0">
                 {hasNoPO ? (
                   <button
                     onClick={() => router.push("/exceptions/EX-003")}
@@ -1088,7 +1110,7 @@ export default function ExtractPage() {
                       const exId = selectedDoc ? DOC_TO_EXCEPTION[selectedDoc] : null;
                       router.push(exId ? `/exceptions/${exId}` : "/exceptions");
                     }}
-                    className="w-full bg-[#0065cb] text-white text-xs font-medium py-1.5 px-3 rounded-md border-none cursor-pointer hover:bg-[#0057ad] transition-colors"
+                    className="w-full bg-[var(--acl-primary)] text-white text-xs font-medium py-1.5 px-3 rounded-md border-none cursor-pointer hover:bg-[var(--acl-primary-hover)] transition-colors"
                   >
                     Match Against PO &rarr;
                   </button>
@@ -1099,7 +1121,7 @@ export default function ExtractPage() {
                       ? `/exceptions/${DOC_TO_EXCEPTION[selectedDoc]}`
                       : "/exceptions"
                   }
-                  className="text-xs text-[#0065cb] text-center no-underline hover:underline"
+                  className="text-xs text-[var(--acl-primary)] text-center no-underline hover:underline"
                 >
                   View in Exception Queue &rarr;
                 </Link>
@@ -1122,8 +1144,8 @@ export default function ExtractPage() {
             className="relative bg-white rounded-lg shadow-lg w-[800px] h-[85vh] flex flex-col"
             style={{ maxWidth: "90vw" }}
           >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[#e5e7eb]">
-              <span className="text-sm font-medium text-[#111827]">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
+              <span className="text-sm font-medium text-[var(--text-primary)]">
                 {previewDoc.label} &mdash; {previewDoc.sub}
               </span>
               <div className="flex gap-2 items-center">
@@ -1134,16 +1156,16 @@ export default function ExtractPage() {
                       setPreviewDoc(null);
                       handleExtractDoc(docId);
                     }}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#0065cb] text-white hover:bg-[#0057ad] cursor-pointer border-none transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] cursor-pointer border-none transition-colors"
                   >
                     Extract this invoice
                   </button>
                 )}
                 <button
                   onClick={() => setPreviewDoc(null)}
-                  className="p-1.5 rounded-md hover:bg-[#f0f2f5] cursor-pointer bg-transparent border-none transition-colors"
+                  className="p-1.5 rounded-md hover:bg-[var(--bg-subtle)] cursor-pointer bg-transparent border-none transition-colors"
                 >
-                  <X className="w-4 h-4 text-[#9ca3af]" />
+                  <X className="w-4 h-4 text-[var(--text-muted)]" />
                 </button>
               </div>
             </div>

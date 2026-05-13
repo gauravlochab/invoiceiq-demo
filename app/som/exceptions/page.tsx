@@ -89,9 +89,9 @@ function severityDotClass(severity: Severity): string {
 }
 
 function flaggedColor(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "#DC2626";
-  if (severity === "medium") return "#B45309";
-  return "#4b5563";
+  if (severity === "critical" || severity === "high") return "var(--critical)";
+  if (severity === "medium") return "var(--warning)";
+  return "var(--text-secondary)";
 }
 
 // ─── Sort ────────────────────────────────────────────────────────────────────
@@ -156,41 +156,41 @@ export default function SomExceptionsPage() {
   const criticalCount = counts.critical;
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Header */}
-      <div className="px-8 pt-8 pb-6">
+      <div className="px-6 lg:px-8 pt-8 pb-6">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <ShieldAlert className="w-4 h-4 text-[#0065cb]" />
-              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[#0065cb]">
+              <ShieldAlert className="w-4 h-4 text-[var(--acl-primary)]" />
+              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
                 Drug Distributor · SOM
               </span>
             </div>
-            <h1 className="text-xl font-semibold text-[#111827] tracking-tight leading-tight m-0">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight m-0">
               Exceptions
             </h1>
-            <p className="text-xs text-[#4b5563] mt-1 m-0">
+            <p className="text-xs text-[var(--text-secondary)] mt-1 m-0">
               {somExceptions.length} suspicious-order exceptions across {new Set(somExceptions.map((e) => e.vendor)).size} pharmacies
             </p>
           </div>
         </div>
       </div>
 
-      <hr className="border-[#e5e7eb] m-0" />
+      <hr className="border-[var(--border)] m-0" />
 
       {/* Summary strip */}
-      <div className="px-8 py-6">
-        <div className="flex border border-[#e5e7eb] rounded-lg bg-white">
-          <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+      <div className="px-6 lg:px-8 py-6">
+        <div className="flex border border-[var(--border)] rounded-lg bg-white">
+          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
             <p className="section-label">Total exceptions</p>
-            <p className="text-2xl font-bold text-[#111827] mt-1 m-0">{somExceptions.length}</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{somExceptions.length}</p>
           </div>
-          <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
             <p className="section-label">Open / Under Review</p>
             <p className="text-2xl font-bold text-amber-600 mt-1 m-0">{openCount}</p>
           </div>
-          <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
             <p className="section-label">Critical</p>
             <p className="text-2xl font-bold text-red-600 mt-1 m-0">{criticalCount}</p>
           </div>
@@ -202,7 +202,7 @@ export default function SomExceptionsPage() {
       </div>
 
       {/* Filter chips */}
-      <div className="px-8 pb-3">
+      <div className="px-6 lg:px-8 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           {filterChips.map((f) => {
             const active = filter === f.key;
@@ -213,10 +213,10 @@ export default function SomExceptionsPage() {
                 disabled={f.count === 0 && f.key !== "all"}
                 className={`text-[11px] font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
                   active
-                    ? "bg-[#0065cb] text-white border-[#0065cb]"
+                    ? "bg-[var(--acl-primary)] text-white border-[var(--acl-primary)]"
                     : f.count === 0
-                    ? "bg-white text-[#9ca3af] border-[#e5e7eb] cursor-not-allowed opacity-60"
-                    : "bg-white text-[#4b5563] border-[#d1d5db] hover:bg-[#f0f2f5]"
+                    ? "bg-white text-[var(--text-muted)] border-[var(--border)] cursor-not-allowed opacity-60"
+                    : "bg-white text-[var(--text-secondary)] border-[var(--border-strong)] hover:bg-[var(--bg-subtle)]"
                 }`}
               >
                 {f.label} <span className={active ? "opacity-80" : "opacity-60"}>({f.count})</span>
@@ -227,7 +227,7 @@ export default function SomExceptionsPage() {
       </div>
 
       {/* Table */}
-      <div className="px-8 pb-8">
+      <div className="px-6 lg:px-8 pb-8">
         <div className="card overflow-hidden">
           <table className="data-table">
             <thead>
@@ -239,7 +239,7 @@ export default function SomExceptionsPage() {
                 <th className="right">
                   <button
                     onClick={() => handleSort("flaggedAmount")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] hover:text-[#111827] bg-transparent border-none cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
                   >
                     Flagged
                     <ArrowUpDown className="w-3 h-3" />
@@ -250,7 +250,7 @@ export default function SomExceptionsPage() {
                 <th>
                   <button
                     onClick={() => handleSort("detectedAt")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] hover:text-[#111827] bg-transparent border-none cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
                   >
                     Detected
                     <ArrowUpDown className="w-3 h-3" />
@@ -263,7 +263,7 @@ export default function SomExceptionsPage() {
               {sorted.length === 0 ? (
                 <tr>
                   <td colSpan={9}>
-                    <div className="px-5 py-10 text-center text-xs text-[#9ca3af]">
+                    <div className="px-5 py-10 text-center text-xs text-[var(--text-muted)]">
                       No exceptions match this filter.
                     </div>
                   </td>
@@ -273,7 +273,7 @@ export default function SomExceptionsPage() {
                   <tr key={ex.id} className="group">
                     <td>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-mono text-[#111827]">{ex.id}</span>
+                        <span className="text-xs font-mono text-[var(--text-primary)]">{ex.id}</span>
                       </div>
                     </td>
                     <td>
@@ -281,11 +281,11 @@ export default function SomExceptionsPage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-[#9ca3af]" />
-                        <span className="text-xs font-medium text-[#111827]">{ex.vendor}</span>
+                        <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
+                        <span className="text-xs font-medium text-[var(--text-primary)]">{ex.vendor}</span>
                       </div>
                     </td>
-                    <td className="font-mono text-[11px] text-[#4b5563]">{ex.invoiceNumber}</td>
+                    <td className="font-mono text-[11px] text-[var(--text-secondary)]">{ex.invoiceNumber}</td>
                     <td className="right">
                       <span className="text-xs font-medium tabular-nums" style={{ color: flaggedColor(ex.severity) }}>
                         {formatCurrency(ex.flaggedAmount)}
@@ -294,7 +294,7 @@ export default function SomExceptionsPage() {
                     <td>
                       <span className="flex items-center gap-1.5">
                         <span className={severityDotClass(ex.severity)} />
-                        <span className="text-xs text-[#4b5563]">
+                        <span className="text-xs text-[var(--text-secondary)]">
                           {ex.severity.charAt(0).toUpperCase() + ex.severity.slice(1)}
                         </span>
                       </span>
@@ -307,11 +307,11 @@ export default function SomExceptionsPage() {
                           : "Resolved"}
                       </span>
                     </td>
-                    <td className="text-xs text-[#4b5563]">{formatDate(ex.detectedAt)}</td>
+                    <td className="text-xs text-[var(--text-secondary)]">{formatDate(ex.detectedAt)}</td>
                     <td>
                       <Link
                         href={`/exceptions/${ex.id}`}
-                        className="text-[11px] text-[#9ca3af] group-hover:text-[#0065cb] font-medium no-underline hover:underline transition-colors"
+                        className="text-[11px] text-[var(--text-muted)] group-hover:text-[var(--acl-primary)] font-medium no-underline hover:underline transition-colors"
                       >
                         Review →
                       </Link>

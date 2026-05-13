@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Shield, ChevronDown, ChevronRight, AlertTriangle, Flag, XCircle, ArrowUpDown } from "lucide-react";
 import { vendorScores, formatCurrency, formatDate } from "@/lib/data";
 import { useToast } from "@/components/Toast";
+import { VendorBadge } from "@/components/VendorBadge";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 function scoreColor(score: number): string {
   if (score < 30) return "text-red-600";
@@ -21,7 +23,7 @@ function ratingBadge(rating: string): string {
 function discrepancyColor(pct: number): string {
   if (pct > 15) return "text-red-600";
   if (pct > 5) return "text-amber-600";
-  return "text-[#4b5563]";
+  return "text-[var(--text-secondary)]";
 }
 
 function rowRiskBg(discrepancyPct: number): string {
@@ -48,18 +50,30 @@ export default function VendorScoringPage() {
   const [sortKey, setSortKey] = useState<VendorSortKey>("discrepancyPct");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
+  // Pagination state
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
   // Simulated loading
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(timer);
   }, []);
 
-  const sorted = [...vendorScores].sort((a, b) => {
-    if (!sortKey) return b.discrepancyPct - a.discrepancyPct;
-    const aVal = a[sortKey];
-    const bVal = b[sortKey];
-    return sortDir === "desc" ? bVal - aVal : aVal - bVal;
-  });
+  const sorted = useMemo(
+    () =>
+      [...vendorScores].sort((a, b) => {
+        if (!sortKey) return b.discrepancyPct - a.discrepancyPct;
+        const aVal = a[sortKey];
+        const bVal = b[sortKey];
+        return sortDir === "desc" ? bVal - aVal : aVal - bVal;
+      }),
+    [sortKey, sortDir]
+  );
+
+  // Pagination derived values
+  const pageCount = Math.ceil(sorted.length / pageSize);
+  const paginatedVendors = sorted.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const totalDiscrepancy = sorted.reduce((s, v) => s + v.discrepancyAmount, 0);
   const highRiskCount = sorted.filter((v) => v.score < 40).length;
@@ -77,60 +91,61 @@ export default function VendorScoringPage() {
       setSortKey(key);
       setSortDir("desc");
     }
+    setPageIndex(0);
   }
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Header */}
-      <div className="px-8 pt-8 pb-6">
+      <div className="px-6 lg:px-8 pt-8 pb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-[#111827] tracking-tight leading-tight m-0">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight m-0">
               Vendor Scoring
             </h1>
-            <p className="text-xs text-[#4b5563] mt-1 m-0">
+            <p className="text-xs text-[var(--text-secondary)] mt-1 m-0">
               Risk assessment across {sorted.length} vendors · Q1 2026
             </p>
           </div>
           <button
             onClick={() => showToast("Vendor risk report exported as PDF", "success")}
-            className="px-3 py-1.5 text-xs font-medium rounded-md border border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f0f2f5] transition-colors cursor-pointer"
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
           >
             Export Report
           </button>
         </div>
       </div>
 
-      <hr className="border-[#e5e7eb] m-0" />
+      <hr className="border-[var(--border)] m-0" />
 
       {/* Summary Strip */}
       {loading ? (
-        <div className="px-8 py-6">
-          <div className="flex border border-[#e5e7eb] rounded-lg bg-white">
+        <div className="px-6 lg:px-8 py-6">
+          <div className="flex border border-[var(--border)] rounded-lg bg-white">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className={`flex-1 px-6 py-4 ${i < 5 ? "border-r border-[#e5e7eb]" : ""}`}>
-                <div className="h-3 w-20 bg-[#e5e7eb] rounded animate-pulse mb-3" />
-                <div className="h-7 w-14 bg-[#e5e7eb] rounded animate-pulse" />
+              <div key={i} className={`flex-1 px-6 py-4 ${i < 5 ? "border-r border-[var(--border)]" : ""}`}>
+                <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse mb-3" />
+                <div className="h-7 w-14 bg-[var(--border)] rounded animate-pulse" />
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="px-8 py-6">
-          <div className="flex border border-[#e5e7eb] rounded-lg bg-white">
-            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+        <div className="px-6 lg:px-8 py-6">
+          <div className="flex border border-[var(--border)] rounded-lg bg-white">
+            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
               <p className="section-label">Vendors Scored</p>
-              <p className="text-2xl font-bold text-[#111827] mt-1 m-0">{sorted.length}</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{sorted.length}</p>
             </div>
-            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
               <p className="section-label">High Risk</p>
               <p className="text-2xl font-bold text-red-600 mt-1 m-0">{highRiskCount}</p>
             </div>
-            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
               <p className="section-label">Total Discrepancy</p>
               <p className="text-2xl font-bold text-amber-600 mt-1 m-0">{formatCurrency(totalDiscrepancy)}</p>
             </div>
-            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
               <p className="section-label">Avg Score</p>
               <p className={`text-2xl font-bold mt-1 m-0 ${scoreColor(avgScore)}`}>{avgScore}/100</p>
             </div>
@@ -143,16 +158,16 @@ export default function VendorScoringPage() {
       )}
 
       {/* Vendor Table */}
-      <div className="px-8 pb-8">
+      <div className="px-6 lg:px-8 pb-8">
         <div className="card overflow-x-auto">
-          <table className="data-table" style={{ minWidth: 900 }}>
+          <table className="data-table min-w-[900px]">
             <thead>
               <tr>
-                <th style={{ width: 28 }}></th>
+                <th className="w-7"></th>
                 <th>Vendor</th>
                 <th className="right">Invoices</th>
                 <th
-                  className="right cursor-pointer hover:text-[#111827] transition-colors select-none"
+                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
                   onClick={() => handleSortClick("totalSpend")}
                 >
                   <span className="inline-flex items-center gap-1 justify-end">
@@ -160,7 +175,7 @@ export default function VendorScoringPage() {
                   </span>
                 </th>
                 <th
-                  className="right cursor-pointer hover:text-[#111827] transition-colors select-none"
+                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
                   onClick={() => handleSortClick("discrepancyAmount")}
                 >
                   <span className="inline-flex items-center gap-1 justify-end">
@@ -168,7 +183,7 @@ export default function VendorScoringPage() {
                   </span>
                 </th>
                 <th
-                  className="right cursor-pointer hover:text-[#111827] transition-colors select-none"
+                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
                   onClick={() => handleSortClick("discrepancyPct")}
                 >
                   <span className="inline-flex items-center gap-1 justify-end">
@@ -176,7 +191,7 @@ export default function VendorScoringPage() {
                   </span>
                 </th>
                 <th
-                  className="right cursor-pointer hover:text-[#111827] transition-colors select-none"
+                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
                   onClick={() => handleSortClick("recoveryPct")}
                 >
                   <span className="inline-flex items-center gap-1 justify-end">
@@ -184,7 +199,7 @@ export default function VendorScoringPage() {
                   </span>
                 </th>
                 <th
-                  className="right cursor-pointer hover:text-[#111827] transition-colors select-none"
+                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
                   onClick={() => handleSortClick("score")}
                 >
                   <span className="inline-flex items-center gap-1 justify-end">
@@ -192,52 +207,54 @@ export default function VendorScoringPage() {
                   </span>
                 </th>
                 <th>Rating</th>
-                <th style={{ minWidth: 100 }}>Actions</th>
+                <th className="min-w-[100px]">Actions</th>
               </tr>
             </thead>
             {loading ? (
               <tbody>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <tr key={i}>
-                    <td><div className="h-3.5 w-3.5 bg-[#e5e7eb] rounded animate-pulse mx-auto" /></td>
-                    <td><div className="h-3.5 bg-[#e5e7eb] rounded animate-pulse" style={{ width: `${55 + i * 7}%` }} /></td>
-                    <td className="right"><div className="h-3.5 w-8 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-16 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-14 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-10 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-10 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-8 bg-[#e5e7eb] rounded animate-pulse ml-auto" /></td>
-                    <td><div className="h-5 w-20 bg-[#e5e7eb] rounded animate-pulse" /></td>
-                    <td><div className="h-3.5 w-24 bg-[#e5e7eb] rounded animate-pulse" /></td>
+                    <td><div className="h-3.5 w-3.5 bg-[var(--border)] rounded animate-pulse mx-auto" /></td>
+                    <td><div className="h-3.5 bg-[var(--border)] rounded animate-pulse" style={{ width: `${55 + i * 7}%` }} /></td>
+                    <td className="right"><div className="h-3.5 w-8 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
+                    <td className="right"><div className="h-3.5 w-16 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
+                    <td className="right"><div className="h-3.5 w-14 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
+                    <td className="right"><div className="h-3.5 w-10 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
+                    <td className="right"><div className="h-3.5 w-10 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
+                    <td className="right"><div className="h-3.5 w-8 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
+                    <td><div className="h-5 w-20 bg-[var(--border)] rounded animate-pulse" /></td>
+                    <td><div className="h-3.5 w-24 bg-[var(--border)] rounded animate-pulse" /></td>
                   </tr>
                 ))}
               </tbody>
             ) : (
               <>
-                {sorted.map((vendor) => {
+                {paginatedVendors.map((vendor) => {
                   const isExpanded = expandedVendor === vendor.id;
                   const flagAction = flaggedVendors[vendor.id];
 
                   return (
                     <tbody key={vendor.id}>
                       <tr
-                        className={`cursor-pointer hover:bg-[#f7f8fa] transition-colors duration-100 ${rowRiskBg(vendor.discrepancyPct)}`}
+                        className={`cursor-pointer hover:bg-[var(--bg-base)] transition-colors duration-150 ${rowRiskBg(vendor.discrepancyPct)}`}
                         onClick={() => setExpandedVendor(isExpanded ? null : vendor.id)}
                       >
                         <td className="text-center">
                           {isExpanded ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af] inline" />
+                            <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)] inline" />
                           ) : (
-                            <ChevronRight className="w-3.5 h-3.5 text-[#9ca3af] inline" />
+                            <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)] inline" />
                           )}
                         </td>
                         <td>
-                          <span className="text-xs font-medium text-[#111827]">{vendor.name}</span>
-                          {flagAction && (
-                            <span className="badge critical ml-2">
-                              {flagAction}
-                            </span>
-                          )}
+                          <span className="inline-flex items-center gap-2">
+                            <VendorBadge name={vendor.name} size="sm" />
+                            {flagAction && (
+                              <span className="badge critical">
+                                {flagAction}
+                              </span>
+                            )}
+                          </span>
                         </td>
                         <td className="right text-xs tabular-nums">{vendor.totalInvoices}</td>
                         <td className="right text-xs tabular-nums">{formatCurrency(vendor.totalSpend)}</td>
@@ -267,21 +284,21 @@ export default function VendorScoringPage() {
                             <div className="flex items-center gap-0.5">
                               <button
                                 onClick={() => { if (confirm("Flag " + vendor.name + " as high-risk vendor?")) { handleFlag(vendor.id, "Flagged"); showToast(vendor.name + " flagged as high-risk", "warning"); } }}
-                                className="p-1.5 rounded hover:bg-amber-50 text-[#9ca3af] hover:text-amber-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
+                                className="p-1.5 rounded hover:bg-amber-50 text-[var(--text-muted)] hover:text-amber-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
                                 title="Flag as high-risk"
                               >
                                 <Flag className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => { if (confirm("Recommend penalty for " + vendor.name + "?")) { handleFlag(vendor.id, "Penalized"); showToast(vendor.name + " recommended for penalty", "error"); } }}
-                                className="p-1.5 rounded hover:bg-red-50 text-[#9ca3af] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
+                                className="p-1.5 rounded hover:bg-red-50 text-[var(--text-muted)] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
                                 title="Recommend for penalty"
                               >
                                 <AlertTriangle className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => { if (confirm("Remove " + vendor.name + " as supplier?")) { handleFlag(vendor.id, "Removed"); showToast(vendor.name + " removed from approved suppliers", "error"); } }}
-                                className="p-1.5 rounded hover:bg-red-50 text-[#9ca3af] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
+                                className="p-1.5 rounded hover:bg-red-50 text-[var(--text-muted)] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
                                 title="Remove as supplier"
                               >
                                 <XCircle className="w-3.5 h-3.5" />
@@ -289,7 +306,7 @@ export default function VendorScoringPage() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs text-[#9ca3af]">Done</span>
+                            <span className="text-xs text-[var(--text-muted)]">Done</span>
                           )}
                         </td>
                       </tr>
@@ -297,20 +314,20 @@ export default function VendorScoringPage() {
                       {/* Expanded exception history */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={10} className="bg-[#f0f2f5] px-8 py-4 border-t border-[#e5e7eb]">
+                          <td colSpan={10} className="bg-[var(--bg-subtle)] px-8 py-4 border-t border-[var(--border)]">
                             <p className="section-label mb-2">Exception History</p>
                             <div className="space-y-2">
                               {vendor.exceptions.map((ex) => (
                                 <div key={ex.id} className="card px-4 py-3 flex items-start gap-4">
                                   <div className="flex-shrink-0">
-                                    <span className="font-mono text-xs text-[#9ca3af]">{ex.id}</span>
+                                    <span className="font-mono text-xs text-[var(--text-muted)]">{ex.id}</span>
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className="badge warning">{ex.type}</span>
-                                      <span className="text-xs text-[#9ca3af]">{formatDate(ex.date)}</span>
+                                      <span className="text-xs text-[var(--text-muted)]">{formatDate(ex.date)}</span>
                                     </div>
-                                    <p className="text-xs text-[#4b5563] m-0 leading-relaxed">{ex.description}</p>
+                                    <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">{ex.description}</p>
                                   </div>
                                   <div className="flex-shrink-0">
                                     <span className="text-xs font-medium text-red-600 tabular-nums">{formatCurrency(ex.amount)}</span>
@@ -327,6 +344,14 @@ export default function VendorScoringPage() {
               </>
             )}
           </table>
+          <DataTablePagination
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            pageSize={pageSize}
+            totalRows={sorted.length}
+            onPageChange={setPageIndex}
+            onPageSizeChange={(size) => { setPageSize(size); setPageIndex(0); }}
+          />
         </div>
       </div>
     </div>

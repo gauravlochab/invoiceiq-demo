@@ -15,66 +15,76 @@ import {
   exceptionDuplicates,
   duplicatePairs,
   addToRecoveryQueue,
+  updateExceptionStatus,
 } from "@/lib/data";
 import type { Exception, InvoiceLineItem } from "@/lib/data";
-import { Check, X, ChevronDown } from "lucide-react";
+import { Check, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { LegalDisclaimerDialog } from "@/components/LegalDisclaimerDialog";
+import { CategoryBadge } from "@/components/CategoryBadge";
+import { VendorBadge } from "@/components/VendorBadge";
+import { EscalationBanner } from "@/components/EscalationBanner";
+import { PostDisagreeSteps } from "@/components/WorkflowSteps";
+import WorkflowStepper from "@/components/WorkflowStepper";
+import AuditTrail from "@/components/AuditTrail";
+import { getAuditTrail, getWorkflowSteps } from "@/lib/audit-trail";
+import { GPOComparisonSection } from "@/components/GPOComparisonSection";
 
 // ─── Agent timelines per exception ───────────────────────────────────────────
 
 const AGENT_TIMELINES: Record<string, Array<{agent: string; color: string; time: string; msg: string}>> = {
   "EX-001": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "08:14", msg: "Extracted BME-2026-Q1-047 — 23 line items. Contract CTR-2024-BIO-009 detected." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "08:15", msg: "Three-way match passed on all 23 items. No price or qty discrepancies." },
-    { agent: "Compliance Agent", color: "#b45309", time: "08:16", msg: "Annual cap check: $623,890 vs $500,000 cap. Overage $123,890 — BREACHED." },
-    { agent: "Insight Agent",    color: "#0891b2", time: "08:17", msg: "BioMed score updated: 30/100 High Risk. Recovery % 80%." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "08:14", msg: "Extracted BME-2026-Q1-047 — 23 line items. Contract CTR-2024-BIO-009 detected." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "08:15", msg: "Three-way match passed on all 23 items. No price or qty discrepancies." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "08:16", msg: "Annual cap check: $623,890 vs $500,000 cap. Overage $123,890 — BREACHED." },
+    { agent: "Insight Agent",    color: "var(--agent-insight)", time: "08:17", msg: "BioMed score updated: 30/100 High Risk. Recovery % 80%." },
   ],
   "EX-002": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "09:21", msg: "Extracted MS-2026-0923 — duplicate fingerprint 99.6% match vs MS-2026-0847." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "09:21", msg: "Duplicate confirmed. Amount delta $200 (0.42%). Same PO, same line items." },
-    { agent: "Compliance Agent", color: "#b45309", time: "09:22", msg: "No contract implications. Flagged for immediate block." },
-    { agent: "Recovery Agent",   color: "#15803d", time: "09:22", msg: "MedSupply Corp notified. Credit memo requested for $47,320." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "09:21", msg: "Extracted MS-2026-0923 — duplicate fingerprint 99.6% match vs MS-2026-0847." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "09:21", msg: "Duplicate confirmed. Amount delta $200 (0.42%). Same PO, same line items." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "09:22", msg: "No contract implications. Flagged for immediate block." },
+    { agent: "Recovery Agent",   color: "var(--agent-recovery)", time: "09:22", msg: "MedSupply Corp notified. Credit memo requested for $47,320." },
   ],
   "EX-003": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "10:04", msg: "Extracted MTS-INV-00291 — no PO reference. Vendor not in approved master (847 checked)." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "10:05", msg: "Three-way match failed — no PO. Bank account differs from known vendor records." },
-    { agent: "Compliance Agent", color: "#b45309", time: "10:05", msg: "Services billed outside registered category. Non-standard Net 15 terms flagged." },
-    { agent: "Insight Agent",    color: "#0891b2", time: "10:06", msg: "MedTech score: 5/100 Critical. 0% recovery rate. Escalation recommended." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "10:04", msg: "Extracted MTS-INV-00291 — no PO reference. Vendor not in approved master (847 checked)." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "10:05", msg: "Three-way match failed — no PO. Bank account differs from known vendor records." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "10:05", msg: "Services billed outside registered category. Non-standard Net 15 terms flagged." },
+    { agent: "Insight Agent",    color: "var(--agent-insight)", time: "10:06", msg: "MedTech score: 5/100 Critical. 0% recovery rate. Escalation recommended." },
   ],
   "EX-004": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "08:30", msg: "Extracted CH-Q1-2026-REBATE. Contract CTR-2025-CAR-003 referenced." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "08:31", msg: "47 invoices reviewed. Volume threshold met. Rebate applicable." },
-    { agent: "Compliance Agent", color: "#b45309", time: "08:32", msg: "Rebate shortfall $26,554. Volume discount gap $62,876. Total $89,430 outstanding." },
-    { agent: "Recovery Agent",   color: "#15803d", time: "08:33", msg: "Cardinal Health rebates team contacted. 72% historical recovery rate." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "08:30", msg: "Extracted CH-Q1-2026-REBATE. Contract CTR-2025-CAR-003 referenced." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "08:31", msg: "47 invoices reviewed. Volume threshold met. Rebate applicable." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "08:32", msg: "Rebate shortfall $26,554. Volume discount gap $62,876. Total $89,430 outstanding." },
+    { agent: "Recovery Agent",   color: "var(--agent-recovery)", time: "08:33", msg: "Cardinal Health rebates team contacted. 72% historical recovery rate." },
   ],
   "EX-005": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "09:10", msg: "Extracted CH-2026-0341 — 2,340 units at $85/unit." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "09:11", msg: "PO match passed. Unit price discrepancy vs contract schedule detected." },
-    { agent: "Compliance Agent", color: "#b45309", time: "09:12", msg: "Tier 2 at >1,000 units = $72/unit. Billed Tier 1 $85. 3 months × $17,420 = $52,260 overcharge." },
-    { agent: "Recovery Agent",   color: "#15803d", time: "09:13", msg: "Tier pricing dispute initiated. Draft credit memo sent." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "09:10", msg: "Extracted CH-2026-0341 — 2,340 units at $85/unit." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "09:11", msg: "PO match passed. Unit price discrepancy vs contract schedule detected." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "09:12", msg: "Tier 2 at >1,000 units = $72/unit. Billed Tier 1 $85. 3 months × $17,420 = $52,260 overcharge." },
+    { agent: "Recovery Agent",   color: "var(--agent-recovery)", time: "09:13", msg: "Tier pricing dispute initiated. Draft credit memo sent." },
   ],
   "EX-006": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "10:32", msg: "Extracted STC-2026-19847 — 6 line items. Flags: price_mismatch (critical), qty_mismatch (warning)." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "10:33", msg: "Three-way match: STE-4821-A PO $2.10 vs Invoice $2.50 (+19%). STE-9940-B qty -20 units." },
-    { agent: "Compliance Agent", color: "#b45309", time: "10:33", msg: "Contract CTR-2025-STE-007 — within annual cap. No rebate clause. Passed." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "10:32", msg: "Extracted STC-2026-19847 — 6 line items. Flags: price_mismatch (critical), qty_mismatch (warning)." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "10:33", msg: "Three-way match: STE-4821-A PO $2.10 vs Invoice $2.50 (+19%). STE-9940-B qty -20 units." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "10:33", msg: "Contract CTR-2025-STE-007 — within annual cap. No rebate clause. Passed." },
   ],
   "EX-007": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "11:05", msg: "Extracted MDL-2026-44821 — qty variance on exam gloves." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "11:06", msg: "PO 300 units, PS 300 delivered, Invoice billed 365. Overbilled $14,200." },
-    { agent: "Compliance Agent", color: "#b45309", time: "11:07", msg: "No contract cap issues. Qty dispute flagged for recovery." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "11:05", msg: "Extracted MDL-2026-44821 — qty variance on exam gloves." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "11:06", msg: "PO 300 units, PS 300 delivered, Invoice billed 365. Overbilled $14,200." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "11:07", msg: "No contract cap issues. Qty dispute flagged for recovery." },
   ],
   "EX-010": [
-    { agent: "Invoice Agent",    color: "#0065cb", time: "09:44", msg: "Extracted OM-2026-38920 — UOM mismatch detected on IV tubing." },
-    { agent: "Validation Agent", color: "#7c3aed", time: "09:45", msg: "PO ordered 'cases', invoice billed 'cartons' at higher per-unit rate. Variance $3,890." },
-    { agent: "Compliance Agent", color: "#b45309", time: "09:45", msg: "No contract cap breach. UOM discrepancy only. Credit memo recommended." },
-    { agent: "Recovery Agent",   color: "#15803d", time: "09:46", msg: "Owens & Minor issued credit memo. REC-003 closed — fully recovered." },
+    { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "09:44", msg: "Extracted OM-2026-38920 — UOM mismatch detected on IV tubing." },
+    { agent: "Validation Agent", color: "var(--agent-validation)", time: "09:45", msg: "PO ordered 'cases', invoice billed 'cartons' at higher per-unit rate. Variance $3,890." },
+    { agent: "Compliance Agent", color: "var(--agent-compliance)", time: "09:45", msg: "No contract cap breach. UOM discrepancy only. Credit memo recommended." },
+    { agent: "Recovery Agent",   color: "var(--agent-recovery)", time: "09:46", msg: "Owens & Minor issued credit memo. REC-003 closed — fully recovered." },
   ],
 };
 
 const DEFAULT_AGENT_TIMELINE = [
-  { agent: "Invoice Agent",    color: "#0065cb", time: "08:00", msg: "Invoice extracted and flagged for review." },
-  { agent: "Validation Agent", color: "#7c3aed", time: "08:01", msg: "Exception validated and confirmed." },
-  { agent: "Insight Agent",    color: "#0891b2", time: "08:02", msg: "Vendor risk profile updated." },
+  { agent: "Invoice Agent",    color: "var(--agent-invoice)", time: "08:00", msg: "Invoice extracted and flagged for review." },
+  { agent: "Validation Agent", color: "var(--agent-validation)", time: "08:01", msg: "Exception validated and confirmed." },
+  { agent: "Insight Agent",    color: "var(--agent-insight)", time: "08:02", msg: "Vendor risk profile updated." },
 ];
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -90,14 +100,14 @@ function FileIcon() {
     >
       <path
         d="M4 2h5.5L12 4.5V14H4V2z"
-        stroke="#9ca3af"
+        stroke="var(--text-muted)"
         strokeWidth="1.25"
         strokeLinejoin="round"
         fill="none"
       />
       <path
         d="M9.5 2v2.5H12"
-        stroke="#9ca3af"
+        stroke="var(--text-muted)"
         strokeWidth="1.25"
         strokeLinejoin="round"
         fill="none"
@@ -112,9 +122,9 @@ const variantClasses: Record<string, string> = {
   "outline-red":
     "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-white text-red-600 border border-red-600 hover:bg-red-50",
   "outline-gray":
-    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-white text-[#4b5563] border border-[#d1d5db] hover:bg-[#f0f2f5]",
+    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-white text-[var(--text-secondary)] border border-[var(--border-strong)] hover:bg-[var(--bg-subtle)]",
   ghost:
-    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-transparent text-[#9ca3af] border-none hover:text-[#4b5563]",
+    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-transparent text-[var(--text-muted)] border-none hover:text-[var(--text-secondary)]",
 };
 
 function ActionButton({
@@ -141,11 +151,12 @@ function Ex003Page() {
   const router = useRouter();
   const { showToast } = useToast();
   const [actionTaken003, setActionTaken003] = useState<string | null>(null);
+  const [disclaimerAction003, setDisclaimerAction003] = useState<{action: string; callback: () => void} | null>(null);
 
   const poCandidates = [
-    { po: "NMC-PO-2026-0891", vendor: "Medline Industries", product: "IV Catheter Kits 18G", amount: "$44,800", pct: "34%", pctColor: "#B45309" },
-    { po: "NMC-PO-2026-0744", vendor: "Cardinal Health", product: "Peripheral IV Kit", amount: "$38,500", pct: "28%", pctColor: "#9ca3af" },
-    { po: "NMC-PO-2026-1102", vendor: "Henry Schein", product: "IV Access Kit", amount: "$41,200", pct: "21%", pctColor: "#9ca3af" },
+    { po: "NMC-PO-2026-0891", vendor: "Medline Industries", product: "IV Catheter Kits 18G", amount: "$44,800", pct: "34%", pctColor: "var(--warning)" },
+    { po: "NMC-PO-2026-0744", vendor: "Cardinal Health", product: "Peripheral IV Kit", amount: "$38,500", pct: "28%", pctColor: "var(--text-muted)" },
+    { po: "NMC-PO-2026-1102", vendor: "Henry Schein", product: "IV Access Kit", amount: "$41,200", pct: "21%", pctColor: "var(--text-muted)" },
   ];
 
   const steps = [
@@ -180,12 +191,12 @@ function Ex003Page() {
   ];
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Breadcrumb */}
       <div className="pt-6 px-8">
         <button
           onClick={() => router.back()}
-          className="text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline p-0"
+          className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
         >
           &larr; Back
         </button>
@@ -194,14 +205,15 @@ function Ex003Page() {
       {/* Header */}
       <div className="px-8 pt-3 pb-6">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[#9ca3af]">EX-003</span>
+          <span className="font-mono text-[11px] text-[var(--text-muted)]">EX-003</span>
           <span className="badge critical">Suspicious Invoice</span>
           <span className="badge blue">Escalated</span>
+          <CategoryBadge category="Medical Equipment" />
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1.5 leading-tight">
+        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1.5 leading-tight">
           MedTech Solutions LLC
         </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           Invoice #MTS-INV-00291 · February 14, 2026 · $45,200.00
         </p>
       </div>
@@ -215,8 +227,12 @@ function Ex003Page() {
         </div>
       </div>
 
+      <div className="mx-8">
+        <EscalationBanner flaggedAmount={45200} />
+      </div>
+
       {/* Two-column layout */}
-      <div className="px-8 pb-8 grid grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
         {/* LEFT */}
         <div>
           <p className="section-label mb-2">
@@ -225,8 +241,8 @@ function Ex003Page() {
 
           <div className="card overflow-hidden">
             {/* Card header */}
-            <div className="px-5 pt-4 pb-3 border-b border-[#e5e7eb] flex items-center justify-between gap-3">
-              <span className="text-xs text-[#4b5563]">
+            <div className="px-5 pt-4 pb-3 border-b border-[var(--border)] flex items-center justify-between gap-3">
+              <span className="text-xs text-[var(--text-secondary)]">
                 Searching vendor master and open POs for invoice #MTS-INV-00291
               </span>
               <span className="badge critical flex-shrink-0">
@@ -244,7 +260,7 @@ function Ex003Page() {
                   {/* Step indicator */}
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-px ${
-                      step.ok ? "bg-[#f0f2f5]" : "bg-red-50"
+                      step.ok ? "bg-[var(--bg-subtle)]" : "bg-red-50"
                     }`}
                   >
                     <span
@@ -258,10 +274,10 @@ function Ex003Page() {
 
                   {/* Step text */}
                   <div>
-                    <p className="text-xs text-[#111827] m-0 font-medium">
+                    <p className="text-xs text-[var(--text-primary)] m-0 font-medium">
                       {step.title}
                     </p>
-                    <p className="text-[11px] text-[#9ca3af] mt-0.5 m-0">
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5 m-0">
                       {step.sub}
                     </p>
                   </div>
@@ -270,7 +286,7 @@ function Ex003Page() {
             </div>
 
             {/* PO Candidates */}
-            <div className="border-t border-[#e5e7eb] px-5 py-4">
+            <div className="border-t border-[var(--border)] px-5 py-4">
               <p className="section-label mb-2.5">
                 Closest PO Candidates (Insufficient Confidence)
               </p>
@@ -290,13 +306,13 @@ function Ex003Page() {
                     {poCandidates.map((row) => (
                       <tr key={row.po}>
                         <td>
-                          <span className="font-mono text-[11px] text-[#9ca3af]">
+                          <span className="font-mono text-[11px] text-[var(--text-muted)]">
                             {row.po}
                           </span>
                         </td>
-                        <td className="text-xs text-[#111827]">{row.vendor}</td>
-                        <td className="text-xs text-[#4b5563]">{row.product}</td>
-                        <td className="right text-xs tabular-nums text-[#111827]">
+                        <td className="text-xs text-[var(--text-primary)]">{row.vendor}</td>
+                        <td className="text-xs text-[var(--text-secondary)]">{row.product}</td>
+                        <td className="right text-xs tabular-nums text-[var(--text-primary)]">
                           {row.amount}
                         </td>
                         <td className="right">
@@ -340,17 +356,17 @@ function Ex003Page() {
             <div
               key={row.label}
               className={`flex justify-between items-baseline py-2.5 ${
-                i < detailRows.length - 1 ? "border-b border-[#f0f2f5]" : ""
+                i < detailRows.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""
               }`}
             >
-              <span className="text-xs text-[#4b5563]">{row.label}</span>
-              <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+              <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
             </div>
           ))}
 
           {/* Risk level row */}
-          <div className="flex justify-between items-center py-2.5 border-t border-[#f0f2f5]">
-            <span className="text-xs text-[#4b5563]">Risk level</span>
+          <div className="flex justify-between items-center py-2.5 border-t border-[var(--bg-subtle)]">
+            <span className="text-xs text-[var(--text-secondary)]">Risk level</span>
             <span className="badge critical">High</span>
           </div>
 
@@ -362,7 +378,7 @@ function Ex003Page() {
           <div className="flex items-center justify-between gap-2 py-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <FileIcon />
-              <span className="text-[11px] text-[#4b5563] overflow-hidden text-ellipsis whitespace-nowrap">
+              <span className="text-[11px] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
                 invoice-MTS-INV-00291.pdf
               </span>
             </div>
@@ -370,7 +386,7 @@ function Ex003Page() {
               href="/documents/pdfs/invoice-MTS-INV-00291.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] text-[#0065cb] no-underline whitespace-nowrap flex-shrink-0 hover:underline"
+              className="text-[11px] text-[var(--acl-primary)] no-underline whitespace-nowrap flex-shrink-0 hover:underline"
             >
               Open &rarr;
             </a>
@@ -381,7 +397,7 @@ function Ex003Page() {
             Actions
           </p>
 
-          {actionTaken003 ? (
+          {actionTaken003 ? (<>
             <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
               actionTaken003 === "blocked" ? "bg-red-50 text-red-700 border border-red-200" :
               actionTaken003 === "reported" ? "bg-purple-50 text-purple-700 border border-purple-200" :
@@ -393,18 +409,29 @@ function Ex003Page() {
                actionTaken003 === "verification" ? "Verification Requested" :
                "Dismissed — False Positive"}
             </div>
+            {(actionTaken003 === "blocked" || actionTaken003 === "reported") && <PostDisagreeSteps />}
+            </>
           ) : (
             <>
-              <ActionButton variant="primary-red" onClick={() => { setActionTaken003("blocked"); showToast("Payment blocked for MTS-INV-00291", "warning"); }}>Block Payment</ActionButton>
-              <ActionButton variant="outline-red" onClick={() => { setActionTaken003("reported"); showToast("Reported to compliance — case #CR-2026-0291", "info"); }}>Report to Compliance</ActionButton>
-              <ActionButton variant="outline-gray" onClick={() => { setActionTaken003("verification"); showToast("Verification request sent to MedTech Solutions LLC", "success"); }}>Request Vendor Verification</ActionButton>
-              <ActionButton variant="ghost" className="!mb-0" onClick={() => { if (confirm("Dismiss this exception as a false positive?")) { setActionTaken003("dismissed"); showToast("Exception EX-003 dismissed as false positive", "info"); } }}>
+              <ActionButton variant="primary-red" onClick={() => setDisclaimerAction003({ action: "block", callback: () => { setActionTaken003("blocked"); showToast("Payment authorization for invoice MTS-INV-00291 has been suspended", "warning"); } })}>Block Payment</ActionButton>
+              <ActionButton variant="outline-red" onClick={() => setDisclaimerAction003({ action: "report", callback: () => { setActionTaken003("reported"); showToast("Compliance case #CR-2026-0291 filed — referred for investigation", "info"); } })}>Report to Compliance</ActionButton>
+              <ActionButton variant="outline-gray" onClick={() => setDisclaimerAction003({ action: "verify", callback: () => { setActionTaken003("verification"); showToast("Vendor verification request dispatched to MedTech Solutions LLC", "success"); } })}>Request Vendor Verification</ActionButton>
+              <ActionButton variant="ghost" className="!mb-0" onClick={() => setDisclaimerAction003({ action: "dismiss", callback: () => { setActionTaken003("dismissed"); showToast("Exception EX-003 has been dismissed per analyst determination", "info"); } })}>
                 Dismiss (False Positive)
               </ActionButton>
             </>
           )}
         </div>
       </div>
+
+      {/* Legal Disclaimer Dialog for Ex003 actions */}
+      <LegalDisclaimerDialog
+        open={!!disclaimerAction003}
+        onConfirm={() => { disclaimerAction003?.callback(); setDisclaimerAction003(null); }}
+        onCancel={() => setDisclaimerAction003(null)}
+        action={disclaimerAction003?.action || "block"}
+        invoiceNumber="MTS-INV-00291"
+      />
     </div>
   );
 }
@@ -425,13 +452,288 @@ const FLAG_BADGES: Record<string, { cls: string; label: string }> = {
   unit: { cls: "badge neutral", label: "Unit" },
 };
 
+// ─── Discrepancy type display config ────────────────────────────────────────
+
+const DISCREPANCY_TYPES: Record<string, { label: string; badgeCls: string; color: string }> = {
+  price: { label: "Price Mismatch", badgeCls: "badge critical", color: "var(--critical)" },
+  qty: { label: "Quantity Mismatch", badgeCls: "badge warning", color: "var(--warning)" },
+  description: { label: "Description Variation", badgeCls: "badge blue", color: "var(--info)" },
+  unit: { label: "Unit of Measure Mismatch", badgeCls: "badge neutral", color: "var(--text-secondary)" },
+};
+
+interface DiscrepancyViewProps {
+  lineItems: (InvoiceLineItem & { flags: string[]; packingSlipQty: number; poQty: number; poUnitPrice: number })[];
+  showActions?: boolean;
+  lineItemStates?: Record<string, "pending" | "accepted" | "rejected">;
+  onAccept?: (itemCode: string) => void;
+  onReject?: (itemCode: string) => void;
+  onUndo?: (itemCode: string) => void;
+}
+
+function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onReject, onUndo }: DiscrepancyViewProps) {
+  const flaggedItems = lineItems.filter((i) => i.flags && i.flags.length > 0);
+  const matchedItems = lineItems.filter((i) => !i.flags || i.flags.length === 0);
+
+  const grouped: Record<string, typeof flaggedItems> = {};
+  for (const item of flaggedItems) {
+    for (const flag of item.flags) {
+      if (!grouped[flag]) grouped[flag] = [];
+      if (!grouped[flag].some((g) => g.itemCode === item.itemCode)) {
+        grouped[flag].push(item);
+      }
+    }
+  }
+
+  const groupOrder = ["price", "qty", "description", "unit"];
+  const activeGroups = groupOrder.filter((g) => grouped[g]?.length);
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    Object.fromEntries(activeGroups.map((g) => [g, true]))
+  );
+  const [matchedExpanded, setMatchedExpanded] = useState(false);
+
+  const toggleGroup = (g: string) => setExpandedGroups((prev) => ({ ...prev, [g]: !prev[g] }));
+
+  const totalDiscrepancies = flaggedItems.reduce((sum, item) => sum + item.flags.length, 0);
+
+  return (
+    <div className="space-y-3">
+      {/* Summary banner */}
+      <div className="bg-[var(--bg-subtle)] border border-[var(--border)] rounded-md px-4 py-3 flex items-center justify-between">
+        <span className="text-xs text-[var(--text-secondary)]">
+          This invoice has <span className="font-semibold text-[var(--text-primary)]">{lineItems.length}</span> line items.
+          {flaggedItems.length > 0 ? (
+            <> Showing <span className="font-semibold text-[var(--critical)]">{flaggedItems.length}</span> with {totalDiscrepancies} {totalDiscrepancies === 1 ? "discrepancy" : "discrepancies"}.</>
+          ) : (
+            <> All items matched — no discrepancies.</>
+          )}
+        </span>
+        <div className="flex gap-2">
+          {activeGroups.map((g) => {
+            const dt = DISCREPANCY_TYPES[g];
+            return dt ? <span key={g} className={dt.badgeCls}>{grouped[g].length} {dt.label}</span> : null;
+          })}
+        </div>
+      </div>
+
+      {/* Grouped discrepancy sections */}
+      {activeGroups.map((groupKey) => {
+        const dt = DISCREPANCY_TYPES[groupKey];
+        const items = grouped[groupKey];
+        if (!dt || !items) return null;
+        const isExpanded = expandedGroups[groupKey] !== false;
+
+        return (
+          <div key={groupKey} className="card overflow-hidden">
+            {/* Group header */}
+            <button
+              onClick={() => toggleGroup(groupKey)}
+              className="w-full flex items-center justify-between px-5 py-3 bg-[var(--bg-subtle)] border-b border-[var(--border)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors duration-150"
+            >
+              <div className="flex items-center gap-2">
+                {isExpanded ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
+                <span className="text-xs font-semibold text-[var(--text-primary)]">{dt.label}</span>
+                <span className="text-[10px] text-[var(--text-muted)]">— {items.length} {items.length === 1 ? "item" : "items"}</span>
+              </div>
+              <span className={dt.badgeCls}>{items.length}</span>
+            </button>
+
+            {/* Expanded items */}
+            {isExpanded && (
+              <div className="divide-y divide-[var(--border)]">
+                {items.map((item) => {
+                  const state = lineItemStates?.[item.itemCode] ?? "pending";
+                  return (
+                    <div key={`${groupKey}-${item.itemCode}`} className={`px-5 py-4 ${rowBgClass(item.flags)}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        {/* Col 1: Item identification */}
+                        <div className="min-w-0 flex-1">
+                          <span className="font-mono text-[11px] text-[var(--text-muted)] block">{item.itemCode}</span>
+                          <span className="text-xs font-medium text-[var(--text-primary)] block mt-0.5">
+                            {item.invoiceDescription || item.description}
+                          </span>
+                        </div>
+
+                        {/* Col 2+3: Discrepancy detail */}
+                        <div className="flex-1 min-w-[280px]">
+                          {groupKey === "price" && (
+                            <div className="space-y-1">
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">PO Price</span>
+                                <span className="text-xs tabular-nums text-[var(--text-primary)]">${item.poUnitPrice.toFixed(2)}/unit</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">Invoice Price</span>
+                                <span className="text-xs tabular-nums font-medium text-red-600">${item.invoiceUnitPrice.toFixed(2)}/unit</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">Variance</span>
+                                <span className="text-xs tabular-nums font-medium text-red-600">
+                                  {item.invoiceUnitPrice - item.poUnitPrice > 0 ? "+" : ""}${(item.invoiceUnitPrice - item.poUnitPrice).toFixed(2)}/unit
+                                  ({((item.invoiceUnitPrice - item.poUnitPrice) / item.poUnitPrice * 100).toFixed(1)}%)
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {groupKey === "qty" && (
+                            <div className="space-y-1">
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">PO Qty</span>
+                                <span className="text-xs tabular-nums text-[var(--text-primary)]">{item.poQty.toLocaleString()} units</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">Packing Slip Qty</span>
+                                <span className="text-xs tabular-nums font-medium text-amber-700">{item.packingSlipQty.toLocaleString()} units</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">Invoice Qty</span>
+                                <span className="text-xs tabular-nums text-[var(--text-primary)]">{item.invoiceQty.toLocaleString()} units</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">Variance</span>
+                                <span className="text-xs tabular-nums font-medium text-amber-700">
+                                  {item.packingSlipQty - item.invoiceQty > 0 ? "+" : ""}{item.packingSlipQty - item.invoiceQty} units (PS vs Invoice)
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {groupKey === "description" && (
+                            <div className="space-y-1">
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[60px]">PO</span>
+                                <span className="text-xs text-[var(--text-primary)]">&ldquo;{item.poDescription}&rdquo;</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[60px]">Invoice</span>
+                                <span className="text-xs font-medium text-purple-600">&ldquo;{item.invoiceDescription}&rdquo;</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {groupKey === "unit" && (
+                            <div className="space-y-1">
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">PO Unit</span>
+                                <span className="text-xs text-[var(--text-primary)]">{item.poUnit}</span>
+                              </div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">Invoice Unit</span>
+                                <span className="text-xs font-medium text-blue-600">{item.invoiceUnit}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Show other flags for this item */}
+                          {item.flags.filter((f) => f !== groupKey).length > 0 && (
+                            <div className="mt-2 flex gap-1.5">
+                              <span className="text-[10px] text-[var(--text-muted)]">Also flagged:</span>
+                              {item.flags.filter((f) => f !== groupKey).map((f) => {
+                                const fb = FLAG_BADGES[f];
+                                return fb ? <span key={f} className={`${fb.cls} text-[9px]`}>{fb.label}</span> : null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action buttons (EX-006 only) */}
+                        {showActions && (
+                          <div className="flex-shrink-0 w-[140px] flex items-start justify-end">
+                            {state === "pending" ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => onAccept?.(item.itemCode)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors duration-150 cursor-pointer"
+                                >
+                                  <Check className="w-3 h-3" /> Agree
+                                </button>
+                                <button
+                                  onClick={() => onReject?.(item.itemCode)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors duration-150 cursor-pointer"
+                                >
+                                  <X className="w-3 h-3" /> Disagree
+                                </button>
+                              </div>
+                            ) : state === "accepted" ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <Check className="w-3 h-3" /> Agreed
+                                </span>
+                                <button
+                                  onClick={() => onUndo?.(item.itemCode)}
+                                  className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer transition-colors"
+                                  title="Change decision"
+                                >
+                                  undo
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-red-50 text-red-700 border border-red-200">
+                                  <X className="w-3 h-3" /> Disagreed
+                                </span>
+                                <button
+                                  onClick={() => onUndo?.(item.itemCode)}
+                                  className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer transition-colors"
+                                  title="Change decision"
+                                >
+                                  undo
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Matched items — collapsed by default */}
+      {matchedItems.length > 0 && (
+        <div className="card overflow-hidden">
+          <button
+            onClick={() => setMatchedExpanded((prev) => !prev)}
+            className="w-full flex items-center justify-between px-5 py-3 bg-[var(--bg-base)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors duration-150"
+          >
+            <div className="flex items-center gap-2">
+              {matchedExpanded ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
+              <span className="text-xs text-[var(--text-secondary)]">
+                {matchedItems.length} {matchedItems.length === 1 ? "item" : "items"} matched — no discrepancies
+              </span>
+            </div>
+            <span className="badge success">{matchedItems.length} OK</span>
+          </button>
+          {matchedExpanded && (
+            <div className="border-t border-[var(--border)] divide-y divide-[var(--border)]">
+              {matchedItems.map((item) => (
+                <div key={item.itemCode} className="px-5 py-2.5 flex items-center gap-4">
+                  <span className="font-mono text-[11px] text-[var(--text-muted)] w-[100px]">{item.itemCode}</span>
+                  <span className="text-xs text-[var(--text-primary)] flex-1">{item.invoiceDescription || item.description}</span>
+                  <span className="text-xs tabular-nums text-[var(--text-muted)]">{item.invoiceQty} × ${item.invoiceUnitPrice.toFixed(2)}</span>
+                  <span className="badge success text-[9px]">Match</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const REJECT_REASONS = [
-  "Incorrect pricing — vendor applied wrong rate",
-  "Wrong quantity — does not match packing slip",
-  "Item not ordered — not on original PO",
-  "Duplicate charge — already billed previously",
-  "Wrong PO referenced — need to match against correct PO",
-  "Additional shipment pending — quantity will reconcile",
+  "Pricing compliant per contract amendment",
+  "Quantity variance within acceptable tolerance threshold",
+  "Item authorized under separate purchase agreement",
+  "Charge reconciled with supplementary documentation",
+  "Purchase order amendment pending vendor acknowledgment",
+  "Additional fulfillment in transit — variance to reconcile upon delivery",
   "Other",
 ];
 
@@ -503,10 +805,10 @@ function Ex006Page() {
   const [invoiceStatus, setInvoiceStatus] = useState<"pending_review" | "waiting_manager" | "waiting_correction" | "approved_override">("pending_review");
 
   const statusSteps = [
-    { key: "pending_review", label: "Pending Review", color: "#B45309" },
-    { key: "waiting_correction", label: "Waiting on Correction", color: "#0065cb" },
-    { key: "waiting_manager", label: "Escalated to Manager", color: "#7c3aed" },
-    { key: "approved_override", label: "Approved", color: "#15803D" },
+    { key: "pending_review", label: "Pending Review", color: "var(--warning)" },
+    { key: "waiting_correction", label: "Waiting on Correction", color: "var(--agent-invoice)" },
+    { key: "waiting_manager", label: "Escalated to Manager", color: "var(--agent-validation)" },
+    { key: "approved_override", label: "Approved", color: "var(--agent-recovery)" },
   ] as const;
 
   const allResolved = dynamicLineItems.every((item) => lineItemStates[item.itemCode] !== "pending");
@@ -515,18 +817,25 @@ function Ex006Page() {
   // "Going against finding" state — needs reason popup
   const [reasonPopup, setReasonPopup] = useState<{ itemCode: string; action: "accept" | "reject" } | null>(null);
   const [reasonNote, setReasonNote] = useState("");
+  const [disclaimerPending, setDisclaimerPending] = useState<{itemCode: string; action: "accept" | "reject"} | null>(null);
 
   const handleLineItemAction = (itemCode: string, action: "accept" | "reject") => {
-    const item = dynamicLineItems.find((i) => i.itemCode === itemCode);
-    if (!item) return;
+    setDisclaimerPending({ itemCode, action });
+  };
+
+  const handleDisclaimerConfirm = () => {
+    if (!disclaimerPending) return;
+    const { itemCode, action } = disclaimerPending;
+    setDisclaimerPending(null);
 
     if (action === "reject") {
-      // Disagree always requires a reason — user is overriding the AI
+      // Disagree requires a reason — user is overriding the AI
       setReasonPopup({ itemCode, action });
       setReasonNote("");
     } else {
-      // Agree is instant — no reason needed
+      // Accept — original logic
       setLineItemStates((prev) => ({ ...prev, [itemCode]: "accepted" }));
+      showToast(`Line item ${itemCode} accepted — no discrepancy noted`, "success");
     }
   };
 
@@ -564,12 +873,12 @@ function Ex006Page() {
   ];
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Breadcrumb */}
       <div className="pt-6 px-8">
         <button
           onClick={() => router.back()}
-          className="text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline p-0"
+          className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
         >
           &larr; Back
         </button>
@@ -578,14 +887,15 @@ function Ex006Page() {
       {/* Header */}
       <div className="px-8 pt-3 pb-6">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[#9ca3af]">EX-006</span>
+          <span className="font-mono text-[11px] text-[var(--text-muted)]">EX-006</span>
           <span className="badge warning">Match Exception</span>
           <span className="badge warning">Under Review</span>
+          <CategoryBadge category="Sterilization" />
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1.5 leading-tight">
+        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1.5 leading-tight">
           Steris Corporation
         </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           Invoice #STC-2026-19847 · February 28, 2026 · PO #NMC-PO-2026-2847
         </p>
       </div>
@@ -599,188 +909,49 @@ function Ex006Page() {
         </div>
       </div>
 
+      <div className="mx-8">
+        <EscalationBanner flaggedAmount={4600} />
+      </div>
+
       {/* Two-column layout */}
-      <div className="px-8 pb-8 grid grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
         {/* LEFT: Three-way match */}
         <div>
           <p className="section-label mb-2">
             Three-Way Match Analysis
           </p>
 
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Item Code</th>
-                    <th>Description</th>
-                    <th className="right">PO Qty</th>
-                    <th className="right">PS Qty</th>
-                    <th className="right">Inv Qty</th>
-                    <th className="right">PO Price</th>
-                    <th className="right">Inv Price</th>
-                    <th className="right">Variance</th>
-                    <th>Status</th>
-                    <th className="text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dynamicLineItems.map((item) => {
-                    const itemFlags = item.flags || [];
-                    const isPriceMismatch = itemFlags.includes("price");
-                    const isQtyMismatch = itemFlags.includes("qty");
-                    const isDescMismatch = itemFlags.includes("description");
-                    const isUnitMismatch = itemFlags.includes("unit");
-                    const hasAnyIssue = itemFlags.length > 0;
+          <DiscrepancyView
+            lineItems={dynamicLineItems}
+            showActions={true}
+            lineItemStates={lineItemStates}
+            onAccept={handleAccept}
+            onReject={handleRejectOpen}
+            onUndo={(code) => setLineItemStates((prev) => ({ ...prev, [code]: "pending" }))}
+          />
 
-                    let varianceNode: React.ReactNode = (
-                      <span className="text-[#9ca3af]">&mdash;</span>
-                    );
-                    if (isPriceMismatch) {
-                      const delta = item.invoiceUnitPrice - item.poUnitPrice;
-                      varianceNode = (
-                        <span className="text-red-600 font-medium tabular-nums">
-                          {delta > 0 ? "+" : ""}${delta.toFixed(2)}/unit
-                        </span>
-                      );
-                    } else if (isQtyMismatch) {
-                      const delta = item.packingSlipQty - item.invoiceQty;
-                      varianceNode = (
-                        <span className="text-amber-700 font-medium tabular-nums">
-                          {delta > 0 ? "+" : ""}
-                          {delta} units
-                        </span>
-                      );
-                    }
-
-                    return (
-                      <tr key={item.itemCode} className={rowBgClass(item.flags)}>
-                        <td>
-                          <span className="font-mono text-[11px] text-[#9ca3af]">
-                            {item.itemCode}
-                          </span>
-                        </td>
-                        <td className="max-w-[220px]">
-                          <span className="text-xs text-[#111827] block">
-                            {item.invoiceDescription || item.description}
-                          </span>
-                          {isDescMismatch && item.poDescription && (
-                            <span className="text-[10px] text-purple-600 block mt-0.5">
-                              PO: {item.poDescription}
-                            </span>
-                          )}
-                          {isUnitMismatch && (
-                            <span className="text-[10px] text-blue-600 block mt-0.5">
-                              PO unit: {item.poUnit} / Invoice unit: {item.invoiceUnit}
-                            </span>
-                          )}
-                        </td>
-                        <td className="right text-xs tabular-nums">
-                          {item.poQty}
-                        </td>
-                        <td className="right text-xs tabular-nums">
-                          {item.packingSlipQty}
-                        </td>
-                        <td className="right text-xs tabular-nums">
-                          {item.invoiceQty}
-                        </td>
-                        <td className="right text-xs tabular-nums">
-                          ${item.poUnitPrice.toFixed(2)}
-                        </td>
-                        <td className="right">
-                          <span
-                            className={`text-xs tabular-nums ${
-                              isPriceMismatch ? "font-medium text-red-600" : "text-[#111827]"
-                            }`}
-                          >
-                            ${item.invoiceUnitPrice.toFixed(2)}
-                          </span>
-                        </td>
-                        <td className="right">{varianceNode}</td>
-                        <td>
-                          {hasAnyIssue ? (
-                            <div className="flex flex-wrap gap-1">
-                              {itemFlags.map((flag) => {
-                                const fb = FLAG_BADGES[flag];
-                                return fb ? <span key={flag} className={fb.cls}>{fb.label}</span> : null;
-                              })}
-                            </div>
-                          ) : (
-                            <span className="badge success">Match</span>
-                          )}
-                        </td>
-                        <td className="text-center relative">
-                          {lineItemStates[item.itemCode] === "pending" ? (
-                            <div className="flex items-center gap-1 justify-center">
-                              <button
-                                onClick={() => handleAccept(item.itemCode)}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
-                              >
-                                <Check className="w-3 h-3" /> Agree
-                              </button>
-                              <button
-                                onClick={() => handleRejectOpen(item.itemCode)}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
-                              >
-                                <X className="w-3 h-3" /> Disagree
-                              </button>
-                            </div>
-                          ) : lineItemStates[item.itemCode] === "accepted" ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <Check className="w-3 h-3" /> Agreed
-                              </span>
-                              <button
-                                onClick={() => setLineItemStates((prev) => ({ ...prev, [item.itemCode]: "pending" }))}
-                                className="text-[10px] text-[#9ca3af] hover:text-[#4b5563] bg-transparent border-none cursor-pointer transition-colors"
-                                title="Change decision"
-                              >
-                                undo
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-red-50 text-red-700 border border-red-200">
-                                <X className="w-3 h-3" /> Disagreed
-                              </span>
-                              <button
-                                onClick={() => setLineItemStates((prev) => ({ ...prev, [item.itemCode]: "pending" }))}
-                                className="text-[10px] text-[#9ca3af] hover:text-[#4b5563] bg-transparent border-none cursor-pointer transition-colors"
-                                title="Change decision"
-                              >
-                                undo
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
+          <div className="card overflow-hidden mt-3">
             {/* Reason popup — shown when going against AI finding */}
             {reasonPopup && (
               <div className="fixed inset-0 z-50 flex items-center justify-center">
                 <div className="absolute inset-0 bg-black/40" onClick={() => setReasonPopup(null)} />
-                <div className="relative bg-white border border-[#e5e7eb] shadow-md rounded-lg w-full max-w-md">
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
-                    <h3 className="text-sm font-semibold text-[#111827] m-0">
-                      Disagree with AI Finding: {reasonPopup.itemCode}
+                <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">
+                      Override Automated Determination: {reasonPopup.itemCode}
                     </h3>
-                    <button onClick={() => setReasonPopup(null)} className="text-[#9ca3af] hover:text-[#111827] cursor-pointer bg-transparent border-none p-1">
+                    <button onClick={() => setReasonPopup(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
                   <div className="px-5 py-4">
                     <div className="px-3 py-2.5 rounded-md text-xs mb-4 bg-amber-50 border border-amber-200 text-amber-800">
-                      You are disagreeing with the AI finding for this line item. Please provide a reason for your override.
+                      You are overriding the system&apos;s automated determination for this line item. This action will be recorded in the compliance audit log and may be subject to review.
                     </div>
 
-                    <label className="block text-xs font-medium text-[#4b5563] mb-1.5">
-                      Why do you disagree with the AI finding?
+                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                      Provide justification for determination override
                     </label>
                     <textarea
                       value={reasonNote}
@@ -789,14 +960,14 @@ function Ex006Page() {
                         ? "e.g., Vendor confirmed new pricing, PO amendment pending..."
                         : "e.g., Extraction error, wrong item matched, data entry issue..."}
                       rows={3}
-                      className="w-full px-3 py-2 text-xs border border-[#e5e7eb] rounded-md bg-white text-[#111827] resize-none focus:outline-none focus:ring-2 focus:ring-[#0065cb]/20 focus:border-[#0065cb]"
+                      className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
                     />
                   </div>
 
-                  <div className="flex gap-2 justify-end px-5 py-3 border-t border-[#e5e7eb]">
+                  <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
                     <button
                       onClick={() => setReasonPopup(null)}
-                      className="px-4 py-2 text-xs font-medium rounded-md border border-[#d1d5db] text-[#4b5563] bg-white hover:bg-[#f0f2f5] transition-colors cursor-pointer"
+                      className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -813,10 +984,10 @@ function Ex006Page() {
             )}
 
             {/* Totals summary */}
-            <div className="border-t border-[#e5e7eb] px-6 py-4 flex gap-10">
+            <div className="border-t border-[var(--border)] px-6 py-4 flex gap-10">
               <div>
                 <p className="section-label mb-1">PO Total</p>
-                <p className="text-lg font-semibold text-[#111827] m-0 tabular-nums">
+                <p className="text-lg font-semibold text-[var(--text-primary)] m-0 tabular-nums">
                   {formatCurrency(poTotal)}
                 </p>
               </div>
@@ -839,9 +1010,9 @@ function Ex006Page() {
 
             {/* AI recommendation */}
             <div className="px-6 pb-5">
-              <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+              <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
                 <p className="section-label mb-1.5">AI Recommendation</p>
-                <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
+                <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
                   Hold invoice. Request revised invoice from Steris at contracted rate of
                   $2.10/unit (PO #NMC-PO-2026-2847). Price variance of $0.40/unit has
                   recurred 23x this quarter = $4,600 total overcharge.
@@ -849,6 +1020,7 @@ function Ex006Page() {
               </div>
             </div>
           </div>
+          <GPOComparisonSection exceptionId="EX-006" />
           {/* Invoice Status Stepper */}
           <div className="card px-6 py-4 mt-4">
             <p className="section-label mb-3">Invoice Status</p>
@@ -865,21 +1037,21 @@ function Ex006Page() {
                             ? "text-white"
                             : isPast
                               ? "text-white"
-                              : "bg-[#f0f2f5] text-[#9ca3af]"
+                              : "bg-[var(--bg-subtle)] text-[var(--text-muted)]"
                         }`}
                         style={isActive || isPast ? { backgroundColor: step.color } : undefined}
                       >
                         {isPast ? <Check className="w-3 h-3" /> : i + 1}
                       </div>
                       <span className={`text-[10px] mt-1.5 text-center whitespace-nowrap ${
-                        isActive ? "font-semibold text-[#111827]" : "text-[#9ca3af]"
+                        isActive ? "font-semibold text-[var(--text-primary)]" : "text-[var(--text-muted)]"
                       }`}>
                         {step.label}
                       </span>
                     </div>
                     {i < statusSteps.length - 1 && (
                       <div className={`flex-1 h-0.5 mx-2 mb-4 ${
-                        isPast ? "bg-[#0065cb]" : "bg-[#e5e7eb]"
+                        isPast ? "bg-[var(--acl-primary)]" : "bg-[var(--border)]"
                       }`} />
                     )}
                   </div>
@@ -902,11 +1074,11 @@ function Ex006Page() {
             <div
               key={row.label}
               className={`flex justify-between items-baseline py-2.5 ${
-                i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""
+                i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""
               }`}
             >
-              <span className="text-xs text-[#4b5563]">{row.label}</span>
-              <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+              <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
             </div>
           ))}
 
@@ -914,15 +1086,15 @@ function Ex006Page() {
           <p className="section-label mt-5 mb-2">Documents</p>
 
           {documents.map((doc) => (
-            <div key={doc.href} className="relative py-2 border-b border-[#f0f2f5]">
+            <div key={doc.href} className="relative py-2 border-b border-[var(--bg-subtle)]">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <FileIcon />
-                  <span className="text-[11px] text-[#4b5563] overflow-hidden text-ellipsis whitespace-nowrap">
+                  <span className="text-[11px] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
                     {docOverrides[doc.href]?.label || doc.label}
                   </span>
                   {docOverrides[doc.href] && docOverrides[doc.href].label !== doc.label && (
-                    <span className="text-[9px] text-[#0065cb] font-medium ml-1">changed</span>
+                    <span className="text-[9px] text-[var(--acl-primary)] font-medium ml-1">changed</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -930,14 +1102,14 @@ function Ex006Page() {
                     href={docOverrides[doc.href]?.href || doc.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[11px] text-[#0065cb] no-underline whitespace-nowrap hover:underline"
+                    className="text-[11px] text-[var(--acl-primary)] no-underline whitespace-nowrap hover:underline"
                   >
                     Open
                   </a>
                   {altDocuments[doc.href] && (
                     <button
                       onClick={() => setChangingDoc(changingDoc === doc.href ? null : doc.href)}
-                      className="text-[11px] text-[#9ca3af] bg-transparent border-none cursor-pointer hover:text-[#111827] transition-colors"
+                      className="text-[11px] text-[var(--text-muted)] bg-transparent border-none cursor-pointer hover:text-[var(--text-primary)] transition-colors"
                     >
                       Change
                     </button>
@@ -945,7 +1117,7 @@ function Ex006Page() {
                 </div>
               </div>
               {changingDoc === doc.href && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-[#e5e7eb] rounded-md shadow-md py-1 z-20 w-[240px]">
+                <div className="absolute right-0 top-full mt-1 bg-white border border-[var(--border)] rounded-md shadow-md py-1 z-20 w-[240px]">
                   {(altDocuments[doc.href] || []).map((alt) => (
                     <button
                       key={alt.label}
@@ -954,12 +1126,12 @@ function Ex006Page() {
                         setChangingDoc(null);
                         if (alt.label.startsWith("po-")) setSelectedPO(alt.label);
                         if (alt.label.startsWith("packingslip-")) setSelectedPS(alt.label);
-                        showToast(`Document changed to ${alt.label} — table recalculated`, "info");
+                        showToast(`Source document updated to ${alt.label} — line items recalculated`, "info");
                       }}
                       className={`flex items-center w-full text-left px-3 py-1.5 text-[11px] cursor-pointer border-none transition-colors ${
                         (docOverrides[doc.href]?.label || doc.label) === alt.label
-                          ? "bg-[#0065cb]/5 text-[#0065cb] font-medium"
-                          : "bg-white text-[#4b5563] hover:bg-[#f0f2f5]"
+                          ? "bg-[var(--acl-primary)]/5 text-[var(--acl-primary)] font-medium"
+                          : "bg-white text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                       }`}
                     >
                       {(docOverrides[doc.href]?.label || doc.label) === alt.label && <Check className="w-3 h-3 inline mr-1" />}{alt.label}
@@ -987,16 +1159,17 @@ function Ex006Page() {
               {actionTaken === "correction" && (
                 <Link
                   href="/recovery"
-                  className="block text-center text-[11px] text-[#0065cb] no-underline hover:underline"
+                  className="block text-center text-[11px] text-[var(--acl-primary)] no-underline hover:underline"
                 >
                   View in Recovery Queue →
                 </Link>
               )}
+              {(actionTaken === "escalated" || actionTaken === "override") && <PostDisagreeSteps />}
             </div>
           ) : (
             <>
               {!allResolved && (
-                <p className="text-[10px] text-[#9ca3af] mb-2 italic">
+                <p className="text-[10px] text-[var(--text-muted)] mb-2 italic">
                   Review all line items above to unlock actions
                 </p>
               )}
@@ -1018,7 +1191,7 @@ function Ex006Page() {
                 onClick={() => { setActiveModal("override"); setModalNote(""); }}
                 className={`block w-full text-xs font-medium px-3 py-2 rounded-md text-center mb-2 transition-colors border ${
                   allResolved && !hasAnyRejection
-                    ? "bg-white text-[#4b5563] border-[#d1d5db] cursor-pointer hover:bg-[#f0f2f5]"
+                    ? "bg-white text-[var(--text-secondary)] border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-subtle)]"
                     : "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
                 }`}
                 title={hasAnyRejection ? "Cannot approve — one or more line items have disagreements" : ""}
@@ -1031,7 +1204,7 @@ function Ex006Page() {
 
               <button
                 onClick={() => { setActiveModal("escalate"); setModalNote(""); setSelectedManager(""); }}
-                className="block w-full bg-white text-[#4b5563] text-xs font-medium px-3 py-2 rounded-md border border-[#d1d5db] cursor-pointer text-center transition-colors hover:bg-[#f0f2f5]"
+                className="block w-full bg-white text-[var(--text-secondary)] text-xs font-medium px-3 py-2 rounded-md border border-[var(--border-strong)] cursor-pointer text-center transition-colors hover:bg-[var(--bg-subtle)]"
               >
                 Escalate to Manager
               </button>
@@ -1039,20 +1212,20 @@ function Ex006Page() {
           )}
 
           {/* Agent History */}
-          <div className="mt-4 pt-3 border-t border-[#f0f2f5]">
+          <div className="mt-4 pt-3 border-t border-[var(--bg-subtle)]">
             <button
               onClick={() => setHistoryOpen006(!historyOpen006)}
               className="flex items-center gap-1.5 w-full text-left bg-transparent border-none cursor-pointer p-0"
             >
-              <ChevronDown className={`w-3 h-3 text-[#9ca3af] flex-shrink-0 transition-transform duration-200 ${historyOpen006 ? "" : "-rotate-90"}`} />
-              <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[#4b5563]">Agent History</span>
+              <ChevronDown className={`w-3 h-3 text-[var(--text-muted)] flex-shrink-0 transition-transform duration-200 ${historyOpen006 ? "" : "-rotate-90"}`} />
+              <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[var(--text-secondary)]">Agent History</span>
             </button>
             {historyOpen006 && (
               <div className="mt-2 space-y-2">
                 {(() => {
                   const base = AGENT_TIMELINES["EX-006"] ?? DEFAULT_AGENT_TIMELINE;
                   const timeline = (actionTaken === "correction")
-                    ? [...base, { agent: "Recovery Agent", color: "#15803d", time: "Now", msg: "Recovery initiated. Email sent to ap@steris.com. Awaiting vendor response." }]
+                    ? [...base, { agent: "Recovery Agent", color: "var(--agent-recovery)", time: "Now", msg: "Recovery initiated. Email sent to ap@steris.com. Awaiting vendor response." }]
                     : base;
                   return timeline.map((e, i) => (
                     <div key={i} className="flex gap-2 text-[11px]">
@@ -1063,9 +1236,9 @@ function Ex006Page() {
                             style={{ backgroundColor: e.color + "22", color: e.color }}>
                             {e.agent}
                           </span>
-                          <span className="text-[9px] text-[#9ca3af]">{e.time}</span>
+                          <span className="text-[9px] text-[var(--text-muted)]">{e.time}</span>
                         </div>
-                        <p className="text-[#4b5563] m-0 leading-relaxed">{e.msg}</p>
+                        <p className="text-[var(--text-secondary)] m-0 leading-relaxed">{e.msg}</p>
                       </div>
                     </div>
                   ));
@@ -1082,30 +1255,30 @@ function Ex006Page() {
       {activeModal === "correction" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setActiveModal(null)} />
-          <div className="relative bg-white border border-[#e5e7eb] shadow-md rounded-lg w-full max-w-lg max-h-[85vh] overflow-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-sm font-semibold text-[#111827] m-0">Initiate Recovery from Vendor</h3>
-              <button onClick={() => setActiveModal(null)} className="text-[#9ca3af] hover:text-[#111827] cursor-pointer bg-transparent border-none p-1">
+          <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-lg max-h-[85vh] overflow-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">Initiate Recovery from Vendor</h3>
+              <button onClick={() => setActiveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="px-5 py-4">
-              <label className="block text-xs font-medium text-[#4b5563] mb-1">Vendor Email</label>
-              <input type="text" readOnly value="ap@steris.com" className="w-full px-3 py-2 text-xs border border-[#e5e7eb] rounded-md bg-[#f7f8fa] text-[#4b5563] mb-3" />
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Vendor Email</label>
+              <input type="text" readOnly value="ap@steris.com" className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-[var(--bg-base)] text-[var(--text-secondary)] mb-3" />
 
-              <label className="block text-xs font-medium text-[#4b5563] mb-1">Subject</label>
-              <input type="text" readOnly value="Recovery Request: Invoice #STC-2026-19847 — Price Discrepancy" className="w-full px-3 py-2 text-xs border border-[#e5e7eb] rounded-md bg-[#f7f8fa] text-[#4b5563] mb-3" />
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Subject</label>
+              <input type="text" readOnly value="Recovery Request: Invoice #STC-2026-19847 — Price Discrepancy" className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-[var(--bg-base)] text-[var(--text-secondary)] mb-3" />
 
-              <label className="block text-xs font-medium text-[#4b5563] mb-1">Message</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Message</label>
               <textarea
                 value={modalNote || "Dear Steris Accounts Receivable,\n\nWe have identified a pricing discrepancy on Invoice #STC-2026-19847.\n\nThe contracted rate for Sterile Surgical Drape Sets (STE-4821-A) is $2.10/unit per PO #NMC-PO-2026-2847, but the invoice reflects $2.50/unit.\n\nPlease issue a revised invoice at the contracted rate, or provide documentation supporting the rate change.\n\nRegards,\nNorthfield Medical Center — Accounts Payable"}
                 onChange={(e) => setModalNote(e.target.value)}
                 rows={10}
-                className="w-full px-3 py-2 text-xs border border-[#e5e7eb] rounded-md bg-white text-[#111827] resize-none focus:outline-none focus:ring-2 focus:ring-[#0065cb]/20 focus:border-[#0065cb] leading-relaxed"
+                className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)] leading-relaxed"
               />
             </div>
-            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[#e5e7eb]">
-              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[#d1d5db] text-[#4b5563] bg-white hover:bg-[#f0f2f5] transition-colors cursor-pointer">
+            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
+              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer">
                 Cancel
               </button>
               <button
@@ -1120,12 +1293,13 @@ function Ex006Page() {
                     emailSentTo: "ap@steris.com",
                     analystNote: "Recovery initiated from EX-006. Price mismatch on STE-4821-A: PO $2.10/unit vs Invoice $2.50/unit. $4,600 at risk.",
                   });
+                  updateExceptionStatus("EX-006", "under_review");
                   setActiveModal(null);
                   setActionTaken("correction");
                   setInvoiceStatus("waiting_correction");
-                  showToast(`Recovery request sent · ${rec.id} created → Recovery Queue`, "success");
+                  showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
                 }}
-                className="px-4 py-2 text-xs font-medium rounded-md bg-[#0065cb] text-white border-none hover:bg-[#0057ad] transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white border-none hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer"
               >
                 Send Recovery Request
               </button>
@@ -1138,10 +1312,10 @@ function Ex006Page() {
       {activeModal === "override" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setActiveModal(null)} />
-          <div className="relative bg-white border border-[#e5e7eb] shadow-md rounded-lg w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-sm font-semibold text-[#111827] m-0">Approve Invoice with Override</h3>
-              <button onClick={() => setActiveModal(null)} className="text-[#9ca3af] hover:text-[#111827] cursor-pointer bg-transparent border-none p-1">
+          <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">Approve Invoice with Override</h3>
+              <button onClick={() => setActiveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1151,21 +1325,21 @@ function Ex006Page() {
                 <p className="text-[11px] text-amber-700 m-0 mt-1">Invoice #STC-2026-19847 · Steris Corporation · $27,750.00</p>
               </div>
 
-              <label className="block text-xs font-medium text-[#4b5563] mb-1.5">Override reason (required)</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Override reason (required)</label>
               <textarea
                 value={modalNote}
                 onChange={(e) => setModalNote(e.target.value)}
                 placeholder="Explain why this override is justified..."
                 rows={4}
-                className="w-full px-3 py-2 text-xs border border-[#e5e7eb] rounded-md bg-white text-[#111827] resize-none focus:outline-none focus:ring-2 focus:ring-[#0065cb]/20 focus:border-[#0065cb]"
+                className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
               />
             </div>
-            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[#e5e7eb]">
-              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[#d1d5db] text-[#4b5563] bg-white hover:bg-[#f0f2f5] transition-colors cursor-pointer">
+            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
+              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer">
                 Cancel
               </button>
               <button
-                onClick={() => { setActiveModal(null); setActionTaken("override"); setInvoiceStatus("approved_override"); showToast("Invoice STC-2026-19847 approved with override", "warning"); }}
+                onClick={() => { setActiveModal(null); updateExceptionStatus("EX-006", "resolved"); setActionTaken("override"); setInvoiceStatus("approved_override"); showToast("Invoice STC-2026-19847 approved with managerial override — logged for audit", "warning"); }}
                 disabled={!modalNote.trim()}
                 className="px-4 py-2 text-xs font-medium rounded-md bg-amber-600 text-white border-none hover:bg-amber-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -1180,20 +1354,20 @@ function Ex006Page() {
       {activeModal === "escalate" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setActiveModal(null)} />
-          <div className="relative bg-white border border-[#e5e7eb] shadow-md rounded-lg w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-sm font-semibold text-[#111827] m-0">Escalate to Manager</h3>
-              <button onClick={() => setActiveModal(null)} className="text-[#9ca3af] hover:text-[#111827] cursor-pointer bg-transparent border-none p-1">
+          <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">Escalate to Manager</h3>
+              <button onClick={() => setActiveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="px-5 py-4">
-              <label className="block text-xs font-medium text-[#4b5563] mb-1.5">Select Manager</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Select Manager</label>
               <div className="relative mb-3">
                 <select
                   value={selectedManager}
                   onChange={(e) => setSelectedManager(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-[#e5e7eb] rounded-md bg-white text-[#111827] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0065cb]/20 focus:border-[#0065cb]"
+                  className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
                 >
                   <option value="">Choose a manager...</option>
                   <option value="david">David Kim — VP Finance</option>
@@ -1201,26 +1375,26 @@ function Ex006Page() {
                   <option value="michael">Michael Chang — CFO</option>
                   <option value="jennifer">Jennifer Walsh — Compliance Officer</option>
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af] pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
               </div>
 
-              <label className="block text-xs font-medium text-[#4b5563] mb-1.5">Note</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Note</label>
               <textarea
                 value={modalNote}
                 onChange={(e) => setModalNote(e.target.value)}
                 placeholder="Describe the situation and any urgency..."
                 rows={4}
-                className="w-full px-3 py-2 text-xs border border-[#e5e7eb] rounded-md bg-white text-[#111827] resize-none focus:outline-none focus:ring-2 focus:ring-[#0065cb]/20 focus:border-[#0065cb]"
+                className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
               />
             </div>
-            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[#e5e7eb]">
-              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[#d1d5db] text-[#4b5563] bg-white hover:bg-[#f0f2f5] transition-colors cursor-pointer">
+            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
+              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer">
                 Cancel
               </button>
               <button
-                onClick={() => { setActiveModal(null); setActionTaken("escalate"); setInvoiceStatus("waiting_manager"); showToast("Escalated to " + (selectedManager === "david" ? "David Kim" : selectedManager === "lisa" ? "Lisa Rodriguez" : selectedManager === "michael" ? "Michael Chang" : "Jennifer Walsh"), "info"); }}
+                onClick={() => { setActiveModal(null); setActionTaken("escalate"); setInvoiceStatus("waiting_manager"); showToast("Exception escalated for managerial review — assigned to " + (selectedManager === "david" ? "David Kim" : selectedManager === "lisa" ? "Lisa Rodriguez" : selectedManager === "michael" ? "Michael Chang" : "Jennifer Walsh"), "info"); }}
                 disabled={!selectedManager || !modalNote.trim()}
-                className="px-4 py-2 text-xs font-medium rounded-md bg-[#0065cb] text-white border-none hover:bg-[#0057ad] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white border-none hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Escalate
               </button>
@@ -1228,6 +1402,16 @@ function Ex006Page() {
           </div>
         </div>
       )}
+
+      {/* Legal Disclaimer Dialog for line-item agree/disagree */}
+      <LegalDisclaimerDialog
+        open={!!disclaimerPending}
+        onConfirm={handleDisclaimerConfirm}
+        onCancel={() => setDisclaimerPending(null)}
+        action={disclaimerPending?.action === "accept" ? "agree" : "disagree"}
+        itemCode={disclaimerPending?.itemCode}
+        invoiceNumber="STC-2026-19847"
+      />
     </div>
   );
 }
@@ -1245,6 +1429,7 @@ function ActionPanel({
 }) {
   const { showToast } = useToast();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [disclaimerAction, setDisclaimerAction] = useState<{action: string; callback: () => void} | null>(null);
   const detailRows = [
     { label: "Assigned to", value: ex.assignee || "Unassigned" },
     { label: "Detected", value: new Date(ex.detectedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) },
@@ -1255,15 +1440,16 @@ function ActionPanel({
   ];
 
   return (
+    <>
     <div className="card p-5">
       <p className="section-label mb-0">Exception Details</p>
       {detailRows.map((row, i, arr) => (
         <div
           key={row.label}
-          className={`flex justify-between items-baseline py-2.5 ${i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""}`}
+          className={`flex justify-between items-baseline py-2.5 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}
         >
-          <span className="text-xs text-[#4b5563]">{row.label}</span>
-          <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+          <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+          <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
         </div>
       ))}
 
@@ -1285,18 +1471,19 @@ function ActionPanel({
           {actionTaken === "recovery" && (
             <Link
               href="/recovery"
-              className="block text-center text-[11px] text-[#0065cb] no-underline hover:underline"
+              className="block text-center text-[11px] text-[var(--acl-primary)] no-underline hover:underline"
             >
               View in Recovery Queue →
             </Link>
           )}
+          {(actionTaken === "blocked" || actionTaken === "escalated") && <PostDisagreeSteps />}
         </div>
       ) : (
         <>
-          <ActionButton variant="primary-red" onClick={() => { setActionTaken("blocked"); showToast(`Payment blocked for ${ex.invoiceNumber}`, "warning"); }}>
+          <ActionButton variant="primary-red" onClick={() => setDisclaimerAction({ action: "block", callback: () => { setActionTaken("blocked"); updateExceptionStatus(ex.id, "under_review"); showToast(`Payment authorization for invoice ${ex.invoiceNumber} has been suspended`, "warning"); } })}>
             Block Payment
           </ActionButton>
-          <ActionButton variant="outline-red" onClick={() => {
+          <ActionButton variant="outline-red" onClick={() => setDisclaimerAction({ action: "recover", callback: () => {
             const rec = addToRecoveryQueue({
               exceptionId: ex.id,
               vendor: ex.vendor,
@@ -1307,35 +1494,36 @@ function ActionPanel({
               emailSentTo: `ap@${ex.vendor.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12)}.com`,
               analystNote: `Recovery initiated from exception ${ex.id}. Amount at risk: ${formatCurrency(ex.flaggedAmount)}.`,
             });
+            updateExceptionStatus(ex.id, "under_review");
             setActionTaken("recovery");
-            showToast(`Recovery initiated · ${rec.id} created → Recovery Queue`, "success");
-          }}>
+            showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
+          } })}>
             Initiate Recovery
           </ActionButton>
-          <ActionButton variant="outline-gray" onClick={() => { setActionTaken("escalated"); showToast(`${ex.id} escalated to manager`, "info"); }}>
+          <ActionButton variant="outline-gray" onClick={() => setDisclaimerAction({ action: "escalate", callback: () => { setActionTaken("escalated"); updateExceptionStatus(ex.id, "escalated"); showToast(`Exception ${ex.id} escalated for managerial review`, "info"); } })}>
             Escalate to Manager
           </ActionButton>
-          <ActionButton variant="ghost" className="!mb-0" onClick={() => { if (confirm("Dismiss this exception?")) { setActionTaken("dismissed"); showToast(`${ex.id} dismissed`, "info"); } }}>
+          <ActionButton variant="ghost" className="!mb-0" onClick={() => setDisclaimerAction({ action: "dismiss", callback: () => { setActionTaken("dismissed"); updateExceptionStatus(ex.id, "resolved"); showToast(`Exception ${ex.id} has been dismissed per analyst determination`, "info"); } })}>
             Dismiss
           </ActionButton>
         </>
       )}
 
       {/* Agent History */}
-      <div className="mt-4 pt-3 border-t border-[#f0f2f5]">
+      <div className="mt-4 pt-3 border-t border-[var(--bg-subtle)]">
         <button
           onClick={() => setHistoryOpen(!historyOpen)}
           className="flex items-center gap-1.5 w-full text-left bg-transparent border-none cursor-pointer p-0 mb-0"
         >
-          <ChevronDown className={`w-3 h-3 text-[#9ca3af] flex-shrink-0 transition-transform duration-200 ${historyOpen ? "" : "-rotate-90"}`} />
-          <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[#4b5563]">Agent History</span>
+          <ChevronDown className={`w-3 h-3 text-[var(--text-muted)] flex-shrink-0 transition-transform duration-200 ${historyOpen ? "" : "-rotate-90"}`} />
+          <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[var(--text-secondary)]">Agent History</span>
         </button>
         {historyOpen && (
           <div className="mt-2 space-y-2">
             {(() => {
               const base = AGENT_TIMELINES[ex.id] ?? DEFAULT_AGENT_TIMELINE;
               const timeline = (actionTaken === "correction" || actionTaken === "recovery")
-                ? [...base, { agent: "Recovery Agent", color: "#15803d", time: "Now", msg: "Recovery initiated. Email sent to vendor. Awaiting response." }]
+                ? [...base, { agent: "Recovery Agent", color: "var(--agent-recovery)", time: "Now", msg: "Recovery initiated. Email sent to vendor. Awaiting response." }]
                 : base;
               return timeline.map((e, i) => (
                 <div key={i} className="flex gap-2 text-[11px]">
@@ -1348,9 +1536,9 @@ function ActionPanel({
                       >
                         {e.agent}
                       </span>
-                      <span className="text-[9px] text-[#9ca3af]">{e.time}</span>
+                      <span className="text-[9px] text-[var(--text-muted)]">{e.time}</span>
                     </div>
-                    <p className="text-[#4b5563] m-0 leading-relaxed">{e.msg}</p>
+                    <p className="text-[var(--text-secondary)] m-0 leading-relaxed">{e.msg}</p>
                   </div>
                 </div>
               ));
@@ -1359,6 +1547,14 @@ function ActionPanel({
         )}
       </div>
     </div>
+    <LegalDisclaimerDialog
+      open={!!disclaimerAction}
+      onConfirm={() => { disclaimerAction?.callback(); setDisclaimerAction(null); }}
+      onCancel={() => setDisclaimerAction(null)}
+      action={disclaimerAction?.action || "block"}
+      invoiceNumber={ex.invoiceNumber}
+    />
+    </>
   );
 }
 
@@ -1375,25 +1571,26 @@ function PageShell({
 }) {
   const router = useRouter();
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       <div className="pt-6 px-8">
-        <button onClick={() => router.back()} className="text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline p-0">
+        <button onClick={() => router.back()} className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0">
           &larr; Back
         </button>
       </div>
 
       <div className="px-8 pt-3 pb-6">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[#9ca3af]">{ex.id}</span>
+          <span className="font-mono text-[11px] text-[var(--text-muted)]">{ex.id}</span>
           <span className={severityColors[ex.severity] || "badge neutral"}>{typeLabels[ex.type] || ex.type}</span>
           <span className={`badge ${ex.status === "open" ? "critical" : ex.status === "resolved" ? "success" : ex.status === "escalated" ? "blue" : "warning"}`}>
             {ex.status === "open" ? "Open" : ex.status === "resolved" ? "Resolved" : ex.status === "escalated" ? "Escalated" : "Under Review"}
           </span>
+          {ex.category && <CategoryBadge category={ex.category} />}
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1.5 leading-tight">
-          {ex.vendor}
-        </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <div className="mb-1.5">
+          <VendorBadge name={ex.vendor} size="lg" />
+        </div>
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           Invoice #{ex.invoiceNumber} · {new Date(ex.invoiceDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Flagged: {formatCurrency(ex.flaggedAmount)}
         </p>
       </div>
@@ -1404,9 +1601,26 @@ function PageShell({
         </div>
       </div>
 
-      <div className="px-8 pb-8 grid grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="mx-8">
+        <EscalationBanner flaggedAmount={ex.flaggedAmount} />
+      </div>
+
+      {/* Workflow Stepper */}
+      <div className="mx-8 mb-6">
+        <div className="card px-8 py-5">
+          <WorkflowStepper steps={getWorkflowSteps(ex.id)} />
+        </div>
+      </div>
+
+      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
         <div>{children}</div>
-        {rightPanel}
+        <div className="flex flex-col gap-5">
+          {rightPanel}
+          {/* Audit Trail */}
+          <div className="card p-5">
+            <AuditTrail entries={getAuditTrail(ex.id)} />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1427,86 +1641,17 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
       <p className="section-label mb-2">Three-Way Match Analysis</p>
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Item Code</th>
-                <th>Description</th>
-                <th className="right">PO Qty</th>
-                <th className="right">PS Qty</th>
-                <th className="right">Inv Qty</th>
-                <th className="right">PO Price</th>
-                <th className="right">Inv Price</th>
-                <th className="right">Variance</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lineItems.map((item) => {
-                const itemFlags = item.flags || [];
-                const isPriceMismatch = itemFlags.includes("price");
-                const isQtyMismatch = itemFlags.includes("qty");
-                const isDescMismatch = itemFlags.includes("description");
-                const isUnitMismatch = itemFlags.includes("unit");
-                const hasAnyIssue = itemFlags.length > 0;
+      <DiscrepancyView
+        lineItems={lineItems.map((item) => ({ ...item, flags: item.flags || [] }))}
+        showActions={false}
+      />
 
-                let varianceNode: React.ReactNode = <span className="text-[#9ca3af]">&mdash;</span>;
-                if (isPriceMismatch) {
-                  const delta = item.invoiceUnitPrice - item.poUnitPrice;
-                  varianceNode = <span className="text-red-600 font-medium tabular-nums">{delta > 0 ? "+" : ""}${delta.toFixed(2)}/unit</span>;
-                } else if (isQtyMismatch) {
-                  const delta = item.packingSlipQty - item.invoiceQty;
-                  varianceNode = <span className="text-amber-700 font-medium tabular-nums">{delta > 0 ? "+" : ""}{delta} units</span>;
-                }
-
-                return (
-                  <tr key={item.itemCode} className={rowBgClass(item.flags)}>
-                    <td><span className="font-mono text-[11px] text-[#9ca3af]">{item.itemCode}</span></td>
-                    <td className="max-w-[220px]">
-                      <span className="text-xs text-[#111827] block">{item.invoiceDescription || item.description}</span>
-                      {isDescMismatch && item.poDescription && (
-                        <span className="text-[10px] text-purple-600 block mt-0.5">PO: {item.poDescription}</span>
-                      )}
-                      {isUnitMismatch && (
-                        <span className="text-[10px] text-blue-600 block mt-0.5">PO unit: {item.poUnit} / Invoice unit: {item.invoiceUnit}</span>
-                      )}
-                    </td>
-                    <td className="right text-xs tabular-nums">{item.poQty}</td>
-                    <td className="right text-xs tabular-nums">{item.packingSlipQty}</td>
-                    <td className="right text-xs tabular-nums">{item.invoiceQty}</td>
-                    <td className="right text-xs tabular-nums">${item.poUnitPrice.toFixed(2)}</td>
-                    <td className="right">
-                      <span className={`text-xs tabular-nums ${isPriceMismatch ? "font-medium text-red-600" : "text-[#111827]"}`}>
-                        ${item.invoiceUnitPrice.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="right">{varianceNode}</td>
-                    <td>
-                      {hasAnyIssue ? (
-                        <div className="flex flex-wrap gap-1">
-                          {itemFlags.map((flag) => {
-                            const fb = FLAG_BADGES[flag];
-                            return fb ? <span key={flag} className={fb.cls}>{fb.label}</span> : null;
-                          })}
-                        </div>
-                      ) : (
-                        <span className="badge success">Match</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
+      <div className="card overflow-hidden mt-3">
         {/* Totals */}
-        <div className="border-t border-[#e5e7eb] px-6 py-4 flex gap-10">
+        <div className="border-t border-[var(--border)] px-6 py-4 flex gap-10">
           <div>
             <p className="section-label mb-1">PO Total</p>
-            <p className="text-lg font-semibold text-[#111827] m-0 tabular-nums">{formatCurrency(poTotal)}</p>
+            <p className="text-lg font-semibold text-[var(--text-primary)] m-0 tabular-nums">{formatCurrency(poTotal)}</p>
           </div>
           <div>
             <p className="section-label mb-1">Invoice Total</p>
@@ -1522,9 +1667,9 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
 
         {/* AI Recommendation */}
         <div className="px-6 pb-5">
-          <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
             <p className="section-label mb-1.5">AI Recommendation</p>
-            <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
               {ex.id === "EX-007"
                 ? "Hold invoice. Invoice bills 365 units but PO and packing slip both confirm 300 units. Request revised invoice for 300 units from Medline Industries. Overage of 65 units = $14,200 overbilled."
                 : "Resolved. Unit of measure mismatch between PO (cases) and invoice (cartons) caused $3,890 price variance. Vendor Owens & Minor issued credit memo. Recommend standardising UOM in vendor master."}
@@ -1532,6 +1677,7 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
           </div>
         </div>
       </div>
+      <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
 }
@@ -1548,19 +1694,19 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
 
   const inv1 = pair.invoice1;
   const inv2 = pair.invoice2;
-  const similarityColor = pair.similarity >= 99 ? "#ef4444" : pair.similarity >= 95 ? "#f59e0b" : "#3b82f6";
+  const similarityColor = pair.similarity >= 99 ? "var(--critical)" : pair.similarity >= 95 ? "var(--warning)" : "var(--info)";
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
       <p className="section-label mb-2">Duplicate Invoice Comparison</p>
       <div className="card overflow-hidden">
         {/* Side-by-side comparison */}
-        <div className="grid grid-cols-2 divide-x divide-[#e5e7eb]">
+        <div className="grid grid-cols-2 divide-x divide-[var(--border)]">
           {/* Invoice A */}
           <div className="p-5">
             <div className="flex items-center gap-2 mb-3">
               <span className="badge success">Original</span>
-              <span className="text-xs font-medium text-[#111827]">Invoice A</span>
+              <span className="text-xs font-medium text-[var(--text-primary)]">Invoice A</span>
             </div>
             {[
               { label: "Invoice #", value: inv1.number },
@@ -1568,9 +1714,9 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
               { label: "Amount", value: formatCurrency(inv1.amount) },
               { label: "Submitted via", value: inv1.submittedVia },
             ].map((row, i, arr) => (
-              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""}`}>
-                <span className="text-xs text-[#4b5563]">{row.label}</span>
-                <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}>
+                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
               </div>
             ))}
           </div>
@@ -1579,7 +1725,7 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
           <div className="p-5">
             <div className="flex items-center gap-2 mb-3">
               <span className="badge critical">Suspected Duplicate</span>
-              <span className="text-xs font-medium text-[#111827]">Invoice B</span>
+              <span className="text-xs font-medium text-[var(--text-primary)]">Invoice B</span>
             </div>
             {[
               { label: "Invoice #", value: inv2.number },
@@ -1587,44 +1733,44 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
               { label: "Amount", value: formatCurrency(inv2.amount) },
               { label: "Submitted via", value: inv2.submittedVia },
             ].map((row, i, arr) => (
-              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""}`}>
-                <span className="text-xs text-[#4b5563]">{row.label}</span>
-                <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}>
+                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Similarity score */}
-        <div className="border-t border-[#e5e7eb] px-5 py-4">
+        <div className="border-t border-[var(--border)] px-5 py-4">
           <div className="flex items-center justify-between mb-2">
             <span className="section-label">Content Similarity</span>
             <span className="text-sm font-semibold tabular-nums" style={{ color: similarityColor }}>{pair.similarity}%</span>
           </div>
-          <div className="w-full h-2 bg-[#f0f2f5] rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-[var(--bg-subtle)] rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${pair.similarity}%`, backgroundColor: similarityColor }} />
           </div>
           <div className="flex gap-6 mt-3">
             <div>
-              <span className="text-[11px] text-[#9ca3af]">Amount delta</span>
-              <p className="text-xs font-medium text-[#111827] m-0 mt-0.5">{formatCurrency(pair.amountDelta)} ({((pair.amountDelta / inv1.amount) * 100).toFixed(2)}%)</p>
+              <span className="text-[11px] text-[var(--text-muted)]">Amount delta</span>
+              <p className="text-xs font-medium text-[var(--text-primary)] m-0 mt-0.5">{formatCurrency(pair.amountDelta)} ({((pair.amountDelta / inv1.amount) * 100).toFixed(2)}%)</p>
             </div>
             <div>
-              <span className="text-[11px] text-[#9ca3af]">Days apart</span>
-              <p className="text-xs font-medium text-[#111827] m-0 mt-0.5">{pair.daysDelta} days</p>
+              <span className="text-[11px] text-[var(--text-muted)]">Days apart</span>
+              <p className="text-xs font-medium text-[var(--text-primary)] m-0 mt-0.5">{pair.daysDelta} days</p>
             </div>
             <div>
-              <span className="text-[11px] text-[#9ca3af]">Different channel</span>
-              <p className="text-xs font-medium text-[#111827] m-0 mt-0.5">{inv1.submittedVia !== inv2.submittedVia ? "Yes" : "No"}</p>
+              <span className="text-[11px] text-[var(--text-muted)]">Different channel</span>
+              <p className="text-xs font-medium text-[var(--text-primary)] m-0 mt-0.5">{inv1.submittedVia !== inv2.submittedVia ? "Yes" : "No"}</p>
             </div>
           </div>
         </div>
 
         {/* AI Analysis */}
         <div className="px-5 pb-5">
-          <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
             <p className="section-label mb-1.5">AI Analysis</p>
-            <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
               {ex.id === "EX-002"
                 ? "Near-identical invoices from MedSupply Corp submitted through different channels (postal mail vs email) within 6 days. Amount differs by only $200 (0.42%), consistent with manual re-entry error. Same line items, same PO reference. Recommend blocking the duplicate and confirming with vendor."
                 : "Exact duplicate from Henry Schein submitted via EDI and then again via email attachment 4 days later. Amounts are identical ($8,750). Second invoice was blocked before payment was processed."}
@@ -1656,7 +1802,7 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
       <div className="card p-6">
         {/* Contract summary */}
         <div className="mb-5">
-          <p className="text-sm font-medium text-[#111827] mb-3">Contract Summary</p>
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Contract Summary</p>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
@@ -1664,42 +1810,42 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
               { label: "Cap Amount", value: formatCurrency(capAmount) },
               { label: "Current Spend", value: formatCurrency(currentSpend) },
             ].map((row) => (
-              <div key={row.label} className="flex justify-between items-baseline py-1.5 border-b border-[#f0f2f5]">
-                <span className="text-xs text-[#4b5563]">{row.label}</span>
-                <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+              <div key={row.label} className="flex justify-between items-baseline py-1.5 border-b border-[var(--bg-subtle)]">
+                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="border-t border-[#e5e7eb] pt-4 mb-5">
+        <div className="border-t border-[var(--border)] pt-4 mb-5">
           <div className="flex items-center justify-between mb-2">
             <span className="section-label">Spend vs Cap</span>
             <span className="text-sm font-semibold text-red-600 tabular-nums">{pct}% of cap</span>
           </div>
-          <div className="w-full h-4 bg-[#f0f2f5] rounded-full overflow-hidden relative">
+          <div className="w-full h-4 bg-[var(--bg-subtle)] rounded-full overflow-hidden relative">
             {/* Cap marker at 100% */}
-            <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-[#9ca3af]" style={{ left: `${(100 / parseFloat(pct)) * 100}%` }} />
+            <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-[var(--text-muted)]" style={{ left: `${(100 / parseFloat(pct)) * 100}%` }} />
             <div className="h-full rounded-full bg-red-500 transition-all" style={{ width: `${Math.min((barWidth / 150) * 100, 100)}%` }} />
           </div>
           <div className="flex justify-between mt-1">
-            <span className="text-[10px] text-[#9ca3af]">$0</span>
-            <span className="text-[10px] text-[#9ca3af]">Cap: {formatCurrency(capAmount)}</span>
+            <span className="text-[10px] text-[var(--text-muted)]">$0</span>
+            <span className="text-[10px] text-[var(--text-muted)]">Cap: {formatCurrency(capAmount)}</span>
           </div>
         </div>
 
         {/* Overage calculation */}
-        <div className="border-t border-[#e5e7eb] pt-4 mb-5">
-          <p className="text-sm font-medium text-[#111827] mb-3">Overage Calculation</p>
+        <div className="border-t border-[var(--border)] pt-4 mb-5">
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Overage Calculation</p>
           <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-[#4b5563]">Current Spend</span>
-              <span className="text-xs font-medium text-[#111827] tabular-nums">{formatCurrency(currentSpend)}</span>
+              <span className="text-xs text-[var(--text-secondary)]">Current Spend</span>
+              <span className="text-xs font-medium text-[var(--text-primary)] tabular-nums">{formatCurrency(currentSpend)}</span>
             </div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-[#4b5563]">Contract Cap</span>
-              <span className="text-xs font-medium text-[#111827] tabular-nums">- {formatCurrency(capAmount)}</span>
+              <span className="text-xs text-[var(--text-secondary)]">Contract Cap</span>
+              <span className="text-xs font-medium text-[var(--text-primary)] tabular-nums">- {formatCurrency(capAmount)}</span>
             </div>
             <div className="border-t border-red-200 pt-2 mt-2 flex items-center gap-2">
               <span className="text-xs font-medium text-red-700">Overage</span>
@@ -1717,14 +1863,15 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
 
         {/* AI Recommendation */}
         <div className="mt-5">
-          <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
             <p className="section-label mb-1.5">AI Recommendation</p>
-            <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
               Flag for procurement review. The contract cap of {formatCurrency(capAmount)} has been exceeded by {formatCurrency(overage)} ({pct}% utilisation). Contract has expired with no auto-renewal. 23 invoices were processed after the cap was breached. Consider renegotiation or competitive bidding for future orders.
             </p>
           </div>
         </div>
       </div>
+      <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
 }
@@ -1745,7 +1892,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
       <div className="card p-6">
         {/* Contract terms */}
         <div className="mb-5">
-          <p className="text-sm font-medium text-[#111827] mb-3">Contract Terms</p>
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Contract Terms</p>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
@@ -1754,61 +1901,61 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
               { label: "Threshold", value: formatCurrency(contract.rebateThreshold || 0) },
               { label: "Q1 Spend", value: isEX004 ? "$312,400" : "$94,200" },
             ].map((row) => (
-              <div key={row.label} className="flex justify-between items-baseline py-1.5 border-b border-[#f0f2f5]">
-                <span className="text-xs text-[#4b5563]">{row.label}</span>
-                <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+              <div key={row.label} className="flex justify-between items-baseline py-1.5 border-b border-[var(--bg-subtle)]">
+                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Rebate calculation */}
-        <div className="border-t border-[#e5e7eb] pt-4 mb-5">
-          <p className="text-sm font-medium text-[#111827] mb-3">Rebate Calculation Breakdown</p>
-          <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+        <div className="border-t border-[var(--border)] pt-4 mb-5">
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Rebate Calculation Breakdown</p>
+          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
             {isEX004 ? (
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Q1 Spend</span>
-                  <span className="text-[#111827] font-medium tabular-nums">$312,400</span>
+                  <span className="text-[var(--text-secondary)]">Q1 Spend</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$312,400</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Quarterly rebate (8.5% × $312,400)</span>
+                  <span className="text-[var(--text-secondary)]">Quarterly rebate (8.5% × $312,400)</span>
                   <span className="text-amber-700 font-medium tabular-nums">$26,554</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Volume discounts (47 line items)</span>
+                  <span className="text-[var(--text-secondary)]">Volume discounts (47 line items)</span>
                   <span className="text-amber-700 font-medium tabular-nums">$62,876</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-[#e5e7eb] pt-2">
-                  <span className="text-[#111827] font-medium">Total owed to Northfield</span>
+                <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
+                  <span className="text-[var(--text-primary)] font-medium">Total owed to Northfield</span>
                   <span className="text-red-600 font-bold tabular-nums text-sm">$89,430</span>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Q1 Spend</span>
-                  <span className="text-[#111827] font-medium tabular-nums">$94,200</span>
+                  <span className="text-[var(--text-secondary)]">Q1 Spend</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$94,200</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Threshold</span>
-                  <span className="text-[#111827] font-medium tabular-nums">- $80,000</span>
+                  <span className="text-[var(--text-secondary)]">Threshold</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">- $80,000</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-[#e5e7eb] pt-2">
-                  <span className="text-[#4b5563]">Excess spend</span>
-                  <span className="text-[#111827] font-medium tabular-nums">= $14,200</span>
+                <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
+                  <span className="text-[var(--text-secondary)]">Excess spend</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">= $14,200</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Rebate (7.25% of excess)</span>
+                  <span className="text-[var(--text-secondary)]">Rebate (7.25% of excess)</span>
                   <span className="text-amber-700 font-medium tabular-nums">$1,030</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Early payment discount (3% on $194K)</span>
+                  <span className="text-[var(--text-secondary)]">Early payment discount (3% on $194K)</span>
                   <span className="text-amber-700 font-medium tabular-nums">$5,820</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-[#e5e7eb] pt-2">
-                  <span className="text-[#111827] font-medium">Total owed to Northfield</span>
+                <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
+                  <span className="text-[var(--text-primary)] font-medium">Total owed to Northfield</span>
                   <span className="text-red-600 font-bold tabular-nums text-sm">$6,850</span>
                 </div>
               </div>
@@ -1817,15 +1964,16 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
         </div>
 
         {/* AI Recommendation */}
-        <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+        <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
           <p className="section-label mb-1.5">AI Recommendation</p>
-          <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
+          <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
             {isEX004
               ? "Contact Cardinal Health to claim the outstanding rebate credit of $26,554 plus $62,876 in volume discount adjustments (total $89,430). Reference contract #CTR-2025-CAR-003. No credit memo has been received."
               : "Contact Vizient Inc. to claim $1,030 rebate on Q1 excess spend and $5,820 in missed early-payment discounts across 12 invoices. Reference contract #CTR-2025-VZT-002."}
           </p>
         </div>
       </div>
+      <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
 }
@@ -1846,7 +1994,7 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
       <div className="card p-6">
         {/* Tier pricing table */}
         <div className="mb-5">
-          <p className="text-sm font-medium text-[#111827] mb-3">Contract Tier Pricing</p>
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Contract Tier Pricing</p>
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
@@ -1859,11 +2007,11 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
               <tbody>
                 {tiers.map((tier, i) => (
                   <tr key={tier.label}>
-                    <td className="text-xs text-[#111827] font-medium">{tier.label}</td>
-                    <td className="right text-xs tabular-nums text-[#4b5563]">
+                    <td className="text-xs text-[var(--text-primary)] font-medium">{tier.label}</td>
+                    <td className="right text-xs tabular-nums text-[var(--text-secondary)]">
                       {i === 0 ? `Up to ${tier.maxQty.toLocaleString()} units/month` : `> ${tiers[i - 1].maxQty.toLocaleString()} units/month`}
                     </td>
-                    <td className="right text-xs tabular-nums text-[#111827] font-medium">${tier.unitPrice.toFixed(2)}</td>
+                    <td className="right text-xs tabular-nums text-[var(--text-primary)] font-medium">${tier.unitPrice.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1872,20 +2020,20 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
         </div>
 
         {/* Actual calculation */}
-        <div className="border-t border-[#e5e7eb] pt-4 mb-5">
-          <p className="text-sm font-medium text-[#111827] mb-3">March Invoice Calculation</p>
+        <div className="border-t border-[var(--border)] pt-4 mb-5">
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">March Invoice Calculation</p>
           <div className="grid grid-cols-2 gap-4">
             {/* What was charged */}
             <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3">
               <p className="section-label text-red-600 mb-2">What Was Charged</p>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">March units</span>
-                  <span className="text-[#111827] font-medium tabular-nums">2,340</span>
+                  <span className="text-[var(--text-secondary)]">March units</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">2,340</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Rate applied</span>
-                  <span className="text-[#111827] font-medium tabular-nums">$85.00/unit (Tier 1 only)</span>
+                  <span className="text-[var(--text-secondary)]">Rate applied</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$85.00/unit (Tier 1 only)</span>
                 </div>
                 <div className="flex justify-between text-xs border-t border-red-200 pt-1.5">
                   <span className="text-red-700 font-medium">Total billed</span>
@@ -1899,12 +2047,12 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
               <p className="section-label text-emerald-700 mb-2">Correct Pricing</p>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Tier 1: 1,000 units x $85</span>
-                  <span className="text-[#111827] font-medium tabular-nums">$85,000</span>
+                  <span className="text-[var(--text-secondary)]">Tier 1: 1,000 units x $85</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$85,000</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#4b5563]">Tier 2: 1,340 units x $72</span>
-                  <span className="text-[#111827] font-medium tabular-nums">$96,480</span>
+                  <span className="text-[var(--text-secondary)]">Tier 2: 1,340 units x $72</span>
+                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$96,480</span>
                 </div>
                 <div className="flex justify-between text-xs border-t border-emerald-200 pt-1.5">
                   <span className="text-emerald-700 font-medium">Correct total</span>
@@ -1916,24 +2064,24 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
         </div>
 
         {/* Overcharge summary */}
-        <div className="border-t border-[#e5e7eb] pt-4 mb-5">
-          <p className="text-sm font-medium text-[#111827] mb-3">Overcharge Summary</p>
-          <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+        <div className="border-t border-[var(--border)] pt-4 mb-5">
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Overcharge Summary</p>
+          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-[#4b5563]">Jan 2026 overcharge (2,340 units)</span>
+                <span className="text-[var(--text-secondary)]">Jan 2026 overcharge (2,340 units)</span>
                 <span className="text-red-600 font-medium tabular-nums">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#4b5563]">Feb 2026 overcharge (2,340 units)</span>
+                <span className="text-[var(--text-secondary)]">Feb 2026 overcharge (2,340 units)</span>
                 <span className="text-red-600 font-medium tabular-nums">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#4b5563]">Mar 2026 overcharge (2,340 units)</span>
+                <span className="text-[var(--text-secondary)]">Mar 2026 overcharge (2,340 units)</span>
                 <span className="text-red-600 font-medium tabular-nums">$17,420</span>
               </div>
-              <div className="flex justify-between text-xs border-t border-[#e5e7eb] pt-2">
-                <span className="text-[#111827] font-medium">Total overcharge (3 months)</span>
+              <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
+                <span className="text-[var(--text-primary)] font-medium">Total overcharge (3 months)</span>
                 <span className="text-red-600 font-bold tabular-nums text-sm">$52,260</span>
               </div>
             </div>
@@ -1941,13 +2089,14 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
         </div>
 
         {/* AI Recommendation */}
-        <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+        <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
           <p className="section-label mb-1.5">AI Recommendation</p>
-          <p className="text-xs text-[#4b5563] m-0 leading-relaxed">
+          <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
             Request pricing correction from Cardinal Health. Contract #CTR-2025-CAR-003 specifies tiered pricing: $85/unit up to 1,000 units, $72/unit above 1,000 units. Jan–Mar 2026: 2,340 units/month all billed at Tier 1. Monthly overcharge: $17,420. Total retroactive adjustment: $52,260 (3 months).
           </p>
         </div>
       </div>
+      <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
 }
@@ -1978,14 +2127,15 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [actionTaken, setActionTaken] = useState<string | null>(null);
+  const [disclaimerActionGeneric, setDisclaimerActionGeneric] = useState<{action: string; callback: () => void} | null>(null);
 
   const ex = exceptions.find((e) => e.id === exceptionId);
   if (!ex) {
     return (
-      <div className="bg-[#f7f8fa] min-h-screen flex items-center justify-center">
+      <div className="bg-[var(--bg-base)] min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm text-[#9ca3af]">Exception {exceptionId} not found</p>
-          <button onClick={() => router.back()} className="mt-3 text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline">
+          <p className="text-sm text-[var(--text-muted)]">Exception {exceptionId} not found</p>
+          <button onClick={() => router.back()} className="mt-3 text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline">
             &larr; Back
           </button>
         </div>
@@ -1994,10 +2144,10 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
   }
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Breadcrumb */}
       <div className="pt-6 px-8">
-        <button onClick={() => router.back()} className="text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline p-0">
+        <button onClick={() => router.back()} className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0">
           &larr; Back
         </button>
       </div>
@@ -2005,16 +2155,17 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
       {/* Header */}
       <div className="px-8 pt-3 pb-6">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[#9ca3af]">{ex.id}</span>
+          <span className="font-mono text-[11px] text-[var(--text-muted)]">{ex.id}</span>
           <span className={severityColors[ex.severity] || "badge neutral"}>{typeLabels[ex.type] || ex.type}</span>
           <span className={`badge ${ex.status === "open" ? "critical" : ex.status === "resolved" ? "success" : ex.status === "escalated" ? "blue" : "warning"}`}>
             {ex.status === "open" ? "Open" : ex.status === "resolved" ? "Resolved" : ex.status === "escalated" ? "Escalated" : "Under Review"}
           </span>
+          {ex.category && <CategoryBadge category={ex.category} />}
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1.5 leading-tight">
-          {ex.vendor}
-        </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <div className="mb-1.5">
+          <VendorBadge name={ex.vendor} size="lg" />
+        </div>
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           Invoice #{ex.invoiceNumber} · {new Date(ex.invoiceDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Flagged: {formatCurrency(ex.flaggedAmount)}
         </p>
       </div>
@@ -2026,39 +2177,50 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
         </div>
       </div>
 
+      <div className="mx-8">
+        <EscalationBanner flaggedAmount={ex.flaggedAmount} />
+      </div>
+
+      {/* Workflow Stepper */}
+      <div className="mx-8 mb-6">
+        <div className="card px-8 py-5">
+          <WorkflowStepper steps={getWorkflowSteps(ex.id)} />
+        </div>
+      </div>
+
       {/* Two-column layout */}
-      <div className="px-8 pb-8 grid grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
         {/* LEFT: Exception Details */}
         <div>
           <p className="section-label mb-2">Exception Analysis</p>
           <div className="card p-6">
             <div className="mb-5">
-              <p className="text-sm font-medium text-[#111827] mb-2">What was detected</p>
-              <p className="text-xs text-[#4b5563] leading-relaxed">{ex.description}</p>
+              <p className="text-sm font-medium text-[var(--text-primary)] mb-2">What was detected</p>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{ex.description}</p>
             </div>
 
-            <div className="border-t border-[#e5e7eb] pt-4 mb-5">
-              <p className="text-sm font-medium text-[#111827] mb-3">Key Figures</p>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-[#f7f8fa] rounded-md px-4 py-3">
+            <div className="border-t border-[var(--border)] pt-4 mb-5">
+              <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Key Figures</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-[var(--bg-base)] rounded-md px-4 py-3">
                   <p className="section-label mb-1">Invoice Amount</p>
-                  <p className="text-lg font-semibold text-[#111827]">{formatCurrency(ex.amount)}</p>
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">{formatCurrency(ex.amount)}</p>
                 </div>
                 <div className="bg-red-50 rounded-md px-4 py-3">
                   <p className="section-label mb-1">Flagged Amount</p>
                   <p className="text-lg font-semibold text-red-600">{formatCurrency(ex.flaggedAmount)}</p>
                 </div>
-                <div className="bg-[#f7f8fa] rounded-md px-4 py-3">
+                <div className="bg-[var(--bg-base)] rounded-md px-4 py-3">
                   <p className="section-label mb-1">Risk Percentage</p>
-                  <p className="text-lg font-semibold text-[#111827]">{((ex.flaggedAmount / ex.amount) * 100).toFixed(1)}%</p>
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">{((ex.flaggedAmount / ex.amount) * 100).toFixed(1)}%</p>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-[#e5e7eb] pt-4">
-              <p className="text-sm font-medium text-[#111827] mb-2">AI Recommendation</p>
-              <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
-                <p className="text-xs text-[#4b5563] leading-relaxed">
+            <div className="border-t border-[var(--border)] pt-4">
+              <p className="text-sm font-medium text-[var(--text-primary)] mb-2">AI Recommendation</p>
+              <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                   {ex.type === "duplicate" && "Block the duplicate invoice and initiate recovery for the flagged amount. Verify vendor billing channel to prevent recurrence."}
                   {ex.type === "missing_rebate" && "Contact vendor to claim the outstanding rebate credit. Reference the contract terms and quarterly spend threshold."}
                   {ex.type === "contract_overage" && "Flag for procurement review. The contract cap has been exceeded. Consider renegotiation or competitive bidding for future orders."}
@@ -2085,17 +2247,17 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
           ].map((row, i, arr) => (
             <div
               key={row.label}
-              className={`flex justify-between items-baseline py-2.5 ${i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""}`}
+              className={`flex justify-between items-baseline py-2.5 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}
             >
-              <span className="text-xs text-[#4b5563]">{row.label}</span>
-              <span className="text-xs text-[#111827] font-medium">{row.value}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
+              <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
             </div>
           ))}
 
           {/* Actions */}
           <p className="section-label mt-5 mb-2.5">Actions</p>
 
-          {actionTaken ? (
+          {actionTaken ? (<>
             <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
               actionTaken === "blocked" ? "bg-red-50 text-red-700 border border-red-200" :
               actionTaken === "recovery" ? "bg-blue-50 text-blue-700 border border-blue-200" :
@@ -2107,36 +2269,71 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
                actionTaken === "escalated" ? "Escalated to Manager" :
                "Dismissed"}
             </div>
+            {actionTaken === "recovery" && (
+              <Link href="/recovery" className="block text-center text-[11px] text-[var(--acl-primary)] no-underline hover:underline mt-2">
+                View in Recovery Queue →
+              </Link>
+            )}
+            {(actionTaken === "blocked" || actionTaken === "escalated") && <PostDisagreeSteps />}
+            </>
           ) : (
             <>
               <button
-                onClick={() => { setActionTaken("blocked"); showToast(`Payment blocked for ${ex.invoiceNumber}`, "warning"); }}
+                onClick={() => setDisclaimerActionGeneric({ action: "block", callback: () => { setActionTaken("blocked"); updateExceptionStatus(ex.id, "under_review"); showToast(`Payment authorization for invoice ${ex.invoiceNumber} has been suspended`, "warning"); } })}
                 className="block w-full bg-red-600 text-white text-xs font-medium px-3 py-2 rounded-md border-none cursor-pointer text-center mb-2 transition-colors hover:bg-red-700"
               >
                 Block Payment
               </button>
               <button
-                onClick={() => { setActionTaken("recovery"); showToast(`Recovery initiated for ${formatCurrency(ex.flaggedAmount)}`, "success"); }}
+                onClick={() => setDisclaimerActionGeneric({ action: "recover", callback: () => {
+                  const rec = addToRecoveryQueue({
+                    exceptionId: ex.id,
+                    vendor: ex.vendor,
+                    invoiceNumber: ex.invoiceNumber,
+                    targetAmount: ex.flaggedAmount,
+                    status: "pending",
+                    initiatedAt: new Date().toISOString(),
+                    emailSentTo: `ap@${ex.vendor.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12)}.com`,
+                    analystNote: `Recovery initiated from exception ${ex.id}. Amount at risk: ${formatCurrency(ex.flaggedAmount)}.`,
+                  });
+                  updateExceptionStatus(ex.id, "under_review");
+                  setActionTaken("recovery");
+                  showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
+                } })}
                 className="block w-full bg-white text-amber-700 text-xs font-medium px-3 py-2 rounded-md border border-amber-700 cursor-pointer text-center mb-2 transition-colors hover:bg-amber-50"
               >
                 Initiate Recovery
               </button>
               <button
-                onClick={() => { setActionTaken("escalated"); showToast(`${ex.id} escalated to manager`, "info"); }}
-                className="block w-full bg-white text-[#4b5563] text-xs font-medium px-3 py-2 rounded-md border border-[#d1d5db] cursor-pointer text-center mb-2 transition-colors hover:bg-[#f0f2f5]"
+                onClick={() => setDisclaimerActionGeneric({ action: "escalate", callback: () => { setActionTaken("escalated"); updateExceptionStatus(ex.id, "escalated"); showToast(`Exception ${ex.id} escalated for managerial review`, "info"); } })}
+                className="block w-full bg-white text-[var(--text-secondary)] text-xs font-medium px-3 py-2 rounded-md border border-[var(--border-strong)] cursor-pointer text-center mb-2 transition-colors hover:bg-[var(--bg-subtle)]"
               >
                 Escalate to Manager
               </button>
               <button
-                onClick={() => { if (confirm("Dismiss this exception?")) { setActionTaken("dismissed"); showToast(`${ex.id} dismissed`, "info"); } }}
-                className="block w-full bg-transparent text-[#9ca3af] text-xs font-medium px-3 py-2 rounded-md border-none cursor-pointer text-center transition-colors hover:text-[#4b5563]"
+                onClick={() => setDisclaimerActionGeneric({ action: "dismiss", callback: () => { setActionTaken("dismissed"); updateExceptionStatus(ex.id, "resolved"); showToast(`Exception ${ex.id} has been dismissed per analyst determination`, "info"); } })}
+                className="block w-full bg-transparent text-[var(--text-muted)] text-xs font-medium px-3 py-2 rounded-md border-none cursor-pointer text-center transition-colors hover:text-[var(--text-secondary)]"
               >
                 Dismiss
               </button>
             </>
           )}
+
+          {/* Audit Trail */}
+          <div className="border-t border-[var(--border)] mt-5 pt-5">
+            <AuditTrail entries={getAuditTrail(ex.id)} />
+          </div>
         </div>
       </div>
+
+      {/* Legal Disclaimer Dialog for generic exception actions */}
+      <LegalDisclaimerDialog
+        open={!!disclaimerActionGeneric}
+        onConfirm={() => { disclaimerActionGeneric?.callback(); setDisclaimerActionGeneric(null); }}
+        onCancel={() => setDisclaimerActionGeneric(null)}
+        action={disclaimerActionGeneric?.action || "block"}
+        invoiceNumber={ex.invoiceNumber}
+      />
     </div>
   );
 }
@@ -2154,6 +2351,7 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
   const [decision, setDecision] = useState<"approved" | "held" | "escalated" | null>(
     ex.status === "escalated" ? "escalated" : null,
   );
+  const [disclaimerActionSom, setDisclaimerActionSom] = useState<{action: string; callback: () => void} | null>(null);
 
   // The SOM exception's invoiceNumber field holds the order ID (ORD-*).
   const orderId = ex.invoiceNumber;
@@ -2216,12 +2414,12 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
   }
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Breadcrumb */}
       <div className="pt-6 px-8">
         <button
           onClick={() => router.back()}
-          className="text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline p-0"
+          className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
         >
           &larr; Back
         </button>
@@ -2230,30 +2428,35 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
       {/* Header */}
       <div className="px-8 pt-3 pb-6">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[#9ca3af]">{ex.id}</span>
-          <span className="text-[10px] uppercase tracking-wide font-semibold text-[#0065cb]">
+          <span className="font-mono text-[11px] text-[var(--text-muted)]">{ex.id}</span>
+          <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--acl-primary)]">
             SOM · Drug Distributor
           </span>
           <span className={severityColors[ex.severity] || "badge neutral"}>{typeLabels[ex.type] || ex.type}</span>
           <span className={`badge ${ex.status === "open" ? "critical" : ex.status === "resolved" ? "success" : ex.status === "escalated" ? "blue" : "warning"}`}>
             {ex.status === "open" ? "Open" : ex.status === "resolved" ? "Resolved" : ex.status === "escalated" ? "Escalated" : "Under Review"}
           </span>
+          {ex.category && <CategoryBadge category={ex.category} />}
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1.5 leading-tight">
-          {ex.vendor}
-        </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <div className="mb-1.5">
+          <VendorBadge name={ex.vendor} size="lg" />
+        </div>
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           Order #{orderId} · Detected {new Date(ex.detectedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · Flagged {formatCurrency(ex.flaggedAmount)}
         </p>
       </div>
 
+      <div className="mx-8">
+        <EscalationBanner flaggedAmount={ex.flaggedAmount} />
+      </div>
+
       {/* Body grid */}
-      <div className="px-8 pb-8 grid grid-cols-[1fr_320px] gap-5 items-start">
+      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* LEFT: Description + evidence */}
         <div className="flex flex-col gap-4">
           <div className="card p-5">
             <p className="section-label mb-3">Description</p>
-            <p className="text-sm text-[#111827] m-0 leading-relaxed">{ex.description}</p>
+            <p className="text-sm text-[var(--text-primary)] m-0 leading-relaxed">{ex.description}</p>
           </div>
 
           <div className="card p-5">
@@ -2263,7 +2466,7 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
             </div>
             <Link
               href={`/som/order/${orderId}`}
-              className="inline-flex items-center gap-1.5 mt-4 text-xs font-medium text-[#0065cb] no-underline hover:underline"
+              className="inline-flex items-center gap-1.5 mt-4 text-xs font-medium text-[var(--acl-primary)] no-underline hover:underline"
             >
               View full SOM workflow run →
             </Link>
@@ -2284,10 +2487,10 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
             ].map((row, i, arr) => (
               <div
                 key={row.label}
-                className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""}`}
+                className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}
               >
-                <span className="text-[11px] text-[#4b5563]">{row.label}</span>
-                <span className={`text-[11px] text-[#111827] font-medium ${row.mono ? "font-mono" : ""}`}>
+                <span className="text-[11px] text-[var(--text-secondary)]">{row.label}</span>
+                <span className={`text-[11px] text-[var(--text-primary)] font-medium ${row.mono ? "font-mono" : ""}`}>
                   {row.value}
                 </span>
               </div>
@@ -2307,22 +2510,22 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
                 {decision === "escalated" && "Escalated to compliance manager"}
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button
-                  onClick={() => handleDecision("approved")}
+                  onClick={() => setDisclaimerActionSom({ action: "approve", callback: () => handleDecision("approved") })}
                   className="text-xs font-medium px-3 py-2 rounded-md border border-emerald-600 bg-white text-emerald-700 cursor-pointer hover:bg-emerald-50"
                 >
                   Approve
                 </button>
                 <button
-                  onClick={() => handleDecision("held")}
+                  onClick={() => setDisclaimerActionSom({ action: "hold", callback: () => handleDecision("held") })}
                   className="text-xs font-medium px-3 py-2 rounded-md border border-amber-600 bg-white text-amber-700 cursor-pointer hover:bg-amber-50"
                 >
                   Hold
                 </button>
                 <button
-                  onClick={() => handleDecision("escalated")}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-[#0065cb] bg-white text-[#0065cb] cursor-pointer hover:bg-blue-50"
+                  onClick={() => setDisclaimerActionSom({ action: "escalate", callback: () => handleDecision("escalated") })}
+                  className="text-xs font-medium px-3 py-2 rounded-md border border-[var(--acl-primary)] bg-white text-[var(--acl-primary)] cursor-pointer hover:bg-blue-50"
                 >
                   Escalate
                 </button>
@@ -2331,6 +2534,15 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
           </div>
         </div>
       </div>
+
+      {/* Legal Disclaimer Dialog for SOM actions */}
+      <LegalDisclaimerDialog
+        open={!!disclaimerActionSom}
+        onConfirm={() => { disclaimerActionSom?.callback(); setDisclaimerActionSom(null); }}
+        onCancel={() => setDisclaimerActionSom(null)}
+        action={disclaimerActionSom?.action || "approve"}
+        invoiceNumber={ex.invoiceNumber}
+      />
     </div>
   );
 }
@@ -2338,8 +2550,8 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
 function EvidenceField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-baseline gap-3">
-      <span className="text-[11px] text-[#4b5563] flex-shrink-0">{label}</span>
-      <span className="text-[11px] text-[#111827] font-medium text-right">{value}</span>
+      <span className="text-[11px] text-[var(--text-secondary)] flex-shrink-0">{label}</span>
+      <span className="text-[11px] text-[var(--text-primary)] font-medium text-right">{value}</span>
     </div>
   );
 }

@@ -39,7 +39,7 @@ function SimilarityBar({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-3">
       <span className="section-label">Similarity</span>
-      <div className="w-32 h-1.5 rounded-full overflow-hidden bg-[#e5e7eb]">
+      <div className="w-32 h-1.5 rounded-full overflow-hidden bg-[var(--border)]">
         <div
           className="h-full rounded-full"
           style={{ width: `${Math.min(score, 100)}%`, background: fillColor }}
@@ -48,7 +48,7 @@ function SimilarityBar({ score }: { score: number }) {
       <span className="text-[13px] font-medium" style={{ color: textColor }}>
         {score}%
       </span>
-      <span className="text-[13px] text-[#d1d5db]">|</span>
+      <span className="text-[13px] text-[var(--border-strong)]">|</span>
     </div>
   );
 }
@@ -124,13 +124,13 @@ function DuplicatePairCard({
         </button>
         <button
           onClick={onOverride}
-          className="bg-white text-[#4b5563] px-3 py-1.5 text-xs font-medium rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors"
+          className="bg-white text-[var(--text-secondary)] px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
         >
           Approve with Override
         </button>
         <button
           onClick={onEscalate}
-          className="bg-white text-[#4b5563] px-3 py-1.5 text-xs font-medium rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors"
+          className="bg-white text-[var(--text-secondary)] px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
         >
           Escalate to Manager
         </button>
@@ -141,17 +141,17 @@ function DuplicatePairCard({
   return (
     <div className="card mb-4">
       {/* Card header */}
-      <div className="px-5 pt-4 pb-3 border-b border-[#e5e7eb] flex items-center justify-between">
+      <div className="px-5 pt-4 pb-3 border-b border-[var(--border)] flex items-center justify-between">
         <div className="flex items-center">
-          <span className="text-sm font-semibold text-[#111827]">
+          <span className="text-sm font-semibold text-[var(--text-primary)]">
             {pair.vendor}
           </span>
-          <span className="text-[11px] text-[#9ca3af] ml-2">
+          <span className="text-[11px] text-[var(--text-muted)] ml-2">
             {pair.id}
           </span>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="text-sm font-medium text-[#111827]">
+          <span className="text-sm font-medium text-[var(--text-primary)]">
             {formatCurrency(pair.flaggedAmount)}
           </span>
           <span className={badgeClass}>{badgeLabel}</span>
@@ -159,9 +159,9 @@ function DuplicatePairCard({
       </div>
 
       {/* Similarity score row */}
-      <div className="px-5 py-2 border-b border-[#e5e7eb] bg-[#f7f8fa] flex items-center gap-3">
+      <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--bg-base)] flex items-center gap-3">
         <SimilarityBar score={pair.similarity} />
-        <span className="text-xs text-[#4b5563]">
+        <span className="text-xs text-[var(--text-secondary)]">
           {pair.amountDelta > 0
             ? `\u0394 ${formatCurrency(pair.amountDelta)} \u00b7 ${pair.daysDelta} days apart`
             : `${pair.daysDelta} days apart \u00b7 no amount delta`}
@@ -173,36 +173,36 @@ function DuplicatePairCard({
         {/* Invoice A */}
         <div>
           <div className="section-label mb-2">Invoice A</div>
-          <div className="font-mono text-xs font-medium text-[#111827]">
+          <div className="font-mono text-xs font-medium text-[var(--text-primary)]">
             {pair.invoice1.number}
           </div>
-          <div className="text-[11px] text-[#4b5563] mt-0.5">
+          <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
             {formatDate(pair.invoice1.date)}
           </div>
-          <div className="text-[15px] font-semibold text-[#111827] mt-1">
+          <div className="text-[15px] font-semibold text-[var(--text-primary)] mt-1">
             {formatCurrency(pair.invoice1.amount)}
           </div>
-          <div className="text-[11px] text-[#9ca3af] mt-1">
+          <div className="text-[11px] text-[var(--text-muted)] mt-1">
             {pair.invoice1.submittedVia}
           </div>
         </div>
 
         {/* Center divider */}
-        <div className="w-px bg-[#e5e7eb] self-stretch mx-8" />
+        <div className="w-px bg-[var(--border)] self-stretch mx-8" />
 
         {/* Invoice B */}
         <div>
           <div className="section-label mb-2">Invoice B</div>
-          <div className="font-mono text-xs font-medium text-[#111827]">
+          <div className="font-mono text-xs font-medium text-[var(--text-primary)]">
             {pair.invoice2.number}
           </div>
-          <div className="text-[11px] text-[#4b5563] mt-0.5">
+          <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
             {formatDate(pair.invoice2.date)}
           </div>
-          <div className="text-[15px] font-semibold text-[#111827] mt-1">
+          <div className="text-[15px] font-semibold text-[var(--text-primary)] mt-1">
             {formatCurrency(pair.invoice2.amount)}
           </div>
-          <div className="text-[11px] text-[#9ca3af] mt-1">
+          <div className="text-[11px] text-[var(--text-muted)] mt-1">
             {pair.invoice2.submittedVia}
           </div>
         </div>
@@ -211,12 +211,12 @@ function DuplicatePairCard({
       {/* AI analysis */}
       {analysis.length > 0 && (
         <div className="px-5 pb-4">
-          <div className="bg-[#f7f8fa] border border-[#e5e7eb] rounded-md px-4 py-3">
+          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
             <div className="section-label mb-2">Analysis</div>
             <div className="flex flex-col gap-1.5">
               {analysis.map((line, i) => (
-                <div key={i} className="text-xs text-[#4b5563] flex gap-2">
-                  <span className="text-[#9ca3af] shrink-0">&ndash;</span>
+                <div key={i} className="text-xs text-[var(--text-secondary)] flex gap-2">
+                  <span className="text-[var(--text-muted)] shrink-0">&ndash;</span>
                   <span>{line}</span>
                 </div>
               ))}
@@ -255,20 +255,20 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <div className="border border-[#e5e7eb] rounded-lg bg-white px-6 py-4 flex items-center mb-6">
+    <div className="border border-[var(--border)] rounded-lg bg-white px-6 py-4 flex items-center mb-6">
       {steps.map((s, i) => (
         <div key={s.step} className="flex items-center flex-1 min-w-0">
           <div className="flex-1 min-w-0">
             <div className="section-label">{s.step}</div>
-            <div className="text-[13px] font-medium text-[#111827] mt-0.5">
+            <div className="text-[13px] font-medium text-[var(--text-primary)] mt-0.5">
               {s.name}
             </div>
-            <div className="text-[11px] text-[#9ca3af] mt-0.5 leading-snug">
+            <div className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-snug">
               {s.desc}
             </div>
           </div>
           {i < steps.length - 1 && (
-            <span className="text-[#d1d5db] text-lg mx-6 shrink-0">
+            <span className="text-[var(--border-strong)] text-lg mx-6 shrink-0">
               &rarr;
             </span>
           )}
@@ -310,20 +310,20 @@ export default function DuplicatesPage() {
   }
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       <div className="max-w-[900px] mx-auto">
         {/* Header */}
-        <div className="px-8 pt-8 pb-6">
+        <div className="px-6 lg:px-8 pt-8 pb-6">
           <div className="flex items-start justify-between mb-1">
             <div>
-              <h1 className="text-xl font-semibold text-[#111827] tracking-tight m-0">
+              <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight m-0">
                 Duplicate Detection
               </h1>
-              <p className="text-xs text-[#4b5563] mt-1 mb-0">
+              <p className="text-xs text-[var(--text-secondary)] mt-1 mb-0">
                 AI scanned 1,847 invoices &middot; 3 pairs flagged &middot; $56,070 at risk
               </p>
             </div>
-            <button className="text-xs font-medium text-[#4b5563] bg-white border border-[#d1d5db] rounded-md px-3.5 py-1.5 cursor-pointer hover:bg-[#f7f8fa] transition-colors">
+            <button className="text-xs font-medium text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] rounded-md px-3.5 py-1.5 cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
               Export
             </button>
           </div>
@@ -331,7 +331,7 @@ export default function DuplicatesPage() {
         </div>
 
         {/* How it works + cards */}
-        <div className="px-8 pb-8">
+        <div className="px-6 lg:px-8 pb-8">
           <HowItWorks />
 
           {duplicatePairs.map((pair) => (
@@ -364,37 +364,37 @@ export default function DuplicatesPage() {
           onClick={() => setActiveModal(null)}
         >
           <div
-            className="bg-white border border-[#e5e7eb] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
+            className="bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-4 right-4 text-[#9ca3af] hover:text-[#4b5563] cursor-pointer bg-transparent border-none p-0"
+              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
             >
               <X size={16} />
             </button>
 
-            <h2 className="text-sm font-semibold text-[#111827] m-0 mb-1">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
               Reject Duplicate Invoice
             </h2>
-            <p className="text-xs text-[#4b5563] mt-0 mb-4">
+            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
               This will block the duplicate invoice from processing.
             </p>
 
-            <label className="block text-xs font-medium text-[#4b5563] mb-1.5">
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
               Reason for rejection
             </label>
             <textarea
               value={modalNote}
               onChange={(e) => setModalNote(e.target.value)}
               placeholder="Describe why this invoice is being rejected..."
-              className="w-full h-24 text-xs text-[#111827] border border-[#e5e7eb] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[#9ca3af] bg-white"
+              className="w-full h-24 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-white"
             />
 
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[#4b5563] bg-white border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors"
+                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
               >
                 Cancel
               </button>
@@ -416,20 +416,20 @@ export default function DuplicatesPage() {
           onClick={() => setActiveModal(null)}
         >
           <div
-            className="bg-white border border-[#e5e7eb] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
+            className="bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-4 right-4 text-[#9ca3af] hover:text-[#4b5563] cursor-pointer bg-transparent border-none p-0"
+              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
             >
               <X size={16} />
             </button>
 
-            <h2 className="text-sm font-semibold text-[#111827] m-0 mb-1">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
               Approve with Override
             </h2>
-            <p className="text-xs text-[#4b5563] mt-0 mb-4">
+            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
               Override the duplicate flag and approve this invoice for payment.
             </p>
 
@@ -440,20 +440,20 @@ export default function DuplicatesPage() {
               </p>
             </div>
 
-            <label className="block text-xs font-medium text-[#4b5563] mb-1.5">
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
               Justification for override
             </label>
             <textarea
               value={modalNote}
               onChange={(e) => setModalNote(e.target.value)}
               placeholder="Explain why this is not a true duplicate..."
-              className="w-full h-24 text-xs text-[#111827] border border-[#e5e7eb] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[#9ca3af] bg-white"
+              className="w-full h-24 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-white"
             />
 
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[#4b5563] bg-white border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors"
+                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
               >
                 Cancel
               </button>
@@ -475,31 +475,31 @@ export default function DuplicatesPage() {
           onClick={() => setActiveModal(null)}
         >
           <div
-            className="bg-white border border-[#e5e7eb] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
+            className="bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-4 right-4 text-[#9ca3af] hover:text-[#4b5563] cursor-pointer bg-transparent border-none p-0"
+              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
             >
               <X size={16} />
             </button>
 
-            <h2 className="text-sm font-semibold text-[#111827] m-0 mb-1">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
               Escalate to Manager
             </h2>
-            <p className="text-xs text-[#4b5563] mt-0 mb-4">
+            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
               Send this duplicate pair to a manager for final review.
             </p>
 
-            <label className="block text-xs font-medium text-[#4b5563] mb-1.5">
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
               Select manager
             </label>
             <div className="relative mb-4">
               <select
                 value={selectedManager}
                 onChange={(e) => setSelectedManager(e.target.value)}
-                className="w-full text-xs text-[#111827] border border-[#e5e7eb] rounded-md px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[#9ca3af] bg-white cursor-pointer"
+                className="w-full text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[var(--text-muted)] bg-white cursor-pointer"
               >
                 <option value="">Choose a manager...</option>
                 {managers.map((m) => (
@@ -510,24 +510,24 @@ export default function DuplicatesPage() {
               </select>
               <ChevronDown
                 size={14}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9ca3af] pointer-events-none"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
               />
             </div>
 
-            <label className="block text-xs font-medium text-[#4b5563] mb-1.5">
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
               Note (optional)
             </label>
             <textarea
               value={modalNote}
               onChange={(e) => setModalNote(e.target.value)}
               placeholder="Add context for the manager..."
-              className="w-full h-20 text-xs text-[#111827] border border-[#e5e7eb] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[#9ca3af] bg-white"
+              className="w-full h-20 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-white"
             />
 
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[#4b5563] bg-white border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors"
+                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
               >
                 Cancel
               </button>

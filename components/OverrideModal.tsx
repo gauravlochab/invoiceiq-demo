@@ -1,17 +1,15 @@
 "use client";
 
-// ─── Override Modal ──────────────────────────────────────────────────────────
-//
-// Captures the analyst's justification + approver identity when overriding
-// a system-imposed block on a suspicious order. Per Rajesh's
-// pharmacy_usecase_transcript.txt t=12:33: "...a human justification which
-// gets recorded for audit purpose...".
-//
-// On Submit, calls onSubmit with the captured fields. The parent (SOM queue)
-// is responsible for appending to the audit log.
-
 import { useState, useEffect } from "react";
-import { X, ShieldAlert, AlertTriangle } from "lucide-react";
+import { ShieldAlert, AlertTriangle, FileText } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import type { ApproverRole } from "@/lib/som/data/auditLog";
 
 interface Props {
@@ -51,7 +49,6 @@ export function OverrideModal({
   const [approverRole, setApproverRole] = useState<ApproverRole>("Compliance Manager");
   const [submitted, setSubmitted] = useState(false);
 
-  // Reset on open.
   useEffect(() => {
     if (open) {
       setJustification("");
@@ -60,8 +57,6 @@ export function OverrideModal({
       setSubmitted(false);
     }
   }, [open]);
-
-  if (!open) return null;
 
   const justificationOk = justification.trim().length >= MIN_JUSTIFICATION;
   const nameOk = approverName.trim().length >= 2;
@@ -85,28 +80,19 @@ export function OverrideModal({
     : "text-blue-700 bg-blue-50 border-blue-200";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6" onClick={onClose}>
-      <div
-        className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-lg p-0 gap-0">
+        <DialogHeader className="px-5 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-red-600" />
-            <h2 className="text-sm font-semibold text-[#111827] m-0">Override System Block</h2>
+            <DialogTitle className="text-sm font-semibold">Authorization Override Request</DialogTitle>
           </div>
-          <button
-            onClick={onClose}
-            className="text-[#9ca3af] hover:text-[#4b5563] cursor-pointer bg-transparent border-none"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+          <DialogDescription className="sr-only">
+            Provide formal justification and designated approver credentials to authorize release of order {orderId}
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Body */}
         <div className="p-5 flex flex-col gap-4">
-          {/* Context strip */}
           <div className={`rounded-md border p-3 ${ratingColor}`}>
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -116,30 +102,29 @@ export function OverrideModal({
                   Order {orderId} · Risk score {score}/100 · {rating}
                 </p>
                 <p className="m-0 mt-1.5 text-[11px] opacity-90">
-                  This pharmacy's risk score requires manual approval before fulfilment. Your
-                  justification will be recorded in the audit log.
+                  This entity has been flagged for elevated risk and requires authorized approval
+                  before order fulfilment. All justifications are permanently recorded in the compliance audit log.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Justification */}
           <div>
-            <label className="block text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] mb-1.5">
-              Justification <span className="text-red-600">*</span>
+            <label className="block text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] mb-1.5">
+              Formal Justification <span className="text-red-600">*</span>
             </label>
             <textarea
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
-              placeholder="Why is it acceptable to release this order despite the suspicious-order flags?"
+              placeholder="Please provide formal justification for authorizing this transaction despite the flagged risk indicators."
               rows={5}
               className={`w-full text-xs px-3 py-2 rounded-md border focus:outline-none focus:ring-2 ${
                 submitted && !justificationOk
                   ? "border-red-400 focus:ring-red-200"
-                  : "border-[#d1d5db] focus:border-[#0065cb] focus:ring-[#0065cb]/20"
+                  : "border-[var(--border-strong)] focus:border-[var(--acl-primary)] focus:ring-[var(--acl-primary)]/20"
               }`}
             />
-            <p className="text-[10px] text-[#9ca3af] mt-1 m-0">
+            <p className="text-[10px] text-[var(--text-muted)] mt-1 m-0">
               {justification.trim().length}/{MIN_JUSTIFICATION} min characters
               {submitted && !justificationOk && (
                 <span className="text-red-600 ml-2">— please add more detail</span>
@@ -147,10 +132,9 @@ export function OverrideModal({
             </p>
           </div>
 
-          {/* Approver name + role */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] mb-1.5">
+              <label className="block text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] mb-1.5">
                 Approver name <span className="text-red-600">*</span>
               </label>
               <input
@@ -161,18 +145,18 @@ export function OverrideModal({
                 className={`w-full text-xs px-3 py-2 rounded-md border focus:outline-none focus:ring-2 ${
                   submitted && !nameOk
                     ? "border-red-400 focus:ring-red-200"
-                    : "border-[#d1d5db] focus:border-[#0065cb] focus:ring-[#0065cb]/20"
+                    : "border-[var(--border-strong)] focus:border-[var(--acl-primary)] focus:ring-[var(--acl-primary)]/20"
                 }`}
               />
             </div>
             <div>
-              <label className="block text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] mb-1.5">
+              <label className="block text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] mb-1.5">
                 Role
               </label>
               <select
                 value={approverRole}
                 onChange={(e) => setApproverRole(e.target.value as ApproverRole)}
-                className="w-full text-xs px-3 py-2 rounded-md border border-[#d1d5db] bg-white focus:outline-none focus:ring-2 focus:border-[#0065cb] focus:ring-[#0065cb]/20"
+                className="w-full text-xs px-3 py-2 rounded-md border border-[var(--border-strong)] bg-white focus:outline-none focus:ring-2 focus:border-[var(--acl-primary)] focus:ring-[var(--acl-primary)]/20"
               >
                 {APPROVER_ROLES.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -182,22 +166,32 @@ export function OverrideModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-[#e5e7eb] flex items-center justify-end gap-2 bg-[#f7f8fa]">
-          <button
-            onClick={onClose}
-            className="text-xs font-medium px-3 py-1.5 rounded-md border border-[#d1d5db] bg-white text-[#4b5563] hover:bg-[#eef0f3] cursor-pointer"
+        <DialogFooter className="px-5 py-4 border-t border-[var(--border)] bg-[var(--bg-base)] flex-row justify-between items-center gap-2">
+          <a
+            href="/documents/policies/exception-review-policy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[10px] text-[var(--acl-primary)] hover:underline"
           >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="text-xs font-medium px-3 py-1.5 rounded-md border border-red-600 bg-red-600 text-white hover:bg-red-700 cursor-pointer"
-          >
-            Override + Release
-          </button>
-        </div>
-      </div>
-    </div>
+            <FileText className="w-3 h-3" />
+            View Policy Document
+          </a>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="text-xs font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="text-xs font-medium px-3 py-1.5 rounded-md border border-red-600 bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+            >
+              Authorize Release
+            </button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

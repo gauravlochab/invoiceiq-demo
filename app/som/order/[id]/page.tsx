@@ -38,7 +38,7 @@ const STATUS_COLORS: Record<TaskStatus, { text: string; bg: string; border: stri
   pass: { text: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", label: "Verified" },
   warn: { text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200", label: "Review" },
   fail: { text: "text-red-700", bg: "bg-red-50", border: "border-red-200", label: "Failed" },
-  error: { text: "text-[#4b5563]", bg: "bg-[#f0f2f5]", border: "border-[#e5e7eb]", label: "Error" },
+  error: { text: "text-[var(--text-secondary)]", bg: "bg-[var(--bg-subtle)]", border: "border-[var(--border)]", label: "Error" },
 };
 
 function formatCurrency(n: number) {
@@ -79,9 +79,9 @@ export default function SomOrderRunnerPage() {
 
   if (!order) {
     return (
-      <div className="bg-[#f7f8fa] min-h-screen p-8">
-        <p className="text-sm text-[#4b5563]">Order not found.</p>
-        <Link href="/som" className="text-[#0065cb] text-xs no-underline hover:underline">
+      <div className="bg-[var(--bg-base)] min-h-screen p-8">
+        <p className="text-sm text-[var(--text-secondary)]">Order not found.</p>
+        <Link href="/som" className="text-[var(--acl-primary)] text-xs no-underline hover:underline">
           ← Back to queue
         </Link>
       </div>
@@ -108,12 +108,12 @@ export default function SomOrderRunnerPage() {
   }
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Breadcrumb */}
-      <div className="pt-6 px-8">
+      <div className="pt-6 px-6 lg:px-8">
         <button
           onClick={() => router.push("/som")}
-          className="inline-flex items-center gap-1 text-xs text-[#0065cb] bg-transparent border-none cursor-pointer hover:underline p-0"
+          className="inline-flex items-center gap-1 text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
         >
           <ArrowLeft className="w-3 h-3" />
           Back to SOM queue
@@ -121,26 +121,26 @@ export default function SomOrderRunnerPage() {
       </div>
 
       {/* Header */}
-      <div className="px-8 pt-3 pb-5">
+      <div className="px-6 lg:px-8 pt-3 pb-5">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[#9ca3af]">{order.id}</span>
-          <ShieldAlert className="w-3 h-3 text-[#0065cb]" />
-          <span className="text-[10px] uppercase tracking-wide font-semibold text-[#0065cb]">SOM workflow</span>
+          <span className="font-mono text-[11px] text-[var(--text-muted)]">{order.id}</span>
+          <ShieldAlert className="w-3 h-3 text-[var(--acl-primary)]" />
+          <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--acl-primary)]">SOM workflow</span>
           {order.lineItems.some((l) => l.isControlled) && (
             <span className="badge warning">Controlled substance</span>
           )}
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1.5 leading-tight">
+        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1.5 leading-tight">
           {order.pharmacy.name}
         </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           {order.pharmacy.address} · {order.pharmacy.city}, {order.pharmacy.state} ·
           {" "}
           {order.lineItems.length} line item{order.lineItems.length === 1 ? "" : "s"} · {formatCurrency(order.totalAmount)}
         </p>
       </div>
 
-      <div className="px-8 pb-8 grid grid-cols-[1fr_320px] gap-5 items-start">
+      <div className="px-6 lg:px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
         {/* LEFT: Pipeline */}
         <div className="flex flex-col gap-3">
           {/* Re-run button */}
@@ -149,7 +149,7 @@ export default function SomOrderRunnerPage() {
             <button
               onClick={startRun}
               disabled={isRunning}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-md border border-[#d1d5db] bg-white text-[#4b5563] cursor-pointer hover:bg-[#f0f2f5] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--bg-subtle)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
               {isRunning ? "Running…" : "Re-run pipeline"}
@@ -193,7 +193,7 @@ export default function SomOrderRunnerPage() {
                 {decision === "escalated" && "Escalated to compliance manager"}
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button
                   onClick={() => handleDecision("approved")}
                   disabled={!allDone || (overall === "fail")}
@@ -212,7 +212,7 @@ export default function SomOrderRunnerPage() {
                 <button
                   onClick={() => handleDecision("escalated")}
                   disabled={!allDone}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-[#0065cb] bg-white text-[#0065cb] cursor-pointer hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="text-xs font-medium px-3 py-2 rounded-md border border-[var(--acl-primary)] bg-white text-[var(--acl-primary)] cursor-pointer hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Escalate
                 </button>
@@ -232,9 +232,9 @@ export default function SomOrderRunnerPage() {
               { label: "NPI on file", value: order.pharmacy.npi || "—", mono: true },
               { label: "Total", value: formatCurrency(order.totalAmount) },
             ].map((row, i, arr) => (
-              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[#f0f2f5]" : ""}`}>
-                <span className="text-[11px] text-[#4b5563]">{row.label}</span>
-                <span className={`text-[11px] text-[#111827] font-medium ${row.mono ? "font-mono" : ""}`}>{row.value}</span>
+              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}>
+                <span className="text-[11px] text-[var(--text-secondary)]">{row.label}</span>
+                <span className={`text-[11px] text-[var(--text-primary)] font-medium ${row.mono ? "font-mono" : ""}`}>{row.value}</span>
               </div>
             ))}
           </div>
@@ -245,14 +245,14 @@ export default function SomOrderRunnerPage() {
               {order.lineItems.map((line) => (
                 <div key={line.ndc} className="text-[11px]">
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-medium text-[#111827]">{line.description}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{line.description}</span>
                     {line.isControlled && (
                       <span className="text-[9px] uppercase tracking-wide font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
                         Controlled
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between text-[#4b5563]">
+                  <div className="flex items-center justify-between text-[var(--text-secondary)]">
                     <span className="font-mono">{line.ndc}</span>
                     <span className="tabular-nums">
                       {line.quantity.toLocaleString()} × {formatCurrency(line.unitPrice)}
@@ -292,7 +292,7 @@ function TaskCard({
     <div className={`relative card overflow-hidden transition-opacity ${
       taskState?.status === "pending" ? "opacity-60" : "opacity-100"
     }`}>
-      {isRunning && <BorderBeam duration={3} colorFrom="#0065cb" colorTo="#22d3ee" />}
+      {isRunning && <BorderBeam duration={3} colorFrom="var(--acl-primary)" colorTo="#22d3ee" />}
       <div className="p-5 flex items-start gap-4">
         {/* Numbered circle + icon */}
         <div className="flex-shrink-0">
@@ -300,8 +300,8 @@ function TaskCard({
             isDone && result
               ? `${STATUS_COLORS[result.status].bg} ${STATUS_COLORS[result.status].text}`
               : isRunning
-              ? "bg-[#0065cb]/10 text-[#0065cb]"
-              : "bg-[#f0f2f5] text-[#9ca3af]"
+              ? "bg-[var(--acl-primary)]/10 text-[var(--acl-primary)]"
+              : "bg-[var(--bg-subtle)] text-[var(--text-muted)]"
           }`}>
             {isDone && result?.status === "pass" ? (
               <Check className="w-4 h-4" />
@@ -321,8 +321,8 @@ function TaskCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3 mb-1">
             <div className="flex items-center gap-2">
-              <Icon className="w-3.5 h-3.5 text-[#4b5563]" />
-              <h3 className="text-sm font-semibold text-[#111827] m-0">{title}</h3>
+              <Icon className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">{title}</h3>
             </div>
             {isDone && result && (
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${STATUS_COLORS[result.status].bg} ${STATUS_COLORS[result.status].text} border ${STATUS_COLORS[result.status].border}`}>
@@ -330,14 +330,14 @@ function TaskCard({
               </span>
             )}
             {isRunning && (
-              <span className="text-[10px] font-medium text-[#0065cb] flex items-center gap-1">
+              <span className="text-[10px] font-medium text-[var(--acl-primary)] flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Running
               </span>
             )}
           </div>
           {description && (
-            <p className="text-[11px] text-[#4b5563] m-0 leading-snug mb-2">{description}</p>
+            <p className="text-[11px] text-[var(--text-secondary)] m-0 leading-snug mb-2">{description}</p>
           )}
           {isDone && result && (
             <>
@@ -421,25 +421,25 @@ function TaskEvidence({
     const matches = evidence.matches as Array<{ ndc: string; productName: string; orderedUnitPrice: number; contractPrice: number | null; deviationPct: number | null; outcome: string; tolerancePct: number | null }>;
     if (!matches?.length) return null;
     return (
-      <div className="mt-3 border border-[#e5e7eb] rounded-md overflow-hidden">
+      <div className="mt-3 border border-[var(--border)] rounded-md overflow-hidden">
         <table className="w-full text-[11px]">
-          <thead className="bg-[#f7f8fa]">
+          <thead className="bg-[var(--bg-base)]">
             <tr>
-              <th className="text-left px-2.5 py-1.5 font-medium text-[#4b5563]">Product</th>
-              <th className="text-right px-2.5 py-1.5 font-medium text-[#4b5563]">Ordered</th>
-              <th className="text-right px-2.5 py-1.5 font-medium text-[#4b5563]">Contract</th>
-              <th className="text-right px-2.5 py-1.5 font-medium text-[#4b5563]">Δ</th>
+              <th className="text-left px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Product</th>
+              <th className="text-right px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Ordered</th>
+              <th className="text-right px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Contract</th>
+              <th className="text-right px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Δ</th>
             </tr>
           </thead>
           <tbody>
             {matches.map((m) => (
-              <tr key={m.ndc} className="border-t border-[#f0f2f5]">
-                <td className="px-2.5 py-1.5 text-[#111827]">
+              <tr key={m.ndc} className="border-t border-[var(--bg-subtle)]">
+                <td className="px-2.5 py-1.5 text-[var(--text-primary)]">
                   <div className="font-medium">{m.productName}</div>
-                  <div className="text-[10px] text-[#9ca3af] font-mono">{m.ndc}</div>
+                  <div className="text-[10px] text-[var(--text-muted)] font-mono">{m.ndc}</div>
                 </td>
-                <td className="text-right px-2.5 py-1.5 tabular-nums text-[#111827]">${m.orderedUnitPrice.toFixed(2)}</td>
-                <td className="text-right px-2.5 py-1.5 tabular-nums text-[#4b5563]">
+                <td className="text-right px-2.5 py-1.5 tabular-nums text-[var(--text-primary)]">${m.orderedUnitPrice.toFixed(2)}</td>
+                <td className="text-right px-2.5 py-1.5 tabular-nums text-[var(--text-secondary)]">
                   {m.contractPrice != null ? `$${m.contractPrice.toFixed(2)}` : "—"}
                 </td>
                 <td className={`text-right px-2.5 py-1.5 tabular-nums font-medium ${
@@ -489,21 +489,21 @@ function PatternSubCheckRow({
     subCheck.status === "pass" ? "bg-emerald-500"
     : subCheck.status === "warn" ? "bg-amber-500"
     : subCheck.status === "fail" ? "bg-red-500"
-    : "bg-[#9ca3af]";
-  const labelColor = STATUS_COLORS[subCheck.status]?.text ?? "text-[#4b5563]";
+    : "bg-[var(--text-muted)]";
+  const labelColor = STATUS_COLORS[subCheck.status]?.text ?? "text-[var(--text-secondary)]";
   return (
-    <div className="flex items-start gap-2.5 bg-[#f7f8fa] rounded px-2.5 py-2">
+    <div className="flex items-start gap-2.5 bg-[var(--bg-base)] rounded px-2.5 py-2">
       <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide font-semibold text-[#4b5563]">
+          <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--text-secondary)]">
             {subCheck.label}
           </span>
           <span className={`text-[9px] uppercase tracking-wide font-semibold ${labelColor}`}>
             {STATUS_COLORS[subCheck.status]?.label ?? subCheck.status}
           </span>
         </div>
-        <p className="text-[11px] text-[#111827] m-0 leading-snug mt-0.5">{subCheck.message}</p>
+        <p className="text-[11px] text-[var(--text-primary)] m-0 leading-snug mt-0.5">{subCheck.message}</p>
       </div>
     </div>
   );
@@ -523,12 +523,12 @@ function EvidenceRow({
   const inner = (
     <>
       <div className="flex items-center gap-1.5 mb-1">
-        <Icon className="w-3 h-3 text-[#9ca3af]" />
-        <span className="text-[10px] uppercase tracking-wide text-[#9ca3af] font-semibold">{label}</span>
+        <Icon className="w-3 h-3 text-[var(--text-muted)]" />
+        <span className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] font-semibold">{label}</span>
       </div>
-      <p className="text-[11px] text-[#111827] m-0 leading-snug flex items-center gap-1">
+      <p className="text-[11px] text-[var(--text-primary)] m-0 leading-snug flex items-center gap-1">
         {value}
-        {link && <ChevronRight className="w-3 h-3 text-[#0065cb]" />}
+        {link && <ChevronRight className="w-3 h-3 text-[var(--acl-primary)]" />}
       </p>
     </>
   );
@@ -538,11 +538,11 @@ function EvidenceRow({
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        className="block bg-[#f7f8fa] rounded px-2.5 py-2 no-underline hover:bg-[#eef0f3] transition-colors"
+        className="block bg-[var(--bg-base)] rounded px-2.5 py-2 no-underline hover:bg-[var(--bg-subtle)] transition-colors"
       >
         {inner}
       </a>
     );
   }
-  return <div className="bg-[#f7f8fa] rounded px-2.5 py-2">{inner}</div>;
+  return <div className="bg-[var(--bg-base)] rounded px-2.5 py-2">{inner}</div>;
 }

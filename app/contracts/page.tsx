@@ -1,6 +1,7 @@
 "use client";
 
 import { contracts, formatCurrency, formatDate, Contract } from "@/lib/data";
+import { VendorBadge } from "@/components/VendorBadge";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -42,20 +43,20 @@ function SpendBar({
 }) {
   const p = pct(spend, cap);
   const fillColor =
-    p >= 100 ? "#DC2626" : p >= 70 ? "#B45309" : "#0065cb";
+    p >= 100 ? "var(--critical)" : p >= 70 ? "var(--warning)" : "var(--acl-primary)";
 
   return (
     <div>
       {label && (
-        <div className="section-label mb-1 text-[#9ca3af]">
+        <div className="section-label mb-1 text-[var(--text-muted)]">
           {label}
         </div>
       )}
       <div className="flex items-center justify-between mb-1">
         <span className="section-label">SPEND VS CAP</span>
-        <span className="text-xs tabular-nums text-[#4b5563]">
+        <span className="text-xs tabular-nums text-[var(--text-secondary)]">
           {formatCurrency(spend)}{" "}
-          <span className="text-[#9ca3af]">/</span>{" "}
+          <span className="text-[var(--text-muted)]">/</span>{" "}
           {formatCurrency(cap)}
         </span>
       </div>
@@ -65,7 +66,7 @@ function SpendBar({
           style={{ width: `${Math.min(p, 100)}%`, background: fillColor }}
         />
       </div>
-      <div className={`text-xs mt-1 ${p >= 100 ? "text-red-600" : "text-[#4b5563]"}`}>
+      <div className={`text-xs mt-1 ${p >= 100 ? "text-red-600" : "text-[var(--text-secondary)]"}`}>
         {p >= 100
           ? `${p.toFixed(1)}% of cap — ${formatCurrency(spend - cap)} over limit`
           : `${p.toFixed(1)}% of cap`}
@@ -83,10 +84,10 @@ function ContractCard({ contract }: { contract: Contract }) {
 
   const leftBorderColor =
     isBreached
-      ? "#DC2626"
+      ? "var(--critical)"
       : contract.status === "warning"
-      ? "#B45309"
-      : "#e5e7eb";
+      ? "var(--warning)"
+      : "var(--border)";
 
   const statusBadgeClass =
     isBreached
@@ -112,35 +113,35 @@ function ContractCard({ contract }: { contract: Contract }) {
       {/* Card header */}
       <div className="flex items-start justify-between px-5 pt-4 pb-3">
         <div>
-          <div className="text-sm font-semibold text-[#111827]">
-            {contract.vendor}
+          <div className="mb-1">
+            <VendorBadge name={contract.vendor} size="md" />
           </div>
-          <div className="text-xs font-mono text-[#9ca3af] mt-0.5">
+          <div className="text-xs font-mono text-[var(--text-muted)] mt-0.5 pl-[42px]">
             {contract.contractNumber}
           </div>
-          <div className="mt-1.5">
+          <div className="mt-1.5 pl-[42px]">
             <span className="badge neutral">{contract.category}</span>
           </div>
         </div>
         <div className="text-right">
           <span className={statusBadgeClass}>{statusLabel}</span>
-          <div className="text-xs text-[#9ca3af] mt-1">
+          <div className="text-xs text-[var(--text-muted)] mt-1">
             {fmtPeriod(contract.startDate, contract.endDate)}
           </div>
         </div>
       </div>
 
       {/* Spend section */}
-      <div className="px-5 pb-3 border-b border-[#f0f2f5]">
+      <div className="px-5 pb-3 border-b border-[var(--bg-subtle)]">
         {hasQuantityCap ? (
           <div className="flex flex-col gap-4">
             {/* Value bar */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="section-label">VALUE SPEND VS CAP</span>
-                <span className="text-xs tabular-nums text-[#4b5563]">
+                <span className="text-xs tabular-nums text-[var(--text-secondary)]">
                   {formatCurrency(contract.currentSpend)}{" "}
-                  <span className="text-[#9ca3af]">/</span>{" "}
+                  <span className="text-[var(--text-muted)]">/</span>{" "}
                   {formatCurrency(contract.capValue)}
                 </span>
               </div>
@@ -151,14 +152,14 @@ function ContractCard({ contract }: { contract: Contract }) {
                     width: `${Math.min(valuePct, 100)}%`,
                     background:
                       valuePct >= 100
-                        ? "#DC2626"
+                        ? "var(--critical)"
                         : valuePct >= 70
-                        ? "#B45309"
-                        : "#0065cb",
+                        ? "var(--warning)"
+                        : "var(--acl-primary)",
                   }}
                 />
               </div>
-              <div className="text-xs mt-1 text-[#4b5563]">
+              <div className="text-xs mt-1 text-[var(--text-secondary)]">
                 {valuePct.toFixed(1)}% of cap
               </div>
             </div>
@@ -170,9 +171,9 @@ function ContractCard({ contract }: { contract: Contract }) {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="section-label">QUANTITY VS CAP</span>
-                      <span className="text-xs tabular-nums text-[#4b5563]">
+                      <span className="text-xs tabular-nums text-[var(--text-secondary)]">
                         {contract.currentQuantity.toLocaleString()}{" "}
-                        <span className="text-[#9ca3af]">/</span>{" "}
+                        <span className="text-[var(--text-muted)]">/</span>{" "}
                         {contract.capQuantity.toLocaleString()} units
                       </span>
                     </div>
@@ -183,14 +184,14 @@ function ContractCard({ contract }: { contract: Contract }) {
                           width: `${Math.min(qp, 100)}%`,
                           background:
                             qp >= 100
-                              ? "#DC2626"
+                              ? "var(--critical)"
                               : qp >= 70
-                              ? "#B45309"
-                              : "#0065cb",
+                              ? "var(--warning)"
+                              : "var(--acl-primary)",
                         }}
                       />
                     </div>
-                    <div className="text-xs mt-1 text-[#4b5563]">
+                    <div className="text-xs mt-1 text-[var(--text-secondary)]">
                       {qp.toFixed(1)}% of cap
                     </div>
                   </div>
@@ -204,7 +205,7 @@ function ContractCard({ contract }: { contract: Contract }) {
 
       {/* Rebate alert */}
       {contract.rebateMissed !== undefined && contract.rebateMissed > 0 && (
-        <div className="px-5 py-2.5 border-b border-[#f0f2f5] flex items-center gap-2">
+        <div className="px-5 py-2.5 border-b border-[var(--bg-subtle)] flex items-center gap-2">
           <span className="section-label">UNCLAIMED REBATE</span>
           <span className="text-xs text-amber-700">
             {formatCurrency(contract.rebateMissed)} not received — No credit
@@ -215,13 +216,13 @@ function ContractCard({ contract }: { contract: Contract }) {
 
       {/* Tier pricing */}
       {contract.tieredPricing && (
-        <div className="px-5 py-2.5 border-b border-[#f0f2f5]">
+        <div className="px-5 py-2.5 border-b border-[var(--bg-subtle)]">
           <div className="section-label mb-1.5">TIERED PRICING</div>
           <div className="flex flex-col gap-1">
-            <div className="text-xs text-[#4b5563]">
+            <div className="text-xs text-[var(--text-secondary)]">
               Tier 1: ≤ 1,000 units/month &rarr; $85.00/unit
             </div>
-            <div className="text-xs text-[#4b5563]">
+            <div className="text-xs text-[var(--text-secondary)]">
               Tier 2: &gt; 1,000 units/month &rarr; $72.00/unit{" "}
               <span className="text-amber-700">
                 &larr; should apply (2,340 units in Mar)
@@ -254,7 +255,7 @@ function ContractCard({ contract }: { contract: Contract }) {
             <button className="bg-white text-red-600 text-xs font-medium px-3 py-1.5 rounded-md border border-red-200 cursor-pointer hover:bg-red-50 transition-colors">
               Contact Vendor
             </button>
-            <button className="bg-white text-[#4b5563] text-xs px-3 py-1.5 rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
+            <button className="bg-white text-[var(--text-secondary)] text-xs px-3 py-1.5 rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
               Notify CFO
             </button>
           </div>
@@ -264,10 +265,10 @@ function ContractCard({ contract }: { contract: Contract }) {
       {/* Cardinal Health warning actions */}
       {isCardinalWarning && (
         <div className="px-5 pb-4 flex gap-2">
-          <button className="bg-white text-[#111827] text-xs font-medium px-3 py-1.5 rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
+          <button className="bg-white text-[var(--text-primary)] text-xs font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
             Request Rebate Credit Memo
           </button>
-          <button className="bg-white text-[#111827] text-xs font-medium px-3 py-1.5 rounded-md border border-[#d1d5db] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
+          <button className="bg-white text-[var(--text-primary)] text-xs font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
             Submit Pricing Correction
           </button>
         </div>
@@ -292,61 +293,61 @@ export default function ContractCompliancePage() {
   ).length;
 
   return (
-    <div className="bg-[#f7f8fa] min-h-full">
+    <div className="bg-[var(--bg-base)] min-h-full">
       {/* ── Header ── */}
-      <div className="px-8 pt-8 pb-6">
+      <div className="px-6 lg:px-8 pt-8 pb-6">
         <div className="flex items-start justify-between">
           <div>
-            <div className="text-xl font-semibold text-[#111827]">
+            <div className="text-xl font-semibold text-[var(--text-primary)]">
               Contract Compliance
             </div>
-            <div className="text-xs text-[#4b5563] mt-1">
+            <div className="text-xs text-[var(--text-secondary)] mt-1">
               {contracts.length} active contracts &middot; {atRiskCount} at risk &middot;{" "}
               {breachedCount} breached
             </div>
           </div>
           <div className="flex gap-2 items-center">
-            <button className="text-sm text-[#111827] bg-white border border-[#e5e7eb] rounded-md px-3.5 py-[7px] cursor-pointer hover:bg-[#f7f8fa] transition-colors">
+            <button className="text-sm text-[var(--text-primary)] bg-white border border-[var(--border)] rounded-md px-3.5 py-[7px] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
               Download Report
             </button>
-            <button className="text-sm text-white bg-[#0065cb] border-none rounded-md px-3.5 py-[7px] cursor-pointer font-medium hover:bg-[#0057ad] transition-colors">
+            <button className="text-sm text-white bg-[var(--acl-primary)] border-none rounded-md px-3.5 py-[7px] cursor-pointer font-medium hover:bg-[var(--acl-primary-hover)] transition-colors">
               Add Contract
             </button>
           </div>
         </div>
-        <hr className="border-none border-t border-[#e5e7eb] mt-5" />
+        <hr className="border-none border-t border-[var(--border)] mt-5" />
       </div>
 
       {/* ── Summary strip ── */}
-      <div className="px-8 pb-6">
-        <div className="bg-white border border-[#e5e7eb] rounded-lg flex">
+      <div className="px-6 lg:px-8 pb-6">
+        <div className="bg-white border border-[var(--border)] rounded-lg flex">
           {/* Cell 1 */}
-          <div className="flex-1 px-5 py-4 border-r border-[#e5e7eb]">
+          <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
             <div className="section-label mb-1.5">TOTAL CONTRACT VALUE</div>
-            <div className="text-xl font-semibold text-[#111827] tabular-nums">
+            <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
               {formatCurrency(totalValue)}
             </div>
-            <div className="text-xs text-[#4b5563] mt-0.5">
+            <div className="text-xs text-[var(--text-secondary)] mt-0.5">
               {contracts.length} contracts
             </div>
           </div>
 
           {/* Cell 2 */}
-          <div className="flex-1 px-5 py-4 border-r border-[#e5e7eb]">
+          <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
             <div className="section-label mb-1.5">CURRENT SPEND</div>
-            <div className="text-xl font-semibold text-[#111827] tabular-nums">
+            <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
               {formatCurrency(totalSpend)}
             </div>
-            <div className="text-xs text-[#4b5563] mt-0.5">Q1 2026</div>
+            <div className="text-xs text-[var(--text-secondary)] mt-0.5">Q1 2026</div>
           </div>
 
           {/* Cell 3 */}
-          <div className="flex-1 px-5 py-4 border-r border-[#e5e7eb]">
+          <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
             <div className="section-label mb-1.5">UNCLAIMED REBATES</div>
             <div className="text-xl font-semibold text-amber-700 tabular-nums">
               {formatCurrency(totalUnclaimed)}
             </div>
-            <div className="text-xs text-[#4b5563] mt-0.5">
+            <div className="text-xs text-[var(--text-secondary)] mt-0.5">
               {vendorsWithRebates} vendors
             </div>
           </div>
@@ -357,20 +358,20 @@ export default function ContractCompliancePage() {
             <div className="text-xl font-semibold text-red-600 tabular-nums">
               {breachedCount}
             </div>
-            <div className="text-xs text-[#4b5563] mt-0.5">Immediate action</div>
+            <div className="text-xs text-[var(--text-secondary)] mt-0.5">Immediate action</div>
           </div>
         </div>
       </div>
 
       {/* ── Contract cards ── */}
-      <div className="px-8">
+      <div className="px-6 lg:px-8">
         {sortedContracts.map((contract) => (
           <ContractCard key={contract.id} contract={contract} />
         ))}
       </div>
 
       {/* ── Renewal timeline ── */}
-      <div className="px-8 pt-2 pb-8">
+      <div className="px-6 lg:px-8 pt-2 pb-8">
         <div className="section-label mb-2">UPCOMING RENEWALS</div>
         <div className="card">
           <table className="data-table">
@@ -385,34 +386,34 @@ export default function ContractCompliancePage() {
             </thead>
             <tbody>
               <tr>
-                <td className="text-sm text-[#111827]">BioMed Equipment Inc.</td>
+                <td><VendorBadge name="BioMed Equipment Inc." size="sm" /></td>
                 <td className="mono">CTR-2024-BIO-009</td>
-                <td className="text-sm text-[#111827]">Dec 31, 2025</td>
+                <td className="text-sm text-[var(--text-primary)]">Dec 31, 2025</td>
                 <td><span className="badge critical">Expired</span></td>
                 <td>
-                  <a href="#" className="text-xs text-[#0065cb] no-underline font-medium hover:underline">
+                  <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
                     Renew &rarr;
                   </a>
                 </td>
               </tr>
               <tr>
-                <td className="text-sm text-[#111827]">Cardinal Health</td>
+                <td><VendorBadge name="Cardinal Health" size="sm" /></td>
                 <td className="mono">CTR-2025-CAR-003</td>
-                <td className="text-sm text-[#111827]">Mar 31, 2026</td>
+                <td className="text-sm text-[var(--text-primary)]">Mar 31, 2026</td>
                 <td><span className="badge warning">Expiring</span></td>
                 <td>
-                  <a href="#" className="text-xs text-[#0065cb] no-underline font-medium hover:underline">
+                  <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
                     Renew &rarr;
                   </a>
                 </td>
               </tr>
               <tr>
-                <td className="text-sm text-[#111827]">Steris Corporation</td>
+                <td><VendorBadge name="Steris Corporation" size="sm" /></td>
                 <td className="mono">CTR-2025-STE-007</td>
-                <td className="text-sm text-[#111827]">May 31, 2026</td>
+                <td className="text-sm text-[var(--text-primary)]">May 31, 2026</td>
                 <td><span className="badge neutral">Active</span></td>
                 <td>
-                  <a href="#" className="text-xs text-[#0065cb] no-underline font-medium hover:underline">
+                  <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
                     Renew &rarr;
                   </a>
                 </td>

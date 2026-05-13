@@ -40,7 +40,7 @@ function rowRiskBg(score: number): string {
 function flaggedColor(pct: number): string {
   if (pct > 25) return "text-red-600";
   if (pct > 5) return "text-amber-600";
-  return "text-[#4b5563]";
+  return "text-[var(--text-secondary)]";
 }
 
 const exceptionTypeLabels: Record<string, string> = {
@@ -97,59 +97,59 @@ export default function PharmacyScoringPage() {
   }
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Header */}
-      <div className="px-8 pt-8 pb-6">
+      <div className="px-6 lg:px-8 pt-8 pb-6">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <ShieldAlert className="w-4 h-4 text-[#0065cb]" />
-              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[#0065cb]">
+              <ShieldAlert className="w-4 h-4 text-[var(--acl-primary)]" />
+              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
                 Drug Distributor · SOM
               </span>
             </div>
-            <h1 className="text-xl font-semibold text-[#111827] tracking-tight leading-tight m-0">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight m-0">
               Pharmacy Risk Scoring
             </h1>
-            <p className="text-xs text-[#4b5563] mt-1 m-0">
+            <p className="text-xs text-[var(--text-secondary)] mt-1 m-0">
               Order-time risk across {sorted.length} pharmacies — license · address · price · volume · identity
             </p>
           </div>
           <button
             onClick={() => showToast("Pharmacy risk report exported as PDF", "success")}
-            className="px-3 py-1.5 text-xs font-medium rounded-md border border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f0f2f5] transition-colors cursor-pointer"
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
           >
             Export Report
           </button>
         </div>
       </div>
 
-      <hr className="border-[#e5e7eb] m-0" />
+      <hr className="border-[var(--border)] m-0" />
 
       {/* Summary */}
       {loading ? (
-        <div className="px-8 py-6">
-          <div className="flex border border-[#e5e7eb] rounded-lg bg-white">
+        <div className="px-6 lg:px-8 py-6">
+          <div className="flex border border-[var(--border)] rounded-lg bg-white">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`flex-1 px-6 py-4 ${i < 4 ? "border-r border-[#e5e7eb]" : ""}`}>
-                <div className="h-3 w-20 bg-[#e5e7eb] rounded animate-pulse mb-3" />
-                <div className="h-7 w-14 bg-[#e5e7eb] rounded animate-pulse" />
+              <div key={i} className={`flex-1 px-6 py-4 ${i < 4 ? "border-r border-[var(--border)]" : ""}`}>
+                <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse mb-3" />
+                <div className="h-7 w-14 bg-[var(--border)] rounded animate-pulse" />
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="px-8 py-6">
-          <div className="flex border border-[#e5e7eb] rounded-lg bg-white">
-            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+        <div className="px-6 lg:px-8 py-6">
+          <div className="flex border border-[var(--border)] rounded-lg bg-white">
+            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
               <p className="section-label">Pharmacies Scored</p>
-              <p className="text-2xl font-bold text-[#111827] mt-1 m-0">{sorted.length}</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{sorted.length}</p>
             </div>
-            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
               <p className="section-label">High / Critical Risk</p>
               <p className="text-2xl font-bold text-red-600 mt-1 m-0">{highRiskCount}</p>
             </div>
-            <div className="flex-1 px-6 py-4 border-r border-[#e5e7eb]">
+            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
               <p className="section-label">Total Flagged $</p>
               <p className="text-2xl font-bold text-amber-600 mt-1 m-0">{formatCurrency(totalFlagged)}</p>
             </div>
@@ -162,7 +162,7 @@ export default function PharmacyScoringPage() {
       )}
 
       {/* Pharmacy Table */}
-      <div className="px-8 pb-8">
+      <div className="px-6 lg:px-8 pb-8">
         <div className="card overflow-hidden">
           <table className="data-table">
             <thead>
@@ -173,7 +173,7 @@ export default function PharmacyScoringPage() {
                 <th>
                   <button
                     onClick={() => handleSortClick("score")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] hover:text-[#111827] bg-transparent border-none cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
                   >
                     Score
                     <ArrowUpDown className="w-3 h-3" />
@@ -183,7 +183,7 @@ export default function PharmacyScoringPage() {
                 <th className="right">
                   <button
                     onClick={() => handleSortClick("totalSpend")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] hover:text-[#111827] bg-transparent border-none cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
                   >
                     Spend
                     <ArrowUpDown className="w-3 h-3" />
@@ -192,7 +192,7 @@ export default function PharmacyScoringPage() {
                 <th className="right">
                   <button
                     onClick={() => handleSortClick("flaggedAmount")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] hover:text-[#111827] bg-transparent border-none cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
                   >
                     Flagged $
                     <ArrowUpDown className="w-3 h-3" />
@@ -201,7 +201,7 @@ export default function PharmacyScoringPage() {
                 <th className="right">
                   <button
                     onClick={() => handleSortClick("flaggedPct")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[#4b5563] hover:text-[#111827] bg-transparent border-none cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
                   >
                     Flagged %
                     <ArrowUpDown className="w-3 h-3" />
@@ -250,20 +250,20 @@ function ExpandablePharmacyRow({
 }) {
   return (
     <>
-      <tr className={`group cursor-pointer hover:bg-[#f7f8fa] ${rowRiskBg(p.score)}`} onClick={onToggle}>
-        <td className="text-[#9ca3af]">
+      <tr className={`group cursor-pointer hover:bg-[var(--bg-base)] ${rowRiskBg(p.score)}`} onClick={onToggle}>
+        <td className="text-[var(--text-muted)]">
           {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </td>
         <td>
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[#111827]">{p.name}</span>
-            <span className="text-[10px] text-[#9ca3af] font-mono">{p.id}</span>
+            <span className="text-xs font-medium text-[var(--text-primary)]">{p.name}</span>
+            <span className="text-[10px] text-[var(--text-muted)] font-mono">{p.id}</span>
           </div>
         </td>
         <td>
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3 h-3 text-[#9ca3af]" />
-            <span className="text-xs text-[#4b5563]">{p.city}, {p.state}</span>
+            <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
+            <span className="text-xs text-[var(--text-secondary)]">{p.city}, {p.state}</span>
           </div>
         </td>
         <td className={`text-sm font-semibold tabular-nums ${scoreColor(p.score)}`}>
@@ -272,7 +272,7 @@ function ExpandablePharmacyRow({
         <td>
           <span className={ratingBadge(p.rating)}>{p.rating}</span>
         </td>
-        <td className="right text-xs tabular-nums text-[#111827]">
+        <td className="right text-xs tabular-nums text-[var(--text-primary)]">
           {p.totalSpend > 0 ? formatCurrency(p.totalSpend) : "—"}
         </td>
         <td className={`right text-xs tabular-nums font-medium ${flaggedColor(p.flaggedPct)}`}>
@@ -320,9 +320,9 @@ function ExpandablePharmacyRow({
 
       {/* Expanded panel */}
       {expanded && (
-        <tr className="bg-[#f7f8fa]">
+        <tr className="bg-[var(--bg-base)]">
           <td colSpan={9} className="p-0">
-            <div className="px-8 py-5 border-t border-[#e5e7eb]">
+            <div className="px-8 py-5 border-t border-[var(--border)]">
               <div className="grid grid-cols-[260px_1fr] gap-6">
                 {/* Score breakdown */}
                 <div>
@@ -340,7 +340,7 @@ function ExpandablePharmacyRow({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p className="section-label m-0">Exception history</p>
-                    <span className="text-[10px] text-[#9ca3af]">
+                    <span className="text-[10px] text-[var(--text-muted)]">
                       {p.exceptions.length} exception{p.exceptions.length === 1 ? "" : "s"}
                     </span>
                   </div>
@@ -348,7 +348,7 @@ function ExpandablePharmacyRow({
                   <div className="card max-h-[400px] overflow-y-auto">
                     {p.exceptions.length === 0 ? (
                       <div className="p-5 text-center">
-                        <p className="text-xs text-[#9ca3af] m-0">No SOM exceptions on file</p>
+                        <p className="text-xs text-[var(--text-muted)] m-0">No SOM exceptions on file</p>
                       </div>
                     ) : (
                       <table className="data-table w-full">
@@ -365,13 +365,13 @@ function ExpandablePharmacyRow({
                             <tr key={ex.id}>
                               <td>
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="text-[11px] font-medium text-[#111827]">
+                                  <span className="text-[11px] font-medium text-[var(--text-primary)]">
                                     {exceptionTypeLabels[ex.type] || ex.type}
                                   </span>
-                                  <span className="text-[10px] text-[#9ca3af] font-mono">{ex.id}</span>
+                                  <span className="text-[10px] text-[var(--text-muted)] font-mono">{ex.id}</span>
                                 </div>
                               </td>
-                              <td className="text-[11px] text-[#4b5563]">
+                              <td className="text-[11px] text-[var(--text-secondary)]">
                                 {new Date(ex.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                               </td>
                               <td className="right text-[11px] tabular-nums font-medium text-red-600">
@@ -380,7 +380,7 @@ function ExpandablePharmacyRow({
                               <td>
                                 <Link
                                   href={`/exceptions/${ex.id}`}
-                                  className="text-[11px] text-[#0065cb] no-underline hover:underline"
+                                  className="text-[11px] text-[var(--acl-primary)] no-underline hover:underline"
                                 >
                                   View →
                                 </Link>
@@ -419,9 +419,9 @@ function ScoreBar({
     : "bg-emerald-500";
   return (
     <div className="flex items-center gap-2">
-      <Icon className="w-3 h-3 text-[#9ca3af] flex-shrink-0" />
-      <span className="text-[10px] text-[#4b5563] flex-shrink-0 w-[110px]">{label}</span>
-      <div className="flex-1 bg-[#f0f2f5] rounded-full h-1.5 overflow-hidden">
+      <Icon className="w-3 h-3 text-[var(--text-muted)] flex-shrink-0" />
+      <span className="text-[10px] text-[var(--text-secondary)] flex-shrink-0 w-[110px]">{label}</span>
+      <div className="flex-1 bg-[var(--bg-subtle)] rounded-full h-1.5 overflow-hidden">
         <div
           className={`h-full rounded-full ${color}`}
           style={{ width: `${Math.max(0, Math.min(100, value))}%` }}

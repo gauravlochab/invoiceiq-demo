@@ -117,68 +117,68 @@ export default function SomQueuePage() {
   };
 
   return (
-    <div className="bg-[#f7f8fa] min-h-screen">
+    <div className="bg-[var(--bg-base)] min-h-screen">
       {/* Header */}
-      <div className="px-8 pt-6 pb-5 border-b border-[#e5e7eb] bg-white">
+      <div className="px-6 lg:px-8 pt-6 pb-5 border-b border-[var(--border)] bg-white">
         <div className="flex items-center gap-2 mb-1.5">
-          <ShieldAlert className="w-4 h-4 text-[#0065cb]" />
-          <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[#0065cb]">
+          <ShieldAlert className="w-4 h-4 text-[var(--acl-primary)]" />
+          <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
             Drug Distributor · SOM Analyst
           </span>
         </div>
-        <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight m-0 mb-1">
+        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1">
           Suspicious Order Monitoring
         </h1>
-        <p className="text-xs text-[#4b5563] m-0">
+        <p className="text-xs text-[var(--text-secondary)] m-0">
           Incoming orders pending verification — Address, License, Pricing, Pattern checks. High/Critical-risk pharmacies require override.
         </p>
       </div>
 
       {/* Stats strip — every number below derives from the actual queue + SOM exceptions */}
-      <div className="px-8 py-4 grid grid-cols-4 gap-4">
+      <div className="px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Orders in queue</p>
-            <Activity className="w-3.5 h-3.5 text-[#9ca3af]" />
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Orders in queue</p>
+            <Activity className="w-3.5 h-3.5 text-[var(--text-muted)]" />
           </div>
-          <p className="text-2xl font-semibold text-[#111827] m-0 tabular-nums">{ordersInBatch}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{controlledCount} with controlled substances</p>
+          <p className="text-2xl font-semibold text-[var(--text-primary)] m-0 tabular-nums">{ordersInBatch}</p>
+          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{controlledCount} with controlled substances</p>
         </div>
 
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Auto-blocked</p>
-            <Lock className="w-3.5 h-3.5 text-[#9ca3af]" />
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Auto-blocked</p>
+            <Lock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
           </div>
           <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{blockedCount}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">awaiting human override</p>
+          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">awaiting human override</p>
         </div>
 
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Flagged this batch</p>
-            <ShieldCheck className="w-3.5 h-3.5 text-[#9ca3af]" />
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Flagged this batch</p>
+            <ShieldCheck className="w-3.5 h-3.5 text-[var(--text-muted)]" />
           </div>
           <p className="text-2xl font-semibold text-amber-700 m-0 tabular-nums">{suspicionRate}%</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">{flaggedOrdersCount} of {ordersInBatch} orders flagged</p>
+          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{flaggedOrdersCount} of {ordersInBatch} orders flagged</p>
         </div>
 
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af] m-0">Blocked exposure</p>
-            <DollarSign className="w-3.5 h-3.5 text-[#9ca3af]" />
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Blocked exposure</p>
+            <DollarSign className="w-3.5 h-3.5 text-[var(--text-muted)]" />
           </div>
           <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{formatCurrency(somBlockedAmount)}</p>
-          <p className="text-[10px] text-[#4b5563] m-0 mt-1">across {somExceptions.length} SOM exceptions</p>
+          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">across {somExceptions.length} SOM exceptions</p>
         </div>
       </div>
 
       {/* Orders table */}
-      <div className="px-8 pb-8">
+      <div className="px-6 lg:px-8 pb-8">
         <div className="card overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#e5e7eb] flex items-center justify-between">
-            <p className="text-sm font-semibold text-[#111827] m-0">Incoming orders</p>
-            <span className="text-[11px] text-[#9ca3af]">High/Critical pharmacies require human override</span>
+          <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
+            <p className="text-sm font-semibold text-[var(--text-primary)] m-0">Incoming orders</p>
+            <span className="text-[11px] text-[var(--text-muted)]">High/Critical pharmacies require human override</span>
           </div>
           <table className="data-table w-full">
             <thead>
@@ -202,7 +202,7 @@ export default function SomQueuePage() {
                   <tr key={order.id} className={blocked && !overrideEntry ? "bg-red-50/40" : ""}>
                     <td>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-mono text-[#111827]">{order.id}</span>
+                        <span className="text-xs font-mono text-[var(--text-primary)]">{order.id}</span>
                         {order.isFresh && !blocked && (
                           <span className="text-[9px] uppercase tracking-wide text-emerald-600 font-medium">
                             Fresh · just arrived
@@ -218,14 +218,14 @@ export default function SomQueuePage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5">
-                        <Pill className="w-3 h-3 text-[#9ca3af]" />
-                        <span className="text-xs font-medium text-[#111827]">{order.pharmacy.name}</span>
+                        <Pill className="w-3 h-3 text-[var(--text-muted)]" />
+                        <span className="text-xs font-medium text-[var(--text-primary)]">{order.pharmacy.name}</span>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-[#9ca3af]" />
-                        <span className="text-xs text-[#4b5563]">
+                        <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
+                        <span className="text-xs text-[var(--text-secondary)]">
                           {order.pharmacy.city}, {order.pharmacy.state}
                         </span>
                       </div>
@@ -233,21 +233,21 @@ export default function SomQueuePage() {
                     <td>
                       <ScoreCell score={score} rating={rating} />
                     </td>
-                    <td className="text-xs text-[#4b5563] tabular-nums">{order.lineItems.length}</td>
+                    <td className="text-xs text-[var(--text-secondary)] tabular-nums">{order.lineItems.length}</td>
                     <td>
                       {hasControlled ? (
                         <span className="badge warning">Yes</span>
                       ) : (
-                        <span className="text-xs text-[#9ca3af]">No</span>
+                        <span className="text-xs text-[var(--text-muted)]">No</span>
                       )}
                     </td>
-                    <td className="right text-xs tabular-nums font-medium text-[#111827]">
+                    <td className="right text-xs tabular-nums font-medium text-[var(--text-primary)]">
                       {formatCurrency(order.totalAmount)}
                     </td>
                     <td>
                       <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-[#9ca3af]" />
-                        <span className="text-xs text-[#4b5563]">{formatTime(order.receivedAt)}</span>
+                        <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                        <span className="text-xs text-[var(--text-secondary)]">{formatTime(order.receivedAt)}</span>
                       </div>
                     </td>
                     <td>
@@ -301,7 +301,7 @@ function ScoreCell({ score, rating }: { score: number; rating: string }) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className={`text-xs font-semibold tabular-nums ${color}`}>{score}/100</span>
-      <span className="text-[9px] uppercase tracking-wide text-[#9ca3af]">{rating}</span>
+      <span className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">{rating}</span>
     </div>
   );
 }
@@ -330,7 +330,7 @@ function ActionCell({
         </span>
         <Link
           href="/som/audit-log"
-          className="text-[10px] text-[#0065cb] no-underline hover:underline"
+          className="text-[10px] text-[var(--acl-primary)] no-underline hover:underline"
         >
           View {overrideEntry.id} →
         </Link>
@@ -353,7 +353,7 @@ function ActionCell({
   return (
     <Link
       href={`/som/order/${order.id}`}
-      className="inline-flex items-center gap-1 text-xs text-[#0065cb] no-underline hover:underline"
+      className="inline-flex items-center gap-1 text-xs text-[var(--acl-primary)] no-underline hover:underline"
     >
       Run checks
       <ArrowRight className="w-3 h-3" />

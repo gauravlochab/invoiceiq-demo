@@ -76,6 +76,38 @@
   --neutral-subtle: #f0f2f5;
   --neutral-text: #374151;
 
+  /* Agent palette */
+  --agent-invoice: #0065cb;
+  --agent-validation: #7c3aed;
+  --agent-compliance: #b45309;
+  --agent-recovery: #15803d;
+  --agent-insight: #0891b2;
+  --agent-invoice-subtle: #e8f1fc;
+  --agent-validation-subtle: #f5f3ff;
+  --agent-compliance-subtle: #fffbeb;
+  --agent-recovery-subtle: #f0fdf4;
+  --agent-insight-subtle: #ecfeff;
+
+  /* Chart palette */
+  --chart-spend: #80b8e6;
+  --chart-flagged: #dc2626;
+  --chart-area-fill: #e8f1fc;
+  --chart-grid: #f0f2f5;
+  --chart-tick: #9ca3af;
+  --chart-recovered: #059669;
+  --chart-target: #dc2626;
+
+  /* Pipeline state */
+  --pipeline-pass-border: #86efac;
+  --pipeline-warn-border: #fcd34d;
+  --pipeline-fail-border: #fca5a5;
+  --pipeline-pass-bg: #f0fdf4;
+  --pipeline-warn-bg: #fffbeb;
+  --pipeline-fail-bg: #fff1f2;
+  --pipeline-pass-badge: #dcfce7;
+  --pipeline-warn-badge: #fef3c7;
+  --pipeline-fail-badge: #fee2e2;
+
   /* Elevation */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-md: 0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
@@ -84,6 +116,39 @@
   /* Transition */
   --transition-fast: 0.15s ease;
   --transition-base: 0.2s ease;
+
+  /* Typography scale (1.200 minor third ratio) */
+  --text-xs: 0.694rem;    /* ~11px */
+  --text-sm: 0.833rem;    /* ~13px */
+  --text-base: 0.875rem;  /* 14px  */
+  --text-md: 1rem;        /* 16px  */
+  --text-lg: 1.125rem;    /* 18px  */
+  --text-xl: 1.25rem;     /* 20px  */
+  --text-2xl: 1.5rem;     /* 24px  */
+  --text-3xl: 1.875rem;   /* 30px  */
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Layout */
+  --content-max-width: 1440px;
+  --sidebar-width-collapsed: 52px;
+  --sidebar-width-expanded: 216px;
+  --page-padding-x: 2rem;
+  --page-padding-y: 1.5rem;
+  --grid-gap: 1rem;
+
+  /* Radius scale */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
 
 /* ─── RESET ──────────────────────────────────────────────────────────────── */
@@ -142,7 +207,22 @@ body {
 
 .data-table tbody tr { border-bottom: 1px solid var(--border); }
 .data-table tbody tr:last-child { border-bottom: none; }
-.data-table tbody tr:hover { background: var(--bg-subtle); }
+
+.data-table tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.015);
+}
+
+.data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+  background-color: rgba(0, 101, 203, 0.04);
+}
+
+.data-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--acl-primary);
+}
 
 .data-table td.mono {
   font-family: 'Geist Mono', monospace;
@@ -187,9 +267,60 @@ body {
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ─── CARD METRIC ────────────────────────────────────────────────────────── */
+
+.card-metric {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-left: 3px solid var(--accent-color, var(--acl-primary));
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.card-metric:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* ─── PAGE HEADER ────────────────────────────────────────────────────────── */
+
+.page-header {
+  position: relative;
+  padding-bottom: 12px;
+}
+.page-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--acl-primary), transparent);
+  border-radius: 2px;
+}
+
+/* ─── STAGGERED ENTRANCE ANIMATIONS ─────────────────────────────────────── */
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slideUp 0.3s ease forwards;
+}
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
 
 /* ─── ALERT BAR ─────────────────────────────────────────────────────────── */
 
@@ -246,6 +377,14 @@ body {
   color: var(--acl-primary-hover);
   border-color: var(--info-border);
 }
+
+/* ─── CATEGORY BADGES ───────────────────────────────────────────────────── */
+
+.badge.category-equipment { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.badge.category-pharma { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge.category-surgical { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.badge.category-sterilization { background: #faf5ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+.badge.category-gpo { background: #f0f2f5; color: #374151; border: 1px solid #d1d5db; }
 
 /* ─── MUTED DIVIDER ──────────────────────────────────────────────────────── */
 
@@ -424,15 +563,6 @@ main { animation: fadeUp 0.2s ease-out; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Card hover lift effect — Linear.app style */
-.card {
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
-}
-.card:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
-}
-
 /* Interactive card — clickable cards get cursor + stronger lift */
 .card-interactive {
   cursor: pointer;
@@ -457,11 +587,6 @@ textarea:focus-visible {
   outline: 2px solid var(--acl-primary);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* Table row hover transition */
-.data-table tbody tr {
-  transition: background-color 0.1s ease;
 }
 
 /* Badge hover subtle scale */
@@ -540,4 +665,15 @@ input, select, textarea {
 /* Number tabular styling for data tables */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* ─── REDUCED MOTION ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
