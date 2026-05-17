@@ -1,32 +1,71 @@
 # Invoice Extraction -- Specification
 
 ## Overview
-The Extract page is the entry point for AI-powered invoice data extraction. It lets analysts upload a PDF invoice or select from a library of 35 recent invoices, then runs the document through the Invoice Agent to extract structured fields (vendor, bill-to, invoice metadata, line items, flags). The page uses a three-stage flow: upload/select, processing animation, and side-by-side results view with the PDF on the left and extracted data on the right. For select invoices, extraction results are cached client-side to provide instant demo responses.
+The Extract page is the entry point for AI-powered invoice data extraction. It lets analysts upload a PDF invoice or select from a library of 35 recent invoices, then runs the document through the Invoice Agent to extract structured fields (vendor, bill-to, invoice metadata, line items, flags). The page uses a three-stage flow: upload/select, processing animation, and side-by-side results view with the PDF on the left and extracted data on the right. For select invoices, extraction results are cached client-side to provide instant responses.
+
+## Acceptance Criteria
+
+EARS notation.
+
+**App shell**
+- [ ] THE SYSTEM SHALL render the Extract page inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
+- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
+
+**Stage 1: Upload / Select**
+- [ ] THE SYSTEM SHALL render the upload zone as a shadcn `Card` with `border-dashed border-border` (200px min-height) accepting PDF files up to 10MB
+- [ ] WHEN a file is selected THE SYSTEM SHALL show the file name + size and an "Upload & Extract" shadcn `Button variant="default"`
+- [ ] WHILE the file is uploading THE SYSTEM SHALL render an upload progress bar using shadcn `Progress`
+- [ ] WHEN extraction fails THE SYSTEM SHALL render the error in a shadcn `Alert variant="destructive"` below the upload zone
+- [ ] THE SYSTEM SHALL render the document library as a container-query card grid (`grid-cols-1 @md/main:grid-cols-2 @lg/main:grid-cols-3 @xl/main:grid-cols-4`), each card a shadcn `Card`
+- [ ] THE SYSTEM SHALL render document badges using shadcn `Badge`: `bg-warning/10 text-warning border-warning` for "Mismatch", `variant="destructive"` for "Duplicate" and "Suspicious", no badge otherwise
+
+**Stage 2: Processing**
+- [ ] WHEN extraction starts THE SYSTEM SHALL render a centered full-screen animation using MagicUI `AnimatedBeam` with 4 pipeline nodes (Invoice PDF → AI Extraction → Structured Data → Exception Queue)
+- [ ] THE SYSTEM SHALL light up each node by switching to `bg-primary text-primary-foreground` as processing advances through the 5 steps
+- [ ] THE SYSTEM SHALL render the step label and document name below the animation in `text-sm text-muted-foreground`
+
+**Stage 3: Results**
+- [ ] THE SYSTEM SHALL render a split-pane layout (left 60%, right 40%) at full viewport height
+- [ ] THE SYSTEM SHALL render the left pane header bar with shadcn `Button variant="ghost"` "Back to Upload", document name, and a `Badge` if applicable
+- [ ] THE SYSTEM SHALL render the PDF iframe in a shadcn `Card` with `MagicUI BorderBeam` during loading
+- [ ] THE SYSTEM SHALL reveal extracted fields one-by-one with a 120ms interval until `allRevealed` is true
+- [ ] WHEN `allRevealed` becomes true THE SYSTEM SHALL render the bottom action bar with "Match Against PO" (or "Search for PO Match" if `no_po_reference` flag is present) shadcn `Button variant="default"` and a "View in Exception Queue" link
+
+**Preview overlay**
+- [ ] WHEN a user clicks "Preview" THE SYSTEM SHALL open a shadcn `Dialog` (800px wide, 85vh height) showing the PDF iframe, document name, "Extract this invoice" `Button variant="default"` (for invoices), and a close button
+
+**Loading and safety**
+- [ ] WHEN the page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for 4 document cards for 300ms before the real library
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable the BorderBeam, AnimatedBeam, and sequential field reveal animations (fields appear all at once)
+- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
+- [ ] IF an extraction fails 3 times consecutively THEN THE SYSTEM SHALL stop retrying and surface a non-recoverable error in shadcn `Alert variant="destructive"`
 
 ## Layout
 
-### Stage 1: Upload / Select
-- **Full-page scrollable layout** with `max-w-5xl` centered content.
-- **Header**: Title "Extract Invoice" and subtitle.
-- **Upload area**: A large drag-and-drop zone (dashed border, 200px min-height). Accepts PDF files up to 10MB. Shows file name, size, and "Upload & Extract" button when a file is selected. Shows upload progress bar during upload.
-- **Error display**: Red `alert-bar critical` below the upload zone if extraction fails.
-- **Recent Invoices grid**: `grid-cols-2 md:grid-cols-3 lg:grid-cols-4` card grid. Each card shows a FileText icon, vendor name, date subtitle, optional badge (Mismatch/Duplicate/Suspicious), and two action buttons: "Preview" and "Extract". Shows 4-card skeleton loading for 300ms on mount.
-- **Supporting Documents**: Separate section below invoices for POs and packing slips. Cards have only a "Preview" button (no extract).
+Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
 
-### Stage 2: Processing
-- **Centered full-screen animation** using MagicUI AnimatedBeam.
-- **Four pipeline nodes** in a horizontal flex row: Invoice PDF -> AI Extraction -> Structured Data -> Exception Queue. Each node is a 48x48px rounded square with an icon. Nodes light up (turn `--acl-primary` background with white icon) as processing progresses through 5 steps.
-- **Three AnimatedBeam connectors** between nodes with staggered delays (0s, 0.7s, 1.4s).
-- **Progress indicator** below: Spinner + step label ("Reading invoice PDF...", "Extracting with AI...", etc.) + document name. Upload progress bar shown during file uploads.
+### Stage 1: Upload / Select (v2.0)
+- Full-page scrollable layout with `max-w-5xl` centered content.
+- **Header**: Title `text-2xl font-semibold` "Extract Invoice" and subtitle `text-sm text-muted-foreground`.
+- **Upload area**: Shadcn `Card` with `border-dashed border-border bg-muted/30`, 200px min-height. Shadcn `Progress` for upload progress.
+- **Error display**: Shadcn `Alert variant="destructive"` below the upload zone on failure.
+- **Recent Invoices grid**: container-query `grid-cols-1 @md/main:grid-cols-2 @lg/main:grid-cols-3 @xl/main:grid-cols-4`. Each card is a shadcn `Card` with `CardHeader` (FileText icon + vendor + date) + `CardAction` (`Badge` if any) + `CardFooter` (`Button variant="outline" size="sm"` "Preview" + `Button variant="default" size="sm"` "Extract"). Shadcn `Skeleton` shows 4-card loading for 300ms.
+- **Supporting Documents**: Separate section below invoices for POs and packing slips. Cards have only "Preview" `Button variant="outline" size="sm"` (no Extract).
 
-### Stage 3: Results
-- **Split-pane layout**: Left 60%, Right 40%, full viewport height.
-- **Left pane**: Header bar with "Back to Upload" button, document name, badge. Below: PDF iframe in a subtle-bg container with rounded corners. BorderBeam animation on the iframe during loading.
-- **Right pane**: Scrollable extracted fields panel. Fields appear one-by-one via a sequential reveal animation (120ms per field). Organized into field groups: Vendor, Bill To, Invoice, Line Items (table), Flags Detected.
-- **Bottom action bar** (right pane): Appears after all fields are revealed. Shows "Match Against PO" or "Search for PO Match" (if no PO reference) button, plus "View in Exception Queue" link.
+### Stage 2: Processing (v2.0)
+- Centered full-screen animation using MagicUI AnimatedBeam.
+- Four pipeline nodes in a horizontal flex row: Invoice PDF → AI Extraction → Structured Data → Exception Queue. Each node is a 48x48 rounded square with an icon. Nodes light up via `bg-primary text-primary-foreground` as processing progresses through 5 steps.
+- Three AnimatedBeam connectors between nodes with staggered delays (0s, 0.7s, 1.4s).
+- Progress indicator below: Loader2 spinner + step label `text-sm text-muted-foreground` + document name `text-foreground`. Shadcn `Progress` shown during file uploads.
 
-### Preview Overlay
-- Modal dialog (800px wide, 85vh height) with backdrop blur. Shows PDF iframe, document name, "Extract this invoice" button (for invoices), and close button.
+### Stage 3: Results (v2.0)
+- Split-pane layout: Left 60%, Right 40%, full viewport height.
+- **Left pane**: Header bar with shadcn `Button variant="ghost"` "Back to Upload", document name `text-base font-semibold`, `Badge`. PDF iframe in a shadcn `Card` with `bg-muted/30`. MagicUI BorderBeam on the iframe during loading.
+- **Right pane**: Scrollable extracted fields panel. Fields appear one-by-one via sequential reveal (120ms per field). Organized into field groups using shadcn `Card`s: Vendor, Bill To, Invoice, Line Items (shadcn `Table`), Flags Detected (shadcn `Badge` per flag, variant per severity).
+- **Bottom action bar** (right pane): Shadcn `Button variant="default"` "Match Against PO" or "Search for PO Match" + `Button variant="link"` "View in Exception Queue". Appears after `allRevealed`.
+
+### Preview Overlay (v2.0)
+- Shadcn `Dialog` (800px wide, 85vh height) with backdrop blur. `DialogHeader` (document name), `DialogContent` (PDF iframe in `bg-muted/30` container), `DialogFooter` with shadcn `Button variant="default"` "Extract this invoice" (for invoices) + `Button variant="ghost"` close.
 
 ## Business Rules
 
@@ -130,13 +169,19 @@ idle ──→ uploading ──→ processing ──→ results
 
 ## Forbidden Patterns
 
-- **NEVER send actual invoice content to external APIs without PII scrubbing** -- Reason: Invoices may contain patient names, SSNs, or other PHI. HIPAA requires sanitization before any external transmission.
-- **NEVER auto-accept AI-extracted field values without user review** -- Reason: OCR and AI extraction have error rates. Users must verify critical fields (amounts, PO numbers, vendor IDs) before they enter the pipeline.
-- **NEVER store original documents in the database** -- Reason: Documents go to object storage (S3/MinIO). The database stores metadata and extracted fields only.
-- **NEVER retry a failed extraction more than 3 times** -- Reason: Repeated failures indicate a structural issue (corrupt file, unsupported format). Retries waste compute and delay the user. Surface the error.
+Use affirmative phrasing per SpecLayer v1.1.
+
+- **Scrub PII before transmitting any invoice content to external APIs** — Reason: invoices may contain patient names, SSNs, or other PHI; HIPAA requires sanitization.
+- **Require explicit user review of AI-extracted field values before they enter the pipeline** — Reason: OCR and AI extraction have error rates; critical fields (amounts, PO numbers, vendor IDs) need verification.
+- **Store original documents in object storage (S3/MinIO); store only metadata and extracted fields in the database** — Reason: documents are large binary blobs; databases store structured data.
+- **Cap retries at 3; surface the error after the third failure** — Reason: repeated failures indicate a structural issue (corrupt file, unsupported format); retries waste compute and delay the user.
+- **Use shadcn `Card`, `Button`, `Badge`, `Alert`, `Progress`, `Dialog`, `Table` primitives for the upload zone, document cards, action buttons, error display, upload progress, preview modal, and line items table** — Reason: deprecates `.card`, `.alert-bar`, `.badge.*` utility classes and custom modal implementations from v1.
+- **Use theme tokens (`bg-card`, `bg-muted/30`, `text-foreground`, `text-muted-foreground`, `bg-primary`, `text-destructive`) for all surfaces, text, and node-lit states** — Reason: hex tokens (`--acl-primary`, `--critical`, `--warning`) removed in v2.0.
+- **Use container queries (`@md/main`, `@lg/main`, `@xl/main`) for the document library grid responsive layout** — Reason: shadcn dashboard-01 standard; better than media queries for component-level responsiveness.
 
 ## AJ Feedback (Parkland Demo)
 - Note: Pending -- no specific feedback for this module yet.
 
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
+<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Upload zone, document cards, results panes → shadcn `Card`. Document library grid uses container queries (@md/main, @lg/main, @xl/main). Action buttons → shadcn `Button` variants. Document badges → shadcn `Badge` (variant="destructive" for Duplicate/Suspicious, bg-warning/10 for Mismatch). Error display → shadcn `Alert variant="destructive"`. Upload progress → shadcn `Progress`. Preview overlay → shadcn `Dialog`. Line items table → shadcn `Table`. Loading → `Skeleton`. Pipeline nodes lit via bg-primary instead of --acl-primary. MagicUI AnimatedBeam + BorderBeam retained. Added 16 EARS Acceptance Criteria. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
