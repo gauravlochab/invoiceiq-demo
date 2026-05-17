@@ -5,7 +5,7 @@
 // Per docs/PLAN_SOM_DRUG_DISTRIBUTOR.md §5.3. The visual hero — animated
 // 4-card pipeline (border-beam) running the suspicious-order-monitoring
 // workflow against one order. Mirrors the app/extract/page.tsx animation
-// language so the demo feels coherent across verticals.
+// language so the experience feels coherent across verticals.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -58,7 +58,7 @@ export default function SomOrderRunnerPage() {
   const [decision, setDecision] = useState<"approved" | "held" | "escalated" | null>(null);
   const hasAutoStarted = useRef(false);
 
-  // Auto-run the workflow once on mount so the demo "just goes".
+  // Auto-run the workflow once on mount for a seamless experience.
   useEffect(() => {
     if (!order || hasAutoStarted.current) return;
     hasAutoStarted.current = true;
@@ -353,7 +353,7 @@ function TaskCard({
   );
 }
 
-// ─── Per-task evidence panels (the bits that make the demo feel real) ───────
+// ─── Per-task evidence panels (supporting evidence for each check) ───────
 
 function TaskEvidence({
   taskId,

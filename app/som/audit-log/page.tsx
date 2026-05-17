@@ -9,7 +9,7 @@
 //
 // Data is module-level + seeded — refreshing won't lose entries, but new
 // entries added via override modal will reset on hard reload. This is a
-// demo limitation; production would persist to DB.
+// known limitation; production would persist to DB.
 
 import { useEffect, useState } from "react";
 import { ShieldAlert, FileCheck2, User, Clock } from "lucide-react";
