@@ -3,55 +3,93 @@
 ## Overview
 The Vendor Scoring page provides a risk-ranked table of all vendors with composite scores, discrepancy metrics, recovery rates, and actionable risk management controls. It serves as the Insight Agent's output -- consolidating exception data across the entire invoice lifecycle into per-vendor scorecards. Analysts use this page to identify high-risk vendors, flag or penalize problematic suppliers, and drill into each vendor's exception history.
 
+## Acceptance Criteria
+
+EARS notation.
+
+**App shell**
+- [ ] THE SYSTEM SHALL render the Vendor Scoring page inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
+- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
+
+**Summary strip**
+- [ ] THE SYSTEM SHALL render a 5-cell summary strip in a shadcn `Card` separated by `divide-x divide-border`: Vendors Scored, High Risk (`text-destructive`), Total Discrepancy (`text-warning`), Avg Score (color-coded), Avg Recovery (color-coded)
+
+**Score and rating color coding**
+- [ ] THE SYSTEM SHALL color score values: `text-destructive` < 30, `text-warning` 30-59, `text-success` >= 60
+- [ ] THE SYSTEM SHALL render Rating badges using shadcn `Badge`: `variant="destructive"` for Critical, `bg-warning/10 text-warning border-warning` for High Risk, `variant="secondary"` for Medium Risk, `bg-success/10 text-success border-success` for Low Risk
+- [ ] THE SYSTEM SHALL color Discrepancy % values: `text-destructive` > 15%, `text-warning` > 5%, `text-muted-foreground` <= 5%
+- [ ] THE SYSTEM SHALL color Recovery % values: `text-success` >= 80%, `text-warning` >= 40%, `text-destructive` < 40%
+
+**Row tinting and table**
+- [ ] THE SYSTEM SHALL render the vendor table using shadcn `Table` primitives wrapped in a shadcn `Card` + `CardContent`, with horizontal scroll (`overflow-x-auto`, `min-w-[900px]`)
+- [ ] THE SYSTEM SHALL tint rows by Discrepancy %: `bg-destructive/5` > 15%, `bg-warning/5` > 5%, no tint <= 5%
+- [ ] THE SYSTEM SHALL render exactly 10 columns: expand chevron, Vendor, Invoices, Total Spend, Discrepancy, Discrepancy %, Recovery %, Score, Rating, Actions
+
+**Sorting and pagination**
+- [ ] THE SYSTEM SHALL default sort to Discrepancy % descending
+- [ ] WHEN a user clicks a sortable column header THE SYSTEM SHALL sort by that column (toggling desc/asc on repeat clicks)
+- [ ] WHEN sort changes THE SYSTEM SHALL reset pagination to page 0
+- [ ] THE SYSTEM SHALL render pagination with default page size 10 (adjustable)
+
+**Expanded row**
+- [ ] WHEN a user clicks a vendor row THE SYSTEM SHALL toggle an expanded sub-row showing exception history cards inside a `bg-muted/30` sub-row
+- [ ] THE SYSTEM SHALL render each exception card as a shadcn `Card` containing ID (`font-mono text-xs text-muted-foreground`), type `Badge` (`variant="outline"` styled warning), date, description, amount (`text-destructive` right-aligned)
+
+**Vendor actions**
+- [ ] THE SYSTEM SHALL render three action buttons per row using shadcn `Button variant="ghost" size="sm"`: Flag (Flag icon), Penalize (AlertTriangle icon), Remove (XCircle icon + text)
+- [ ] WHEN a user clicks any action button THE SYSTEM SHALL stop event propagation (no row expansion) and open a shadcn `AlertDialog` confirmation
+- [ ] WHEN the user confirms the action THE SYSTEM SHALL record the flag action, fire a toast, and replace the action area with "Done"
+
+**Loading and safety**
+- [ ] WHEN the page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for the summary strip and 5 table rows for 400ms before real content
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable expand/collapse animations
+- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
+
 ## Layout
-- **Header region**: Title "Vendor Scoring" with subtitle showing total vendor count and time period ("Q1 2026"). "Export Report" button top-right.
-- **Summary strip**: A 5-cell horizontal bar (flex row with border dividers) inside a white card:
-  1. Vendors Scored (total count)
-  2. High Risk (count, red -- vendors with score < 40)
-  3. Total Discrepancy (sum of all discrepancy amounts, amber)
-  4. Avg Score (out of 100, color-coded)
-  5. Avg Recovery (percentage, color-coded)
-  Shows skeleton loading for 400ms on mount.
-- **Vendor table**: A `data-table` inside a card with horizontal scroll support (`overflow-x-auto`, `min-w-[900px]`). Columns: expand chevron, Vendor, Invoices, Total Spend, Discrepancy, Discrepancy %, Recovery %, Score, Rating, Actions.
-- **Pagination**: `DataTablePagination` component below the table. Default page size: 10 rows.
-- **Expanded row**: When a vendor row is clicked, a sub-row appears below with exception history cards on a subtle background.
-- **Responsive behavior**: `px-6 lg:px-8` padding. Table scrolls horizontally on narrow viewports.
+
+Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
+
+- **Header region**: Title `text-2xl font-semibold` "Vendor Scoring" with subtitle `text-sm text-muted-foreground` (vendor count + "Q1 2026"). Shadcn `Button variant="outline"` "Export Report" top-right.
+- **Summary strip**: Shadcn `Card` containing a 5-cell `flex` row with `divide-x divide-border`. Cells per Acceptance Criteria.
+- **Vendor table**: Shadcn `Card` + `CardContent` containing shadcn `Table` with horizontal scroll (`overflow-x-auto`, `min-w-[900px]`). 10 columns per Acceptance Criteria.
+- **Pagination**: `DataTablePagination` block below the table. Default page size 10.
+- **Expanded row**: Sub-row tinted `bg-muted/30` containing exception history cards (per Acceptance Criteria).
+- **Responsive behavior**: `px-4 lg:px-6` padding (v2.0 standard). Table scrolls horizontally on narrow viewports.
 
 ## Business Rules
 
-### Score Color Coding
-| Score Range | Color        | CSS Class        |
-|-------------|--------------|------------------|
-| < 30        | Red          | `text-red-600`   |
-| 30-59       | Amber        | `text-amber-600` |
-| >= 60       | Green        | `text-emerald-600` |
+### Score Color Coding (v2.0 theme tokens)
+| Score Range | Class |
+|-------------|-------|
+| < 30        | `text-destructive` |
+| 30-59       | `text-warning` |
+| >= 60       | `text-success` |
 
-### Rating Badges
-| Rating       | Badge Style      |
-|--------------|------------------|
-| Critical     | `badge critical` |
-| High Risk    | `badge warning`  |
-| Medium Risk  | `badge neutral`  |
-| Low Risk     | `badge success`  |
+### Rating Badges (shadcn `Badge`)
+| Rating       | Class |
+|--------------|-------|
+| Critical     | `variant="destructive"` |
+| High Risk    | `bg-warning/10 text-warning border-warning` (custom override since shadcn lacks built-in warning) |
+| Medium Risk  | `variant="secondary"` |
+| Low Risk     | `bg-success/10 text-success border-success` |
 
-### Discrepancy Color Coding
-| Discrepancy % | Color        |
-|---------------|--------------|
-| > 15%         | Red          |
-| > 5%          | Amber        |
-| <= 5%         | Default gray |
+### Discrepancy % Color Coding
+| Discrepancy % | Class |
+|---------------|-------|
+| > 15%         | `text-destructive` |
+| > 5%          | `text-warning` |
+| <= 5%         | `text-muted-foreground` |
 
-### Recovery Percentage Color Coding
-| Recovery %  | Color        |
-|-------------|--------------|
-| >= 80%      | Green        |
-| >= 40%      | Amber        |
-| < 40%       | Red          |
+### Recovery % Color Coding
+| Recovery % | Class |
+|------------|-------|
+| >= 80%     | `text-success` |
+| >= 40%     | `text-warning` |
+| < 40%      | `text-destructive` |
 
-### Row Background Tinting
-Rows with high discrepancy percentages get subtle background tints:
-- Discrepancy > 15%: `bg-red-50/50`
-- Discrepancy > 5%: `bg-amber-50/30`
+### Row Background Tinting (v2.0 — Tailwind opacity on theme tokens)
+- Discrepancy > 15%: `bg-destructive/5`
+- Discrepancy > 5%: `bg-warning/5`
 - Discrepancy <= 5%: No tint
 
 ### Sorting
@@ -68,12 +106,12 @@ Rows with high discrepancy percentages get subtle background tints:
 - **Avg Recovery**: Mean of all `recoveryPct` values, rounded.
 
 ### Vendor Actions
-Three action buttons per vendor row (click stops propagation to prevent row expansion):
-1. **Flag** (Flag icon): Confirms "Flag {vendor} as high-risk vendor?". Sets flag action to "Flagged". Shows warning toast.
-2. **Penalize** (AlertTriangle icon): Confirms "Recommend penalty for {vendor}?". Sets flag action to "Penalized". Shows error toast.
-3. **Remove** (XCircle icon + "Remove" text): Confirms "Remove {vendor} as supplier?". Sets flag action to "Removed". Shows error toast.
+Three shadcn `Button variant="ghost" size="sm"` actions per vendor row (click stops propagation to prevent row expansion). Each opens a shadcn `AlertDialog` for confirmation:
+1. **Flag** (Flag icon): Confirms "Flag {vendor} as high-risk vendor?". Sets flag action to "Flagged". Fires toast styled with `bg-warning/10 border-warning`.
+2. **Penalize** (AlertTriangle icon): Confirms "Recommend penalty for {vendor}?". Sets flag action to "Penalized". Fires toast `variant="destructive"`.
+3. **Remove** (XCircle icon + "Remove" text): Confirms "Remove {vendor} as supplier?". Sets flag action to "Removed". Fires toast `variant="destructive"`.
 
-After any action, the vendor's action column shows "Done" and the vendor name gets a critical badge with the action text.
+After any action, the vendor's action column shows "Done" and the vendor name gets a `Badge variant="destructive"` with the action text.
 
 ### Expanded Exception History
 Clicking a vendor row toggles an expanded sub-row showing that vendor's exception history. Each exception is displayed as a card with:
@@ -122,10 +160,14 @@ Clicking a vendor row toggles an expanded sub-row showing that vendor's exceptio
 
 ## Forbidden Patterns
 
-- **NEVER display a vendor risk score without showing the component breakdown** — Reason: A single number is opaque. Stakeholders need to see which factors (delivery, pricing, compliance, recovery) drive the score to take targeted action.
-- **NEVER auto-block a vendor based on risk score alone** — Reason: Vendor relationships are complex. A high-risk score triggers review, not automatic action. Blocking requires human decision with legal disclaimer.
-- **NEVER compare vendor scores across different time periods without noting the date range** — Reason: Scores are point-in-time calculations. Comparing Q1 scores to Q3 without context is misleading.
-- **NEVER expose raw exception data in the vendor scorecard** — Reason: Vendor scorecards may be shared with vendors during negotiations. Show aggregated metrics only, not individual invoice details.
+Use affirmative phrasing per SpecLayer v1.1.
+
+- **Display the component breakdown (delivery, pricing, compliance, recovery) alongside every vendor risk score** — Reason: a single number is opaque; stakeholders need the drivers to take targeted action.
+- **Treat the risk score as a trigger for review, not a trigger for automatic action** — Reason: blocking requires human decision with legal disclaimer.
+- **Annotate every vendor score comparison with its date range** — Reason: scores are point-in-time; comparing Q1 to Q3 without context misleads.
+- **Show aggregated metrics in the vendor scorecard, not individual invoice details** — Reason: scorecards may be shared with vendors during negotiations.
+- **Use shadcn `Card`, `Table`, `Badge`, `Button`, `AlertDialog` primitives for the table surface, badges, action buttons, and confirmation dialogs** — Reason: deprecates `.data-table`, `.badge.*`, browser `confirm()` from v1.
+- **Use theme tokens (`text-destructive`, `text-warning`, `text-success`, `text-muted-foreground`, `bg-destructive/5`, `bg-warning/5`, `bg-muted/30`) for all status colors, row tints, and sub-row backgrounds** — Reason: hex tokens (`text-red-600`, `text-amber-600`, `text-emerald-600`, `bg-red-50/50`, `bg-amber-50/30`) removed in v2.0.
 
 ## AJ Feedback (Parkland Demo)
 
@@ -137,3 +179,4 @@ Clicking a vendor row toggles an expanded sub-row showing that vendor's exceptio
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Added AJ feedback from Recording 17 — company logos, enterprise credibility -->
+<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Summary strip → shadcn `Card` with divide-x divide-border. Vendor table → shadcn `Table` primitives wrapped in `Card`. Score/Discrepancy %/Recovery % retokenized to text-destructive/text-warning/text-success/text-muted-foreground. Row tints → bg-destructive/5 / bg-warning/5. Rating badges → shadcn `Badge` variants. Action buttons → shadcn `Button variant="ghost" size="sm"` with shadcn `AlertDialog` confirmation (replaces browser confirm). Loading → `Skeleton`. Added 18 EARS Acceptance Criteria. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
