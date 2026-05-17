@@ -8,13 +8,16 @@
 | UI Library | React | 19.2.4 |
 | Language | TypeScript | 5.x |
 | Styling | Tailwind CSS v4 | 4.x |
+| Design System | shadcn/ui (new-york-v4, dashboard-01 block) | MIT |
 | Charts | Recharts | 3.8.1 |
-| Icons | Lucide React | 1.7.0 |
-| Primitives | Radix UI (Dialog, Tabs, Dropdown, Avatar, Progress) | latest |
+| Icons | Lucide React + @tabler/icons-react | 1.7.0 / latest |
+| Primitives | Radix UI (Dialog, Tabs, Dropdown, Avatar, Progress) + shadcn Sidebar/Card/Badge | latest |
 | Table | TanStack React Table | 8.x |
 | Animation | Framer Motion | 12.x |
 | Command Palette | cmdk | 1.x |
 | Testing | Vitest + Testing Library + Playwright | 4.x / 16.x / 1.60 |
+
+**UI Revamp v2.0 (May 2026):** Migrating to shadcn/ui design system per `ui-standard.md` v2.0. Adds `@tabler/icons-react` for chart trend icons (`IconTrendingUp`/`IconTrendingDown`) and `@radix-ui/react-sidebar`-backed shadcn `Sidebar` primitive. Tokens move from hex to OKLCH. See `ui-standard.md` "v1→v2 Migration Map" for the full token translation.
 
 ## Application Structure
 
