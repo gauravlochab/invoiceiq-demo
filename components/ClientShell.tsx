@@ -1,7 +1,7 @@
+// [Spec: rules/ui-standard.md#Layout Architecture] — v2.0: TopBar moved to SiteHeader in layout.tsx
 "use client";
 
 import { useState, useCallback, type ReactNode } from "react";
-import TopBar from "@/components/TopBar";
 import TrustFooter from "@/components/TrustFooter";
 import CommandPalette from "@/components/CommandPalette";
 import KeyboardShortcutsDialog from "@/components/KeyboardShortcutsDialog";
@@ -19,7 +19,6 @@ export default function ClientShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <TopBar onSearchClick={onCommandPalette} />
       <div className="flex-1">{children}</div>
       <TrustFooter />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
