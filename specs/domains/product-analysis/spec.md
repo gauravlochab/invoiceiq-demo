@@ -4,45 +4,61 @@
 
 The Product Category Analysis page provides a bird's-eye view of how invoice exceptions distribute across product categories. It helps procurement leaders identify which product categories have the most billing problems, the highest dollar exposure, and the worst resolution rates -- enabling them to prioritize vendor negotiations and process improvements by category rather than by individual exception.
 
+In v2.0 this page also receives the "By Category" breakdown content that was removed from the dashboard's Overview tab during the shadcn redesign.
+
+## Acceptance Criteria
+
+EARS notation.
+
+**App shell**
+- [ ] THE SYSTEM SHALL render the Product Analysis page inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
+- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
+
+**Summary strip**
+- [ ] THE SYSTEM SHALL render a 4-panel summary strip in a shadcn `Card` separated by `divide-x divide-border`: Total Categories (`Package` icon), Most Flagged Category (`AlertTriangle` icon, `text-destructive`), Highest Value Category (`BarChart3` icon, `text-warning`), Avg Resolution Time (`TrendingUp` icon, `text-success`)
+
+**Category table**
+- [ ] THE SYSTEM SHALL render the category table using shadcn `Table` primitives wrapped in a shadcn `Card` + `CardContent`, with horizontal scroll (`min-w-[900px]`)
+- [ ] THE SYSTEM SHALL render exactly 7 columns: Category, Exception Count, Total Flagged Amount, Avg Discrepancy %, Resolution Rate, Top Vendor, Trend
+- [ ] THE SYSTEM SHALL color Resolution Rate values: `text-success` >= 40%, `text-warning` >= 20%, `text-destructive` < 20%
+- [ ] THE SYSTEM SHALL color Total Flagged Amount values `text-destructive`
+- [ ] THE SYSTEM SHALL default sort to exceptionCount descending
+- [ ] WHEN a user clicks a sortable column header THE SYSTEM SHALL toggle desc/asc on that column, reset others to default
+
+**Trend indicators**
+- [ ] THE SYSTEM SHALL render trend icons: `up` = `TrendingUp` in `text-destructive` (worsening), `down` = `TrendingUp` rotated 180° in `text-success` (improving), `flat` = "—" in `text-muted-foreground`
+
+**Exception distribution chart**
+- [ ] THE SYSTEM SHALL render a shadcn `Card` containing a horizontal Recharts `BarChart` (`layout="vertical"`) at 280px height
+- [ ] THE SYSTEM SHALL color each bar using `CATEGORY_CONFIG[category].text` (preserves the InvoiceIQ-specific category color mapping)
+- [ ] THE SYSTEM SHALL render a color legend below the chart (wrapped flex row of swatches + names)
+- [ ] THE SYSTEM SHALL use shadcn `ChartTooltip` for hover tooltips
+
+**Loading and safety**
+- [ ] WHEN the page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for the summary strip and 5 table rows for 400ms before real content
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable chart entrance animations
+- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
+
 ## Layout
 
-### Header (px-6 lg:px-8, pt-8 pb-6)
-- Title: "Product Category Analysis" (xl, semibold)
-- Subtitle: "Exception distribution across {totalCategories} product categories"
-- Separated by `<hr>` divider
+Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
 
-### Summary Strip (px-6 lg:px-8, py-6)
-- Horizontal 4-panel metric bar in a single card with internal border-right dividers
-- Each panel has an icon, section-label, and a bold value:
-  1. **Total Categories** (Package icon) -- count of distinct categories from exception data
-  2. **Most Flagged Category** (AlertTriangle icon) -- category name with highest exception count, red text, count subtitle
-  3. **Highest Value Category** (BarChart3 icon) -- category name with highest total flagged amount, amber text, formatted currency subtitle
-  4. **Avg Resolution Time** (TrendingUp icon) -- hardcoded "3.2 days", emerald text
-- Loading state: skeleton placeholders per panel
+### Header (px-4 lg:px-6, pt-6 pb-4)
+- Title: `text-2xl font-semibold` "Product Category Analysis"
+- Subtitle: `text-sm text-muted-foreground` "Exception distribution across {totalCategories} product categories"
 
-### Category Table (px-6 lg:px-8, pb-6)
-- Card with `data-table` class, `min-w-[900px]` for horizontal scroll
-- 7 columns:
-  1. **Category** -- sortable (alpha), rendered as `CategoryBadge` component (color-coded pill)
-  2. **Exception Count** -- sortable (numeric), right-aligned, tabular-nums, medium weight
-  3. **Total Flagged Amount** -- sortable (numeric), right-aligned, tabular-nums, red text
-  4. **Avg Discrepancy %** -- right-aligned, tabular-nums, one decimal place
-  5. **Resolution Rate** -- right-aligned, tabular-nums, semibold, color-coded: >=40% emerald, >=20% amber, <20% red
-  6. **Top Vendor** -- text, truncated at 180px
-  7. **Trend** -- icon indicator: "up" = red TrendingUp, "down" = green TrendingUp (rotated 180deg), "flat" = "--" muted text
-- Loading state: 5-row skeleton placeholders
+### Summary Strip (px-4 lg:px-6, py-4)
+- Shadcn `Card` containing a 4-panel horizontal `flex` bar with `divide-x divide-border`
+- Each panel has an icon, section label (`text-xs text-muted-foreground uppercase`), and a bold value per Acceptance Criteria
+- Loading state: shadcn `Skeleton` per panel
 
-### Exception Distribution Chart (px-6 lg:px-8, pb-8)
-- Card with title "Exception Distribution by Category"
-- Horizontal bar chart (`BarChart` layout="vertical", Recharts)
-  - `ResponsiveContainer` at height 280px
-  - Y-axis: category names (130px width, 11px font)
-  - X-axis: exception count (11px font)
-  - Each bar colored using `CATEGORY_CONFIG[category].text` color
-  - Bar size: 24, rounded right corners (radius [0,3,3,0])
-  - Custom `ChartTooltip` with category dot, "Exceptions" label, count value
-- Color legend below chart: wrapped flex row of category swatches + names
-- Only rendered after loading completes
+### Category Table (px-4 lg:px-6, pb-4)
+- Shadcn `Card` + `CardContent` containing shadcn `Table` with horizontal scroll (`overflow-x-auto`, `min-w-[900px]`)
+- 7 columns per Acceptance Criteria — `Category` column uses `CategoryBadge` (InvoiceIQ-specific component retained); all numeric columns use `tabular-nums`
+
+### Exception Distribution Chart (px-4 lg:px-6, pb-6)
+- Shadcn `Card` with `CardHeader` (`CardTitle` "Exception Distribution by Category") and `CardContent` containing the horizontal Recharts `BarChart` per Acceptance Criteria
+- Color legend below chart in `CardFooter`
 
 ## Business Rules
 
@@ -88,9 +104,14 @@ The Product Category Analysis page provides a bird's-eye view of how invoice exc
 
 ## Forbidden Patterns
 
-- **NEVER merge product categories without showing the mapping** — Reason: Category standardization involves judgment calls (is "Surgical Gloves" the same as "Exam Gloves"?). Users must see and approve the mapping.
-- **NEVER show category spend without normalizing units** — Reason: Comparing spend across categories with different units (boxes vs. cases vs. each) produces meaningless totals.
-- **NEVER auto-flag a category as anomalous without baseline context** — Reason: Seasonal variations (flu season PPE spikes) are normal. Anomaly detection must account for historical baselines.
+Use affirmative phrasing per SpecLayer v1.1.
+
+- **Display the mapping table whenever product categories are merged or standardized** — Reason: standardization involves judgment calls ("Surgical Gloves" vs "Exam Gloves"); users must see and approve.
+- **Normalize units before computing category spend totals** — Reason: comparing boxes vs cases vs each produces meaningless totals.
+- **Compare current category anomalies against historical baselines** — Reason: seasonal variations (flu-season PPE spikes) are normal; anomaly detection without baseline misleads.
+- **Use shadcn `Card`, `Table` primitives for the summary strip, category table, and chart surface** — Reason: deprecates `.card`, `.data-table` utility classes.
+- **Use theme tokens (`text-destructive`, `text-warning`, `text-success`, `text-muted-foreground`) for all status colors** — Reason: hex tokens (`text-red-600`, `text-amber-600`, `text-emerald-600`) removed in v2.0.
+- **Preserve `CategoryBadge` and `CATEGORY_CONFIG` as InvoiceIQ extensions** — Reason: domain-specific category brand colors are not part of the shadcn theme; keep them as scoped extensions on top of v2 tokens.
 
 ## AJ Feedback (Parkland Demo)
 
@@ -103,3 +124,4 @@ The Product Category Analysis page provides a bird's-eye view of how invoice exc
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Added AJ feedback from Recording 17 — product category visual differentiation, sorting, product analysis view -->
+<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Summary strip → shadcn `Card` with divide-x divide-border. Category table → shadcn `Table` in `Card`. Chart → shadcn `Card` + `ChartTooltip` (Recharts bars preserved). Resolution Rate / Total Flagged retokenized to text-success/text-warning/text-destructive. Trend indicators retokenized. Loading → `Skeleton`. CategoryBadge + CATEGORY_CONFIG preserved as InvoiceIQ extension. Also receives the "By Category" content moved from dashboard's removed Overview tab. Added 13 EARS Acceptance Criteria. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
