@@ -4,6 +4,45 @@
 
 The main dashboard is the landing page of InvoiceIQ Detect. It provides a single-screen summary of invoice processing health for Northfield Medical Center, surfacing KPI metrics, AI agent operational status, spend and exception trends, and the most urgent exceptions requiring analyst attention. The dashboard is designed for a VP of Supply Chain or AP Director who needs to assess the current state of their procurement risk in under 10 seconds.
 
+## Acceptance Criteria
+
+EARS notation — `WHEN [trigger]`, `WHILE [state]`, `IF [condition] THEN`, or ubiquitous `THE SYSTEM SHALL`.
+
+**Initial render**
+- [ ] WHEN the dashboard mounts THE SYSTEM SHALL display skeleton placeholders for KPI cards, secondary stats, agent strip, and tabbed content for 400ms before real content
+- [ ] WHEN the 400ms skeleton state ends THE SYSTEM SHALL animate the four primary KPI values in via NumberTicker count-up with staggered slide-up entrance
+
+**Primary KPIs**
+- [ ] THE SYSTEM SHALL display exactly four primary KPI cards (Invoices Processed, Exceptions Found, Amount at Risk, Recovered) in a `grid-cols-2 sm:grid-cols-2 lg:grid-cols-4` grid
+- [ ] THE SYSTEM SHALL render an inline 64x24 SVG `Sparkline` in each primary KPI card, aligned bottom-right
+- [ ] THE SYSTEM SHALL compute "Exceptions Found" as the length of AP exceptions (`!type.startsWith("som_")`)
+- [ ] THE SYSTEM SHALL compute "Amount at Risk" as the sum of `flaggedAmount` across all AP exceptions, formatted with a `$` prefix in `--critical` color
+- [ ] THE SYSTEM SHALL compute "Recovered" as the sum of `recoveredAmount` for recovery queue items with status "recovered", in `--success` color
+
+**Secondary stats strip**
+- [ ] THE SYSTEM SHALL render exactly three secondary stats (Contracts at Risk, GPO Compliance, GPO Savings) in a compact inline flex row below the primary KPI grid
+- [ ] WHEN any secondary stat is hovered THE SYSTEM SHALL transition the text color from `--text-secondary` to `--text-primary`
+
+**Agent strip**
+- [ ] THE SYSTEM SHALL render the five AI agents as a single clickable pill row
+- [ ] WHEN the agent strip is clicked THE SYSTEM SHALL navigate to `/pipeline`
+
+**Tabbed content**
+- [ ] WHEN the page loads THE SYSTEM SHALL default the tabbed content section to the Overview tab
+- [ ] WHILE the Exceptions tab is active THE SYSTEM SHALL display only AP exceptions (`!type.startsWith("som_")`), sorted by severity, limited to the top 6
+- [ ] WHEN a user clicks a column header in the Recent Exceptions table THE SYSTEM SHALL sort by type, flaggedAmount, severity, or status
+
+**Run Scan and Export**
+- [ ] WHEN a user clicks "Run Scan" THE SYSTEM SHALL show a "Scanning..." state for 2 seconds, disable the button on completion, and fire a "2 new exceptions identified" toast
+- [ ] WHEN a user clicks "Export" THE SYSTEM SHALL open the `ExportDialog` for CSV or PDF download
+
+**Navigation**
+- [ ] WHEN any KPI card or secondary stat is clicked THE SYSTEM SHALL navigate to its declared target page (Invoices Processed → `/pipeline`, Exceptions Found → `/exceptions`, Amount at Risk → `/exceptions`, Recovered → `/recovery`, all three secondary stats → `/contracts`)
+
+**Accessibility and safety**
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all KPI entrance animations and sparkline transitions
+- [ ] THE SYSTEM SHALL display a legal disclaimer dialog before any action that commits the organization
+
 ## Layout
 
 ### Header (px-6 lg:px-8, pt-6 pb-5)
@@ -154,3 +193,4 @@ Uses `Tabs` component (Radix-based, `@/components/ui/tabs`) with three tabs:
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Updated spec to match dashboard modernization — reduced from 7 KPI cards (4+3) to 4 primary KPIs with sparklines + compact secondary stats strip; replaced 5-card agent grid with single-row inline agent bar; wrapped charts + exceptions table + discrepancy chart in 3-tab layout (Overview/Exceptions/Trends); removed <hr> separator; tightened padding; removed Category column from exceptions table (8→7 columns) -->
+<!-- 2026-05-18: Added Acceptance Criteria section using EARS notation (SpecLayer v1.1 worked example). 19 criteria covering initial render, primary KPIs, secondary stats, agent strip, tabbed content, Run Scan / Export, navigation, accessibility. Grounded in current code post-d59a2f2. -->
