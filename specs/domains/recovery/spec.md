@@ -3,18 +3,60 @@
 ## Overview
 The Recovery page is the operational hub for tracking vendor overpayment recovery. It displays a queue of recovery cases initiated by AI agents, each tied to a detected exception. Analysts can record outcomes (full recovery, partial, dispute, write-off), track SLA compliance against Parkland Health AP Policy 4.3, view recovery trend charts, and perform bulk actions like escalation and follow-up emails. The page connects upstream to the exception detection pipeline and downstream to vendor scoring.
 
+## Acceptance Criteria
+
+EARS notation.
+
+**App shell**
+- [ ] THE SYSTEM SHALL render the Recovery page inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
+- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
+
+**Policy banner and summary**
+- [ ] THE SYSTEM SHALL render the Parkland AP Policy 4.3 statement in a shadcn `Alert` styled `bg-primary/5 border-primary` with policy reference "AP-POL-4.3-2026"
+- [ ] THE SYSTEM SHALL render the summary strip as a 5-cell horizontal flex row with `divide-x divide-border` separators: In Queue, Total Target (`text-destructive`), Recovered (`text-success` + percentage), Success Rate (color-coded), SLA Overdue (`text-destructive` if > 0, `text-muted-foreground` if 0)
+- [ ] THE SYSTEM SHALL color the Success Rate using `text-success` ≥ 80%, `text-warning` ≥ 50%, `text-destructive` < 50%
+
+**Recovery trend chart**
+- [ ] THE SYSTEM SHALL render a full-width shadcn `Card` containing a Recharts `ComposedChart` with two `Area` series — Target (dashed stroke `var(--destructive)`, tint `var(--destructive)/20%`) and Recovered (solid stroke `var(--success)`, fill `var(--success)/30%`)
+- [ ] THE SYSTEM SHALL include a custom tooltip and legend rendered with theme tokens (`bg-popover text-popover-foreground border-border`)
+
+**Recovery queue (left column)**
+- [ ] THE SYSTEM SHALL render the queue as a shadcn `Card` containing select-all `Checkbox`, "Active recoveries" label, SLA policy note, optional bulk action toolbar, and a list of `RecoveryRow` items separated by `divide-y divide-border`
+- [ ] WHEN at least one actionable row (status `pending` or `in_progress`) is selected THE SYSTEM SHALL render the bulk action toolbar with shadcn `Button` "Bulk Escalate", "Send Follow-up Emails", "Export Selected"
+- [ ] WHEN the select-all checkbox is in partial-selection state THE SYSTEM SHALL render the indeterminate visual
+- [ ] WHEN a user clicks an actionable row THE SYSTEM SHALL expand it to show the outcome recording form and status history timeline
+
+**SLA badges**
+- [ ] THE SYSTEM SHALL render SLA badges using shadcn `Badge` with theme-derived styling: `variant="destructive"` for overdue/critical, `bg-warning/10 text-warning border-warning` for warning, `bg-success/10 text-success border-success` for ok
+- [ ] THE SYSTEM SHALL hide the SLA badge for records with status `recovered` or `closed`
+
+**Right column (320px sticky)**
+- [ ] THE SYSTEM SHALL render exactly four stacked shadcn `Card` instances: Recovery Agent stats (with shadcn `Progress` bars), SLA Compliance breakdown, Agent Activity Log (7 entries), Vendor Scoring navigation link
+- [ ] THE SYSTEM SHALL render the right column with `lg:sticky lg:top-4`
+
+**Outcome recording**
+- [ ] WHEN a user selects "Fully Recovered" THE SYSTEM SHALL set status to `recovered` and require recovered amount > 0
+- [ ] WHEN a user selects "Partially Recovered" THE SYSTEM SHALL set status to `partial` and require recovered amount > 0
+- [ ] WHEN a user selects "Vendor Filed Dispute" or "Vendor Unresponsive" THE SYSTEM SHALL keep status `in_progress` and allow amount 0
+- [ ] WHEN a user selects "Closed — Write Off" THE SYSTEM SHALL set status to `closed` and allow amount 0
+- [ ] WHEN a bulk action completes THE SYSTEM SHALL clear the selection and fire a toast
+
+**Loading and safety**
+- [ ] WHEN the page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for the summary strip, trend chart, queue, and right column for 400ms before real content
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all expand/collapse and chart entrance animations
+- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
+
 ## Layout
-- **Header region**: Title "Recovery Queue" with a TrendingUp icon, breadcrumb-style label ("Healthcare AP - Recovery Agent"), subtitle, and a "Refresh" button top-right.
-- **Policy info banner**: A blue `alert-bar info` banner showing the Parkland Health Recovery Policy statement and policy reference number (AP-POL-4.3-2026).
-- **Summary strip**: A 5-cell horizontal bar in a single `flex` row with `border-r` dividers, displaying: In Queue (count + active), Total Target (red), Recovered (green + percentage), Success Rate (color-coded), SLA Overdue (red if > 0). Shows skeleton loading for 400ms on mount.
-- **Recovery Trend chart**: Full-width card with a Recharts `ComposedChart` showing two `Area` series -- "Target" (dashed stroke, red-tinted fill) and "Recovered" (solid stroke, green fill) -- over 12 months. Includes a custom tooltip and legend.
-- **Two-column layout** (`grid grid-cols-1 lg:grid-cols-[1fr_320px]`):
-  - **Left column**: Recovery queue table -- a card with a header row (select-all checkbox, "Active recoveries" label, SLA policy note), optional bulk action toolbar, and a list of `RecoveryRow` components separated by `divide-y`.
-  - **Right column** (320px, sticky `top-4`): Four stacked cards:
-    1. Recovery Agent stats (response rate bar, settlement rate bar, avg days to close)
-    2. SLA Compliance breakdown (transition SLAs from config, escalation trigger)
-    3. Agent Activity Log (timeline of 7 entries from all 5 agents, last 2 hours)
-    4. Navigation link card to Vendor Scoring page
+
+Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
+
+- **Header region**: Title `text-2xl font-semibold` "Recovery Queue" with a `TrendingUp` Lucide icon, breadcrumb-style label `text-sm text-muted-foreground` ("Healthcare AP - Recovery Agent"), subtitle, and a shadcn `Button variant="outline"` "Refresh" top-right.
+- **Policy info banner**: shadcn `Alert` styled `bg-primary/5 border-primary` showing the Parkland Health Recovery Policy statement and policy reference (AP-POL-4.3-2026).
+- **Summary strip**: A 5-cell horizontal `flex` row with `divide-x divide-border` separators, displaying: In Queue (count + active count `text-muted-foreground`), Total Target (`text-destructive`), Recovered (`text-success` + percentage), Success Rate (color-coded per Acceptance Criteria), SLA Overdue (`text-destructive` if > 0). Shadcn `Skeleton` for 400ms on mount.
+- **Recovery Trend chart**: Full-width shadcn `Card` with `CardHeader` (`CardTitle` "Recovery Trend") and `CardContent` containing the Recharts `ComposedChart` per Acceptance Criteria.
+- **Two-column layout** (`grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6`):
+  - **Left column**: Recovery queue card per Acceptance Criteria.
+  - **Right column** (320px, `lg:sticky lg:top-4`): Four stacked shadcn `Card` instances per Acceptance Criteria.
 
 ## Business Rules
 
@@ -130,10 +172,15 @@ Terminal states: `recovered`, `partial`, `closed`. No transitions out of termina
 
 ## Forbidden Patterns
 
-- **NEVER mark a recovery as "recovered" without a verified amount > 0** -- Reason: Zero-amount recoveries are data errors. A recovery must have actual money returned to be marked complete.
-- **NEVER auto-escalate without respecting SLA timelines** -- Reason: Premature escalation damages vendor relationships. Follow the Parkland AP Policy 4.3 SLA windows.
-- **NEVER delete or edit a recorded outcome** -- Reason: Outcomes are audit events. If a correction is needed, record a new outcome with a note referencing the original.
-- **NEVER send bulk follow-up emails without analyst review of the recipient list** -- Reason: Automated emails to wrong vendors or closed cases damages professional relationships and creates legal exposure.
+Use affirmative phrasing per SpecLayer v1.1.
+
+- **Require a verified amount > 0 to mark a recovery as `recovered` or `partial`** — Reason: zero-amount completions are data errors; recovery means actual money returned.
+- **Respect Parkland AP Policy 4.3 SLA timelines before auto-escalation** — Reason: premature escalation damages vendor relationships.
+- **Append new outcomes as new entries rather than editing or deleting prior ones** — Reason: outcomes are audit events; corrections record a new outcome with a note referencing the original.
+- **Require analyst review of the recipient list before sending bulk follow-up emails** — Reason: automated emails to wrong vendors or closed cases damage relationships and create legal exposure.
+- **Use shadcn `Card`, `Alert`, `Badge`, `Button`, `Checkbox`, `Progress` primitives for the queue surface, banner, badges, buttons, selection, and progress indicators** — Reason: deprecates ad-hoc `.alert-bar`, `.card`, `.badge.*` utility classes from v1.
+- **Use theme tokens (`bg-card`, `text-foreground`, `text-destructive`, `text-warning`, `text-success`, `text-muted-foreground`) for all surfaces and status text** — Reason: hex tokens (`--critical`, `--warning`, `--success`, `--text-primary`) removed in v2.0.
+- **Use chart series tokens (`var(--destructive)` for Target, `var(--success)` for Recovered) for the trend chart** — Reason: status overlays use semantic tokens, not chart-1..5 palette.
 
 ## AJ Feedback (Parkland Demo)
 
@@ -145,3 +192,4 @@ Terminal states: `recovered`, `partial`, `closed`. No transitions out of termina
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Added AJ feedback from Recording 17 — positive reaction, Parkland policy alignment needed -->
+<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Policy banner → shadcn `Alert` styled bg-primary/5. Summary strip retokenized to text-destructive / text-success / text-warning. Recovery trend chart uses var(--destructive) for Target, var(--success) for Recovered (semantic status tokens, not chart-1..5 palette). Queue card and right-column cards → shadcn `Card`. SLA badges → shadcn `Badge` with variant/styled theming. Bulk actions, refresh, outcome form → shadcn `Button` variants. Progress bars in Recovery Agent stats → shadcn `Progress`. Loading → `Skeleton`. Added 20 EARS Acceptance Criteria covering app shell, banner/summary, trend chart, queue, SLA badges, right column, outcome recording, loading, accessibility. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
