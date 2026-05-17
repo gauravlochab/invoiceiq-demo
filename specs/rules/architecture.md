@@ -88,6 +88,51 @@ The `exceptions/[id]/page.tsx` file uses template routing based on exception typ
 | `tier_pricing` | `TierPricingDetail` | Volume discount analysis |
 | SOM types | `SOMExceptionDetail` | Suspicious order analysis |
 
+## Domain Dependencies
+
+How the 10 domain modules connect:
+
+```
+Extract ──→ Pipeline ──→ Exceptions ──→ Invoice Detail
+                │              │               │
+                │              ├──→ Dashboard ←─┤
+                │              │               │
+                │              └──→ Recovery ───┤
+                │                     │         │
+                └──→ Dashboard        └──→ Vendor Scoring
+                                              │
+Contracts ──→ Exceptions                      │
+    │                                         │
+    └──→ Vendor Scoring ←─────────────────────┘
+                │
+Product Analysis ──→ Dashboard
+    │
+SOM ──→ Exceptions ──→ Dashboard
+```
+
+| Source Domain | Target Domain | Relationship |
+|-------------|--------------|-------------|
+| Extract | Pipeline | Extracted invoices enter the 5-agent pipeline |
+| Pipeline | Exceptions | Validation/Compliance agents create exceptions |
+| Pipeline | Dashboard | Agent status and processing counts |
+| Pipeline | Recovery | Recovery agent creates recovery cases |
+| Exceptions | Invoice Detail | Exception records displayed in detail view |
+| Exceptions | Dashboard | Exception counts and severity stats |
+| Exceptions | Recovery | Confirmed overcharges create recovery cases |
+| Invoice Detail | Recovery | Rejected invoices feed recovery queue |
+| Invoice Detail | Vendor Scoring | Exception outcomes influence risk scores |
+| Invoice Detail | Dashboard | Resolution counts update KPIs |
+| Recovery | Vendor Scoring | Recovery rates influence vendor risk |
+| Recovery | Dashboard | Recovery target/recovered amounts |
+| Contracts | Exceptions | Contract breaches create exceptions |
+| Contracts | Vendor Scoring | Compliance history feeds risk scores |
+| Contracts | Dashboard | At-risk contract alerts |
+| Vendor Scoring | Dashboard | High-risk vendor count |
+| Product Analysis | Dashboard | Category spend and anomaly stats |
+| SOM | Exceptions | Flagged orders create SOM exceptions |
+| SOM | Dashboard | Suspicious order counts |
+| SOM | Vendor Scoring | SOM flags influence controlled substance vendor risk |
+
 ## Future Architecture (Planned)
 
 - Backend: FastAPI or Node.js API layer
