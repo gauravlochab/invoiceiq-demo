@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# CTO call transcripts — confidential, contains participant names and business discussion
+docs/cto_call_transcript_*.txt
+
+# Playwright test artifacts — not source
+/playwright-report/
+/test-results/
