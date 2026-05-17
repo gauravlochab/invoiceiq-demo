@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import {
   Upload, LayoutDashboard, AlertTriangle, Shield, ShieldAlert,
   Pill, ShieldCheck, FileCheck2, TrendingUp, Workflow, ChevronLeft, ChevronRight,
-  BarChart3, FileText, GitCompare,
+  BarChart3, FileText, GitCompare, BookOpen, GitBranch,
 } from "lucide-react";
 
 const navHealthcare = [
@@ -27,6 +27,11 @@ const navPharma = [
   { href: "/som/pharmacy-scoring",  label: "Pharmacy Scoring", icon: ShieldCheck },
   { href: "/som/audit-log",         label: "Audit Log",        icon: FileCheck2 },
   { href: "/som/manufacturers",     label: "Manufacturers",    icon: Pill },
+];
+
+const navDocs = [
+  { href: "/specs-viewer",          label: "Specs",            icon: BookOpen },
+  { href: "/specs-viewer/graph",    label: "Spec Graph",       icon: GitBranch },
 ];
 
 export default function Sidebar() {
@@ -71,7 +76,7 @@ export default function Sidebar() {
         </div>
       )}
 
-      <nav className="flex-1 py-1 overflow-hidden">
+      <nav className="flex-1 py-1 overflow-y-auto">
         {!collapsed && (
           <div className="px-4 pt-1 pb-1.5">
             <span className="text-[9px] uppercase tracking-[0.08em] font-semibold text-[var(--sidebar-text)]">
@@ -162,6 +167,47 @@ export default function Sidebar() {
                   {badge}
                 </span>
               ) : null}
+            </Link>
+          );
+        })}
+
+        {!collapsed ? (
+          <div className="mx-4 my-3">
+            <div className="h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
+          </div>
+        ) : (
+          <div className="mx-1.5 my-2 h-px bg-white/[0.08]" />
+        )}
+
+        {!collapsed && (
+          <div className="px-4 pb-1.5">
+            <span className="text-[9px] uppercase tracking-[0.08em] font-semibold text-[var(--sidebar-text)]">
+              Documentation
+            </span>
+          </div>
+        )}
+
+        {navDocs.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + "/");
+          return (
+            <Link
+              key={href}
+              href={href}
+              title={collapsed ? label : undefined}
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center mx-1.5 rounded-md transition-all duration-150 text-[13px] no-underline relative
+                ${collapsed ? "justify-center px-0 py-2.5" : "gap-2.5 px-3 py-2"}
+                ${active
+                  ? "text-white font-medium"
+                  : "text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-active)] hover:bg-white/[0.04]"
+                }`}
+              style={active ? {
+                background: "rgba(0, 101, 203, 0.15)",
+                boxShadow: "inset 3px 0 0 var(--sidebar-active)",
+              } : undefined}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="flex-1 truncate">{label}</span>}
             </Link>
           );
         })}
