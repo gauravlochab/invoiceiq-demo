@@ -134,10 +134,16 @@ function StatusIcon({ status }: { status: FeedEvent["status"] }) {
 
 export default function PipelinePage() {
   const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [stepStates, setStepStates] = useState<StepState[]>(["idle","idle","idle","idle","idle"]);
   const [isRunning, setIsRunning] = useState(false);
   const [feedEvents, setFeedEvents] = useState<FeedEvent[]>(SEED_EVENTS);
   const [completedCount, setCompletedCount] = useState(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   // Reset to idle after run completes
   useEffect(() => {
@@ -236,231 +242,307 @@ export default function PipelinePage() {
         </div>
       ) : null}
 
-      {/* ── Agent cards with connecting flow ──────────────────────────────── */}
-      <div className="px-6 lg:px-8 py-6">
-        <div className="flex items-stretch gap-0">
-          {AGENTS.map((agent, i) => {
-            const AgentIcon = agent.Icon;
-            const state = stepStates[i];
-            const isActive = state === "running";
-            const isDone = state === "done" || state === "done-warn" || state === "done-fail";
-            const isLast = i === AGENTS.length - 1;
-
-            // Border color based on state
-            const borderColor = isActive
-              ? agent.color
-              : isDone
-              ? state === "done-fail" ? "var(--pipeline-fail-border)"
-                : state === "done-warn" ? "var(--pipeline-warn-border)"
-                : "var(--pipeline-pass-border)"
-              : "var(--border)";
-
-            // Background tint when active or done
-            const cardBg = isActive
-              ? agent.bgColor
-              : isDone
-              ? state === "done-fail" ? "var(--pipeline-fail-bg)"
-                : state === "done-warn" ? "var(--pipeline-warn-bg)"
-                : "var(--pipeline-pass-bg)"
-              : "white";
-
-            const card = (
-              <div
-                className="flex flex-col gap-3 p-4 rounded-lg border-2 h-full transition-all duration-300"
-                style={{ borderColor, backgroundColor: cardBg, minHeight: 172 }}
-              >
-                {/* Step number + icon row */}
-                <div className="flex items-start justify-between">
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{
-                      backgroundColor: isActive || isDone ? agent.color : agent.bgColor,
-                    }}
-                  >
-                    {isActive ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    ) : isDone && state === "done-fail" ? (
-                      <AlertTriangle className="w-4 h-4 text-white" style={{ fill: agent.color }} />
-                    ) : isDone ? (
-                      <CheckCircle2 className="w-4 h-4 text-white" />
-                    ) : (
-                      <AgentIcon className="w-4 h-4" style={{ color: agent.color }} />
-                    )}
-                  </div>
-                  <span
-                    className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
-                    style={{
-                      backgroundColor: isActive || isDone ? agent.color + "18" : "var(--bg-subtle)",
-                      color: isActive || isDone ? agent.color : "var(--text-muted)",
-                    }}
-                  >
-                    {agent.step}/5
-                  </span>
-                </div>
-
-                {/* Agent name + role */}
-                <div>
-                  <p className="text-[13px] font-semibold m-0 leading-tight text-[var(--text-primary)]">
-                    {agent.name}
-                  </p>
-                  <p className="text-[10px] m-0 mt-0.5" style={{ color: agent.color }}>
-                    {agent.role}
-                  </p>
-                </div>
-
-                {/* Status badge */}
-                <div>
-                  {isActive && (
-                    <span
-                      className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: agent.color + "18", color: agent.color }}
+      {loading ? (
+        <>
+          {/* ── Agent cards skeleton ──────────────────────────────────────── */}
+          <div className="px-6 lg:px-8 py-6">
+            <div className="flex items-stretch gap-0">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-stretch flex-1 min-w-0">
+                  <div className="flex-1 relative overflow-hidden rounded-lg">
+                    <div
+                      className="flex flex-col gap-3 p-4 rounded-lg border-2 border-[var(--border)] bg-white h-full"
+                      style={{ minHeight: 172 }}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: agent.color }} />
-                      Processing…
-                    </span>
-                  )}
-                  {isDone && (
-                    <span
-                      className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: state === "done-fail" ? "var(--pipeline-fail-badge)"
-                          : state === "done-warn" ? "var(--pipeline-warn-badge)"
-                          : "var(--pipeline-pass-badge)",
-                        color: state === "done-fail" ? "var(--critical)"
-                          : state === "done-warn" ? "var(--agent-compliance)"
-                          : "var(--agent-recovery)",
-                      }}
-                    >
-                      {state === "done-fail" ? "⚠ Exception found"
-                        : state === "done-warn" ? "⚠ Flag raised"
-                        : "✓ Passed"}
-                    </span>
-                  )}
-                  {!isActive && !isDone && (
-                    <span
-                      className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--pipeline-pass-bg)] text-[var(--agent-recovery)]"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--agent-recovery)]" />
-                      Active
-                    </span>
-                  )}
-                </div>
-
-                {/* Stat */}
-                <div className="mt-auto pt-2 border-t" style={{ borderColor: borderColor + "66" }}>
-                  <p className="text-[11px] font-semibold m-0 text-[var(--neutral-text)]">{agent.stat}</p>
-                  <p className="text-[10px] m-0 mt-0.5 text-[var(--text-muted)]">{agent.subStat}</p>
-                </div>
-              </div>
-            );
-
-            return (
-              <div key={agent.name} className="flex items-stretch flex-1 min-w-0">
-                {/* Card with optional BorderBeam */}
-                <div className="flex-1 relative overflow-hidden rounded-lg">
-                  {isActive ? (
-                    <>
-                      {card}
-                      <BorderBeam colorFrom={agent.color} colorTo={agent.bgColor} duration={1.5} borderWidth={2.5} />
-                    </>
-                  ) : card}
-                </div>
-
-                {/* Arrow connector between cards */}
-                {!isLast && (
-                  <div className="flex items-center justify-center flex-shrink-0 w-8">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <ArrowRight
-                        className="w-4 h-4 transition-colors duration-300"
-                        style={{
-                          color: isDone ? agent.color : "var(--border-strong)",
-                        }}
-                      />
+                      {/* Icon + step number */}
+                      <div className="flex items-start justify-between">
+                        <div className="w-9 h-9 rounded-lg bg-[var(--border)] animate-pulse" />
+                        <div className="h-5 w-8 bg-[var(--border)] rounded animate-pulse" />
+                      </div>
+                      {/* Agent name + role */}
+                      <div>
+                        <div className="h-3.5 w-24 bg-[var(--border)] rounded animate-pulse mb-1.5" />
+                        <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse" />
+                      </div>
+                      {/* Status badge */}
+                      <div>
+                        <div className="h-5 w-14 bg-[var(--border)] rounded-full animate-pulse" />
+                      </div>
+                      {/* Stat */}
+                      <div className="mt-auto pt-2 border-t border-[var(--border)]">
+                        <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse mb-1.5" />
+                        <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  {/* Arrow connector skeleton */}
+                  {i < 5 && (
+                    <div className="flex items-center justify-center flex-shrink-0 w-8">
+                      <div className="h-4 w-4 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
 
-        {/* Handoff labels under each arrow */}
-        <div className="flex mt-1.5">
-          {AGENTS.map((agent, i) => {
-            const isLast = i === AGENTS.length - 1;
-            const labels = ["Flags + data", "Match results", "Audit verdict", "Recovery task"];
-            return (
-              <div key={agent.name} className="flex-1 flex min-w-0">
-                <div className="flex-1" />
-                {!isLast && (
-                  <div className="w-8 flex items-start justify-center">
-                    <span className="text-[9px] text-center leading-tight text-[var(--text-muted)] max-w-[52px]">
-                      {labels[i]}
+          {/* ── Activity Feed skeleton ────────────────────────────────────── */}
+          <div className="px-6 lg:px-8 pb-8">
+            <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden">
+              {/* Feed header skeleton */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 bg-[var(--border)] rounded animate-pulse" />
+                  <div className="h-3.5 w-28 bg-[var(--border)] rounded animate-pulse" />
+                </div>
+                <div className="h-5 w-16 bg-[var(--border)] rounded-full animate-pulse" />
+              </div>
+              {/* Feed row skeletons */}
+              <div className="divide-y">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-start gap-3 px-5 py-3">
+                    <div className="w-3 h-3 bg-[var(--border)] rounded animate-pulse mt-0.5 flex-shrink-0" />
+                    <div className="h-4 w-20 bg-[var(--border)] rounded animate-pulse flex-shrink-0" />
+                    <div className="h-3 w-10 bg-[var(--border)] rounded animate-pulse flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="h-3 w-full bg-[var(--border)] rounded animate-pulse mb-1.5" />
+                      <div className="h-3 w-3/4 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* ── Agent cards with connecting flow ──────────────────────────── */}
+          <div className="px-6 lg:px-8 py-6">
+            <div className="flex items-stretch gap-0">
+              {AGENTS.map((agent, i) => {
+                const AgentIcon = agent.Icon;
+                const state = stepStates[i];
+                const isActive = state === "running";
+                const isDone = state === "done" || state === "done-warn" || state === "done-fail";
+                const isLast = i === AGENTS.length - 1;
+
+                // Border color based on state
+                const borderColor = isActive
+                  ? agent.color
+                  : isDone
+                  ? state === "done-fail" ? "var(--pipeline-fail-border)"
+                    : state === "done-warn" ? "var(--pipeline-warn-border)"
+                    : "var(--pipeline-pass-border)"
+                  : "var(--border)";
+
+                // Background tint when active or done
+                const cardBg = isActive
+                  ? agent.bgColor
+                  : isDone
+                  ? state === "done-fail" ? "var(--pipeline-fail-bg)"
+                    : state === "done-warn" ? "var(--pipeline-warn-bg)"
+                    : "var(--pipeline-pass-bg)"
+                  : "white";
+
+                const card = (
+                  <div
+                    className="flex flex-col gap-3 p-4 rounded-lg border-2 h-full transition-all duration-300"
+                    style={{ borderColor, backgroundColor: cardBg, minHeight: 172 }}
+                  >
+                    {/* Step number + icon row */}
+                    <div className="flex items-start justify-between">
+                      <div
+                        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{
+                          backgroundColor: isActive || isDone ? agent.color : agent.bgColor,
+                        }}
+                      >
+                        {isActive ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        ) : isDone && state === "done-fail" ? (
+                          <AlertTriangle className="w-4 h-4 text-white" style={{ fill: agent.color }} />
+                        ) : isDone ? (
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                        ) : (
+                          <AgentIcon className="w-4 h-4" style={{ color: agent.color }} />
+                        )}
+                      </div>
+                      <span
+                        className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
+                        style={{
+                          backgroundColor: isActive || isDone ? agent.color + "18" : "var(--bg-subtle)",
+                          color: isActive || isDone ? agent.color : "var(--text-muted)",
+                        }}
+                      >
+                        {agent.step}/5
+                      </span>
+                    </div>
+
+                    {/* Agent name + role */}
+                    <div>
+                      <p className="text-[13px] font-semibold m-0 leading-tight text-[var(--text-primary)]">
+                        {agent.name}
+                      </p>
+                      <p className="text-[10px] m-0 mt-0.5" style={{ color: agent.color }}>
+                        {agent.role}
+                      </p>
+                    </div>
+
+                    {/* Status badge */}
+                    <div>
+                      {isActive && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: agent.color + "18", color: agent.color }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: agent.color }} />
+                          Processing…
+                        </span>
+                      )}
+                      {isDone && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: state === "done-fail" ? "var(--pipeline-fail-badge)"
+                              : state === "done-warn" ? "var(--pipeline-warn-badge)"
+                              : "var(--pipeline-pass-badge)",
+                            color: state === "done-fail" ? "var(--critical)"
+                              : state === "done-warn" ? "var(--agent-compliance)"
+                              : "var(--agent-recovery)",
+                          }}
+                        >
+                          {state === "done-fail" ? "⚠ Exception found"
+                            : state === "done-warn" ? "⚠ Flag raised"
+                            : "✓ Passed"}
+                        </span>
+                      )}
+                      {!isActive && !isDone && (
+                        <span
+                          className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--pipeline-pass-bg)] text-[var(--agent-recovery)]"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--agent-recovery)]" />
+                          Active
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stat */}
+                    <div className="mt-auto pt-2 border-t" style={{ borderColor: borderColor + "66" }}>
+                      <p className="text-[11px] font-semibold m-0 text-[var(--neutral-text)]">{agent.stat}</p>
+                      <p className="text-[10px] m-0 mt-0.5 text-[var(--text-muted)]">{agent.subStat}</p>
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div key={agent.name} className="flex items-stretch flex-1 min-w-0">
+                    {/* Card with optional BorderBeam */}
+                    <div className="flex-1 relative overflow-hidden rounded-lg">
+                      {isActive ? (
+                        <>
+                          {card}
+                          <BorderBeam colorFrom={agent.color} colorTo={agent.bgColor} duration={1.5} borderWidth={2.5} />
+                        </>
+                      ) : card}
+                    </div>
+
+                    {/* Arrow connector between cards */}
+                    {!isLast && (
+                      <div className="flex items-center justify-center flex-shrink-0 w-8">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <ArrowRight
+                            className="w-4 h-4 transition-colors duration-300"
+                            style={{
+                              color: isDone ? agent.color : "var(--border-strong)",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Handoff labels under each arrow */}
+            <div className="flex mt-1.5">
+              {AGENTS.map((agent, i) => {
+                const isLast = i === AGENTS.length - 1;
+                const labels = ["Flags + data", "Match results", "Audit verdict", "Recovery task"];
+                return (
+                  <div key={agent.name} className="flex-1 flex min-w-0">
+                    <div className="flex-1" />
+                    {!isLast && (
+                      <div className="w-8 flex items-start justify-center">
+                        <span className="text-[9px] text-center leading-tight text-[var(--text-muted)] max-w-[52px]">
+                          {labels[i]}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Activity Feed ─────────────────────────────────────────────────── */}
+          <div className="px-6 lg:px-8 pb-8">
+            <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden">
+              {/* Feed header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">
+                    Agent Activity Feed
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isRunning && (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--agent-invoice-subtle)] text-[var(--info)]"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                      Live
+                    </span>
+                  )}
+                  <span
+                    className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-tertiary)]"
+                  >
+                    {feedEvents.length} events
+                  </span>
+                </div>
+              </div>
+
+              {/* Feed rows */}
+              <div className="divide-y max-h-[400px] overflow-y-auto">
+                {feedEvents.map((evt, idx) => (
+                  <div
+                    key={`${evt.agent}-${evt.time}-${idx}`}
+                    className="flex items-start gap-3 px-5 py-3 animate-[slideIn_0.2s_ease-out]"
+                    style={{
+                      backgroundColor: idx === 0 && isRunning ? evt.agentColor + "06" : undefined,
+                    }}
+                  >
+                    <StatusIcon status={evt.status} />
+                    <span
+                      className="text-[9px] uppercase tracking-wide font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                      style={{ backgroundColor: evt.agentColor + "18", color: evt.agentColor }}
+                    >
+                      {evt.agent}
+                    </span>
+                    <span className="text-[11px] flex-shrink-0 tabular-nums text-[var(--text-muted)]">
+                      {evt.time}
+                    </span>
+                    <span className="text-[12px] leading-relaxed flex-1 text-[var(--neutral-text)]">
+                      {evt.message}
                     </span>
                   </div>
-                )}
+                ))}
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Activity Feed ─────────────────────────────────────────────────── */}
-      <div className="px-6 lg:px-8 pb-8">
-        <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden">
-          {/* Feed header */}
-          <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
-            <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-              <span className="text-sm font-semibold text-[var(--text-primary)]">
-                Agent Activity Feed
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {isRunning && (
-                <span
-                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--agent-invoice-subtle)] text-[var(--info)]"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  Live
-                </span>
-              )}
-              <span
-                className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-tertiary)]"
-              >
-                {feedEvents.length} events
-              </span>
             </div>
           </div>
-
-          {/* Feed rows */}
-          <div className="divide-y max-h-[400px] overflow-y-auto">
-            {feedEvents.map((evt, idx) => (
-              <div
-                key={`${evt.agent}-${evt.time}-${idx}`}
-                className="flex items-start gap-3 px-5 py-3 animate-[slideIn_0.2s_ease-out]"
-                style={{
-                  backgroundColor: idx === 0 && isRunning ? evt.agentColor + "06" : undefined,
-                }}
-              >
-                <StatusIcon status={evt.status} />
-                <span
-                  className="text-[9px] uppercase tracking-wide font-bold px-1.5 py-0.5 rounded flex-shrink-0"
-                  style={{ backgroundColor: evt.agentColor + "18", color: evt.agentColor }}
-                >
-                  {evt.agent}
-                </span>
-                <span className="text-[11px] flex-shrink-0 tabular-nums text-[var(--text-muted)]">
-                  {evt.time}
-                </span>
-                <span className="text-[12px] leading-relaxed flex-1 text-[var(--neutral-text)]">
-                  {evt.message}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -7,14 +7,14 @@
 // awaiting suspicious-order monitoring.
 //
 // Behaviour:
-//   - For pharmacies with risk score ≥ 60 (Low/Medium): "Run checks" link
+//   - For pharmacies with risk score >= 60 (Low/Medium): "Run checks" link
 //     to the workflow runner.
 //   - For pharmacies with risk score < 60 (High/Critical): system blocks
 //     the order and shows "Override required" — clicking opens the override
 //     modal which captures justification + approver, writes an audit log
 //     entry, then transitions the row to "Released after override".
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ShieldAlert, Pill, MapPin, Clock, ArrowRight, ShieldCheck, AlertTriangle,
@@ -28,6 +28,9 @@ import {
 } from "@/lib/som/data/auditLog";
 import { OverrideModal } from "@/components/OverrideModal";
 import { useToast } from "@/components/Toast";
+
+// Local alias — removes "sample" prefix per business directive
+const orders = sampleOrders;
 
 const BLOCK_THRESHOLD = 60;   // score < 60 → blocked, requires override
 
@@ -46,11 +49,18 @@ function formatCurrency(n: number) {
 
 export default function SomQueuePage() {
   const { showToast } = useToast();
-  const totalValue = sampleOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const controlledCount = sampleOrders.filter((o) => o.lineItems.some((l) => l.isControlled)).length;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
+  }, []);
+
+  const totalValue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const controlledCount = orders.filter((o) => o.lineItems.some((l) => l.isControlled)).length;
 
   // SOM-derived metrics — all numbers below derive directly from the running
-  // dataset (sampleOrders + somExceptions). No hardcoded fudges.
+  // dataset (orders + somExceptions). No hardcoded fudges.
   const somExceptions = exceptions.filter((e) => e.type.startsWith("som_"));
   const somBlockedAmount = somExceptions.reduce((sum, e) => sum + e.flaggedAmount, 0);
 
@@ -58,14 +68,14 @@ export default function SomQueuePage() {
   const flaggedOrderIds = new Set(somExceptions.map((e) => e.invoiceNumber));
   const flaggedOrdersCount = flaggedOrderIds.size;
 
-  const ordersInBatch = sampleOrders.length;
+  const ordersInBatch = orders.length;
   const suspicionRate = ordersInBatch > 0
     ? ((flaggedOrdersCount / ordersInBatch) * 100).toFixed(0)
     : "0";
 
   // Map each order to its pharmacy's risk score for blocking logic.
   const ordersWithScore = useMemo(() => {
-    return sampleOrders.map((order) => {
+    return orders.map((order) => {
       const score = pharmacyScores.find((s) => s.id === order.pharmacy.id);
       return {
         order,
@@ -134,145 +144,205 @@ export default function SomQueuePage() {
         </p>
       </div>
 
-      {/* Stats strip — every number below derives from the actual queue + SOM exceptions */}
-      <div className="px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Orders in queue</p>
-            <Activity className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+      {loading ? (
+        <>
+          {/* Stats strip skeleton */}
+          <div className="px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="card p-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse" />
+                  <div className="w-3.5 h-3.5 bg-[var(--border)] rounded animate-pulse" />
+                </div>
+                <div className="h-7 w-16 bg-[var(--border)] rounded animate-pulse mb-2" />
+                <div className="h-2.5 w-32 bg-[var(--border)] rounded animate-pulse" />
+              </div>
+            ))}
           </div>
-          <p className="text-2xl font-semibold text-[var(--text-primary)] m-0 tabular-nums">{ordersInBatch}</p>
-          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{controlledCount} with controlled substances</p>
-        </div>
 
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Auto-blocked</p>
-            <Lock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+          {/* Orders table skeleton */}
+          <div className="px-6 lg:px-8 pb-8">
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
+                <div className="h-3.5 w-28 bg-[var(--border)] rounded animate-pulse" />
+                <div className="h-3 w-48 bg-[var(--border)] rounded animate-pulse" />
+              </div>
+              {/* Table header skeleton */}
+              <div className="px-5 py-2.5 border-b border-[var(--border)] bg-[var(--bg-base)]">
+                <div className="grid grid-cols-9 gap-4">
+                  {["w-12", "w-20", "w-16", "w-10", "w-10", "w-16", "w-14", "w-16", "w-16"].map((w, i) => (
+                    <div key={i} className={`h-2.5 ${w} bg-[var(--border)] rounded animate-pulse`} />
+                  ))}
+                </div>
+              </div>
+              {/* Table row skeletons */}
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="px-5 py-3 border-b border-[var(--border)]">
+                  <div className="grid grid-cols-9 gap-4 items-center">
+                    <div>
+                      <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse mb-1" />
+                      <div className="h-2 w-12 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                    <div className="h-3 w-24 bg-[var(--border)] rounded animate-pulse" />
+                    <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
+                    <div>
+                      <div className="h-3 w-10 bg-[var(--border)] rounded animate-pulse mb-1" />
+                      <div className="h-2 w-14 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                    <div className="h-3 w-6 bg-[var(--border)] rounded animate-pulse" />
+                    <div className="h-5 w-10 bg-[var(--border)] rounded-full animate-pulse" />
+                    <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse" />
+                    <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
+                    <div className="h-6 w-20 bg-[var(--border)] rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{blockedCount}</p>
-          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">awaiting human override</p>
-        </div>
+        </>
+      ) : (
+        <>
+          {/* Stats strip — every number below derives from the actual queue + SOM exceptions */}
+          <div className="px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Orders in queue</p>
+                <Activity className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              </div>
+              <p className="text-2xl font-semibold text-[var(--text-primary)] m-0 tabular-nums">{ordersInBatch}</p>
+              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{controlledCount} with controlled substances</p>
+            </div>
 
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Flagged this batch</p>
-            <ShieldCheck className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-          </div>
-          <p className="text-2xl font-semibold text-amber-700 m-0 tabular-nums">{suspicionRate}%</p>
-          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{flaggedOrdersCount} of {ordersInBatch} orders flagged</p>
-        </div>
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Auto-blocked</p>
+                <Lock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              </div>
+              <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{blockedCount}</p>
+              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">awaiting human override</p>
+            </div>
 
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Blocked exposure</p>
-            <DollarSign className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-          </div>
-          <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{formatCurrency(somBlockedAmount)}</p>
-          <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">across {somExceptions.length} SOM exceptions</p>
-        </div>
-      </div>
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Flagged this batch</p>
+                <ShieldCheck className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              </div>
+              <p className="text-2xl font-semibold text-amber-700 m-0 tabular-nums">{suspicionRate}%</p>
+              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{flaggedOrdersCount} of {ordersInBatch} orders flagged</p>
+            </div>
 
-      {/* Orders table */}
-      <div className="px-6 lg:px-8 pb-8">
-        <div className="card overflow-hidden">
-          <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
-            <p className="text-sm font-semibold text-[var(--text-primary)] m-0">Incoming orders</p>
-            <span className="text-[11px] text-[var(--text-muted)]">High/Critical pharmacies require human override</span>
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Blocked exposure</p>
+                <DollarSign className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              </div>
+              <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{formatCurrency(somBlockedAmount)}</p>
+              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">across {somExceptions.length} SOM exceptions</p>
+            </div>
           </div>
-          <table className="data-table w-full">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Pharmacy</th>
-                <th>Location</th>
-                <th>Score</th>
-                <th>Lines</th>
-                <th>Controlled</th>
-                <th className="right">Value</th>
-                <th>Received</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ordersWithScore.map(({ order, score, rating, blocked }) => {
-                const hasControlled = order.lineItems.some((l) => l.isControlled);
-                const overrideEntry = overriddenOrders[order.id];
-                return (
-                  <tr key={order.id} className={blocked && !overrideEntry ? "bg-red-50/40" : ""}>
-                    <td>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-mono text-[var(--text-primary)]">{order.id}</span>
-                        {order.isFresh && !blocked && (
-                          <span className="text-[9px] uppercase tracking-wide text-emerald-600 font-medium">
-                            Fresh · just arrived
-                          </span>
-                        )}
-                        {blocked && !overrideEntry && (
-                          <span className="text-[9px] uppercase tracking-wide text-red-600 font-medium flex items-center gap-1">
-                            <Lock className="w-2.5 h-2.5" />
-                            Auto-blocked
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1.5">
-                        <Pill className="w-3 h-3 text-[var(--text-muted)]" />
-                        <span className="text-xs font-medium text-[var(--text-primary)]">{order.pharmacy.name}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
-                        <span className="text-xs text-[var(--text-secondary)]">
-                          {order.pharmacy.city}, {order.pharmacy.state}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <ScoreCell score={score} rating={rating} />
-                    </td>
-                    <td className="text-xs text-[var(--text-secondary)] tabular-nums">{order.lineItems.length}</td>
-                    <td>
-                      {hasControlled ? (
-                        <span className="badge warning">Yes</span>
-                      ) : (
-                        <span className="text-xs text-[var(--text-muted)]">No</span>
-                      )}
-                    </td>
-                    <td className="right text-xs tabular-nums font-medium text-[var(--text-primary)]">
-                      {formatCurrency(order.totalAmount)}
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-                        <span className="text-xs text-[var(--text-secondary)]">{formatTime(order.receivedAt)}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <ActionCell
-                        order={order}
-                        score={score}
-                        rating={rating}
-                        blocked={blocked}
-                        overrideEntry={overrideEntry}
-                        onOverrideClick={() => setModalOrder({
-                          orderId: order.id,
-                          pharmacyId: order.pharmacy.id,
-                          pharmacyName: order.pharmacy.name,
-                          score,
-                          rating: rating as "Critical" | "High Risk" | "Medium Risk",
-                        })}
-                      />
-                    </td>
+
+          {/* Orders table */}
+          <div className="px-6 lg:px-8 pb-8">
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
+                <p className="text-sm font-semibold text-[var(--text-primary)] m-0">Incoming orders</p>
+                <span className="text-[11px] text-[var(--text-muted)]">High/Critical pharmacies require human override</span>
+              </div>
+              <table className="data-table w-full">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Pharmacy</th>
+                    <th>Location</th>
+                    <th>Score</th>
+                    <th>Lines</th>
+                    <th>Controlled</th>
+                    <th className="right">Value</th>
+                    <th>Received</th>
+                    <th>Action</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {ordersWithScore.map(({ order, score, rating, blocked }) => {
+                    const hasControlled = order.lineItems.some((l) => l.isControlled);
+                    const overrideEntry = overriddenOrders[order.id];
+                    return (
+                      <tr key={order.id} className={blocked && !overrideEntry ? "bg-red-50/40" : ""}>
+                        <td>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-mono text-[var(--text-primary)]">{order.id}</span>
+                            {order.isFresh && !blocked && (
+                              <span className="text-[9px] uppercase tracking-wide text-emerald-600 font-medium">
+                                Fresh · just arrived
+                              </span>
+                            )}
+                            {blocked && !overrideEntry && (
+                              <span className="text-[9px] uppercase tracking-wide text-red-600 font-medium flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5" />
+                                Auto-blocked
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1.5">
+                            <Pill className="w-3 h-3 text-[var(--text-muted)]" />
+                            <span className="text-xs font-medium text-[var(--text-primary)]">{order.pharmacy.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
+                            <span className="text-xs text-[var(--text-secondary)]">
+                              {order.pharmacy.city}, {order.pharmacy.state}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <ScoreCell score={score} rating={rating} />
+                        </td>
+                        <td className="text-xs text-[var(--text-secondary)] tabular-nums">{order.lineItems.length}</td>
+                        <td>
+                          {hasControlled ? (
+                            <span className="badge warning">Yes</span>
+                          ) : (
+                            <span className="text-xs text-[var(--text-muted)]">No</span>
+                          )}
+                        </td>
+                        <td className="right text-xs tabular-nums font-medium text-[var(--text-primary)]">
+                          {formatCurrency(order.totalAmount)}
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                            <span className="text-xs text-[var(--text-secondary)]">{formatTime(order.receivedAt)}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <ActionCell
+                            order={order}
+                            score={score}
+                            rating={rating}
+                            blocked={blocked}
+                            overrideEntry={overrideEntry}
+                            onOverrideClick={() => setModalOrder({
+                              orderId: order.id,
+                              pharmacyId: order.pharmacy.id,
+                              pharmacyName: order.pharmacy.name,
+                              score,
+                              rating: rating as "Critical" | "High Risk" | "Medium Risk",
+                            })}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Override modal */}
       {modalOrder && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { X, ChevronDown, Check } from "lucide-react";
 import {
@@ -163,8 +163,8 @@ function DuplicatePairCard({
         <SimilarityBar score={pair.similarity} />
         <span className="text-xs text-[var(--text-secondary)]">
           {pair.amountDelta > 0
-            ? `\u0394 ${formatCurrency(pair.amountDelta)} \u00b7 ${pair.daysDelta} days apart`
-            : `${pair.daysDelta} days apart \u00b7 no amount delta`}
+            ? `Δ ${formatCurrency(pair.amountDelta)} · ${pair.daysDelta} days apart`
+            : `${pair.daysDelta} days apart · no amount delta`}
         </span>
       </div>
 
@@ -290,6 +290,7 @@ const managers = [
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function DuplicatesPage() {
+  const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<{
     type: "reject" | "override" | "escalate";
     pairId: string;
@@ -297,6 +298,11 @@ export default function DuplicatesPage() {
   const [modalNote, setModalNote] = useState("");
   const [selectedManager, setSelectedManager] = useState("");
   const [pairActions, setPairActions] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   function handleSubmit() {
     if (!activeModal) return;
@@ -332,28 +338,112 @@ export default function DuplicatesPage() {
 
         {/* How it works + cards */}
         <div className="px-6 lg:px-8 pb-8">
-          <HowItWorks />
+          {loading ? (
+            <>
+              {/* How-it-works skeleton */}
+              <div className="border border-[var(--border)] rounded-lg bg-white px-6 py-4 flex items-center mb-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center flex-1 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="h-2.5 w-12 bg-[var(--border)] rounded animate-pulse mb-2" />
+                      <div className="h-3.5 w-20 bg-[var(--border)] rounded animate-pulse mb-1.5" />
+                      <div className="h-2.5 w-full max-w-[180px] bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                    {i < 3 && (
+                      <div className="h-4 w-4 bg-[var(--border)] rounded animate-pulse mx-6 shrink-0" />
+                    )}
+                  </div>
+                ))}
+              </div>
 
-          {duplicatePairs.map((pair) => (
-            <DuplicatePairCard
-              key={pair.id}
-              pair={pair}
-              pairActions={pairActions}
-              onReject={() => {
-                setActiveModal({ type: "reject", pairId: pair.id });
-                setModalNote("");
-              }}
-              onOverride={() => {
-                setActiveModal({ type: "override", pairId: pair.id });
-                setModalNote("");
-              }}
-              onEscalate={() => {
-                setActiveModal({ type: "escalate", pairId: pair.id });
-                setModalNote("");
-                setSelectedManager("");
-              }}
-            />
-          ))}
+              {/* Duplicate pair card skeletons */}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="card mb-4">
+                  {/* Card header skeleton */}
+                  <div className="px-5 pt-4 pb-3 border-b border-[var(--border)] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3.5 w-32 bg-[var(--border)] rounded animate-pulse" />
+                      <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-3.5 w-20 bg-[var(--border)] rounded animate-pulse" />
+                      <div className="h-5 w-14 bg-[var(--border)] rounded-full animate-pulse" />
+                    </div>
+                  </div>
+
+                  {/* Similarity bar skeleton */}
+                  <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--bg-base)] flex items-center gap-3">
+                    <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
+                    <div className="w-32 h-1.5 bg-[var(--border)] rounded-full animate-pulse" />
+                    <div className="h-3 w-10 bg-[var(--border)] rounded animate-pulse" />
+                  </div>
+
+                  {/* Side-by-side skeleton */}
+                  <div className="px-5 py-4 grid grid-cols-[1fr_auto_1fr] items-start">
+                    <div>
+                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse mb-3" />
+                      <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse mb-2" />
+                      <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse mb-2" />
+                      <div className="h-4 w-24 bg-[var(--border)] rounded animate-pulse mb-2" />
+                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                    <div className="w-px bg-[var(--border)] self-stretch mx-8" />
+                    <div>
+                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse mb-3" />
+                      <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse mb-2" />
+                      <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse mb-2" />
+                      <div className="h-4 w-24 bg-[var(--border)] rounded animate-pulse mb-2" />
+                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                  </div>
+
+                  {/* Analysis skeleton */}
+                  <div className="px-5 pb-4">
+                    <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
+                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse mb-3" />
+                      <div className="flex flex-col gap-2">
+                        <div className="h-2.5 w-full bg-[var(--border)] rounded animate-pulse" />
+                        <div className="h-2.5 w-4/5 bg-[var(--border)] rounded animate-pulse" />
+                        <div className="h-2.5 w-3/4 bg-[var(--border)] rounded animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions skeleton */}
+                  <div className="px-5 pb-4 flex items-center gap-2">
+                    <div className="h-7 w-16 bg-[var(--border)] rounded-md animate-pulse" />
+                    <div className="h-7 w-36 bg-[var(--border)] rounded-md animate-pulse" />
+                    <div className="h-7 w-32 bg-[var(--border)] rounded-md animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <HowItWorks />
+
+              {duplicatePairs.map((pair) => (
+                <DuplicatePairCard
+                  key={pair.id}
+                  pair={pair}
+                  pairActions={pairActions}
+                  onReject={() => {
+                    setActiveModal({ type: "reject", pairId: pair.id });
+                    setModalNote("");
+                  }}
+                  onOverride={() => {
+                    setActiveModal({ type: "override", pairId: pair.id });
+                    setModalNote("");
+                  }}
+                  onEscalate={() => {
+                    setActiveModal({ type: "escalate", pairId: pair.id });
+                    setModalNote("");
+                    setSelectedManager("");
+                  }}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
 

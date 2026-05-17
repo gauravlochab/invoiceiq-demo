@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { contracts, formatCurrency, formatDate, Contract } from "@/lib/data";
 import { VendorBadge } from "@/components/VendorBadge";
 
@@ -280,6 +281,13 @@ function ContractCard({ contract }: { contract: Contract }) {
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function ContractCompliancePage() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
+  }, []);
+
   const totalValue = contracts.reduce((s, c) => s + c.capValue, 0);
   const totalSpend = contracts.reduce((s, c) => s + c.currentSpend, 0);
   const totalUnclaimed = contracts.reduce(
@@ -320,107 +328,171 @@ export default function ContractCompliancePage() {
 
       {/* ── Summary strip ── */}
       <div className="px-6 lg:px-8 pb-6">
-        <div className="bg-white border border-[var(--border)] rounded-lg flex">
-          {/* Cell 1 */}
-          <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
-            <div className="section-label mb-1.5">TOTAL CONTRACT VALUE</div>
-            <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
-              {formatCurrency(totalValue)}
-            </div>
-            <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-              {contracts.length} contracts
-            </div>
+        {loading ? (
+          <div className="bg-white border border-[var(--border)] rounded-lg flex">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={`flex-1 px-5 py-4${i < 4 ? " border-r border-[var(--border)]" : ""}`}>
+                <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse mb-3" />
+                <div className="h-7 w-20 bg-[var(--border)] rounded animate-pulse mb-2" />
+                <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse" />
+              </div>
+            ))}
           </div>
+        ) : (
+          <div className="bg-white border border-[var(--border)] rounded-lg flex">
+            {/* Cell 1 */}
+            <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
+              <div className="section-label mb-1.5">TOTAL CONTRACT VALUE</div>
+              <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
+                {formatCurrency(totalValue)}
+              </div>
+              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
+                {contracts.length} contracts
+              </div>
+            </div>
 
-          {/* Cell 2 */}
-          <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
-            <div className="section-label mb-1.5">CURRENT SPEND</div>
-            <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
-              {formatCurrency(totalSpend)}
+            {/* Cell 2 */}
+            <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
+              <div className="section-label mb-1.5">CURRENT SPEND</div>
+              <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
+                {formatCurrency(totalSpend)}
+              </div>
+              <div className="text-xs text-[var(--text-secondary)] mt-0.5">Q1 2026</div>
             </div>
-            <div className="text-xs text-[var(--text-secondary)] mt-0.5">Q1 2026</div>
-          </div>
 
-          {/* Cell 3 */}
-          <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
-            <div className="section-label mb-1.5">UNCLAIMED REBATES</div>
-            <div className="text-xl font-semibold text-amber-700 tabular-nums">
-              {formatCurrency(totalUnclaimed)}
+            {/* Cell 3 */}
+            <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
+              <div className="section-label mb-1.5">UNCLAIMED REBATES</div>
+              <div className="text-xl font-semibold text-amber-700 tabular-nums">
+                {formatCurrency(totalUnclaimed)}
+              </div>
+              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
+                {vendorsWithRebates} vendors
+              </div>
             </div>
-            <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-              {vendorsWithRebates} vendors
-            </div>
-          </div>
 
-          {/* Cell 4 */}
-          <div className="flex-1 px-5 py-4">
-            <div className="section-label mb-1.5">CONTRACTS BREACHED</div>
-            <div className="text-xl font-semibold text-red-600 tabular-nums">
-              {breachedCount}
+            {/* Cell 4 */}
+            <div className="flex-1 px-5 py-4">
+              <div className="section-label mb-1.5">CONTRACTS BREACHED</div>
+              <div className="text-xl font-semibold text-red-600 tabular-nums">
+                {breachedCount}
+              </div>
+              <div className="text-xs text-[var(--text-secondary)] mt-0.5">Immediate action</div>
             </div>
-            <div className="text-xs text-[var(--text-secondary)] mt-0.5">Immediate action</div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Contract cards ── */}
       <div className="px-6 lg:px-8">
-        {sortedContracts.map((contract) => (
-          <ContractCard key={contract.id} contract={contract} />
-        ))}
+        {loading ? (
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="card mb-3 px-5 py-4" style={{ borderLeft: "2px solid var(--border)" }}>
+                {/* Skeleton header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-8 w-8 bg-[var(--border)] rounded-full animate-pulse" />
+                      <div className="h-4 w-32 bg-[var(--border)] rounded animate-pulse" />
+                    </div>
+                    <div className="h-3 w-24 bg-[var(--border)] rounded animate-pulse mb-2 ml-10" />
+                    <div className="h-5 w-20 bg-[var(--border)] rounded-full animate-pulse ml-10" />
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="h-5 w-16 bg-[var(--border)] rounded-full animate-pulse" />
+                    <div className="h-3 w-36 bg-[var(--border)] rounded animate-pulse" />
+                  </div>
+                </div>
+                {/* Skeleton spend bar */}
+                <div className="border-t border-[var(--bg-subtle)] pt-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
+                    <div className="h-3 w-32 bg-[var(--border)] rounded animate-pulse" />
+                  </div>
+                  <div className="h-2 w-full bg-[var(--border)] rounded-full animate-pulse mt-2" />
+                  <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse mt-1.5" />
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          sortedContracts.map((contract) => (
+            <ContractCard key={contract.id} contract={contract} />
+          ))
+        )}
       </div>
 
       {/* ── Renewal timeline ── */}
       <div className="px-6 lg:px-8 pt-2 pb-8">
         <div className="section-label mb-2">UPCOMING RENEWALS</div>
-        <div className="card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>VENDOR</th>
-                <th>CONTRACT #</th>
-                <th>EXPIRES</th>
-                <th>STATUS</th>
-                <th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><VendorBadge name="BioMed Equipment Inc." size="sm" /></td>
-                <td className="mono">CTR-2024-BIO-009</td>
-                <td className="text-sm text-[var(--text-primary)]">Dec 31, 2025</td>
-                <td><span className="badge critical">Expired</span></td>
-                <td>
-                  <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
-                    Renew &rarr;
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td><VendorBadge name="Cardinal Health" size="sm" /></td>
-                <td className="mono">CTR-2025-CAR-003</td>
-                <td className="text-sm text-[var(--text-primary)]">Mar 31, 2026</td>
-                <td><span className="badge warning">Expiring</span></td>
-                <td>
-                  <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
-                    Renew &rarr;
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td><VendorBadge name="Steris Corporation" size="sm" /></td>
-                <td className="mono">CTR-2025-STE-007</td>
-                <td className="text-sm text-[var(--text-primary)]">May 31, 2026</td>
-                <td><span className="badge neutral">Active</span></td>
-                <td>
-                  <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
-                    Renew &rarr;
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {loading ? (
+          <div className="card">
+            <div className="px-5 py-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center justify-between py-3 border-b border-[var(--bg-subtle)] last:border-b-0">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 bg-[var(--border)] rounded-full animate-pulse" />
+                    <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse" />
+                  </div>
+                  <div className="h-3 w-24 bg-[var(--border)] rounded animate-pulse" />
+                  <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
+                  <div className="h-5 w-14 bg-[var(--border)] rounded-full animate-pulse" />
+                  <div className="h-3 w-12 bg-[var(--border)] rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="card">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>VENDOR</th>
+                  <th>CONTRACT #</th>
+                  <th>EXPIRES</th>
+                  <th>STATUS</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><VendorBadge name="BioMed Equipment Inc." size="sm" /></td>
+                  <td className="mono">CTR-2024-BIO-009</td>
+                  <td className="text-sm text-[var(--text-primary)]">Dec 31, 2025</td>
+                  <td><span className="badge critical">Expired</span></td>
+                  <td>
+                    <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
+                      Renew &rarr;
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td><VendorBadge name="Cardinal Health" size="sm" /></td>
+                  <td className="mono">CTR-2025-CAR-003</td>
+                  <td className="text-sm text-[var(--text-primary)]">Mar 31, 2026</td>
+                  <td><span className="badge warning">Expiring</span></td>
+                  <td>
+                    <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
+                      Renew &rarr;
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td><VendorBadge name="Steris Corporation" size="sm" /></td>
+                  <td className="mono">CTR-2025-STE-007</td>
+                  <td className="text-sm text-[var(--text-primary)]">May 31, 2026</td>
+                  <td><span className="badge neutral">Active</span></td>
+                  <td>
+                    <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
+                      Renew &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
