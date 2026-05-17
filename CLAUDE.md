@@ -11,6 +11,11 @@ This project uses spec-driven development. Specs are the source of truth — upd
 @specs/rules/architecture.md
 @specs/rules/ui-standard.md
 @specs/rules/memory.md
+@specs/rules/audit-trail.md
+@specs/rules/events.md
+@specs/rules/boundaries.md
+@specs/rules/html-outputs.md
+@specs/rules/activeContext.md
 
 ### Domain Specs
 When modifying a module, read its spec first:

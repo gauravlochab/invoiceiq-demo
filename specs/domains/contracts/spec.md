@@ -77,7 +77,7 @@ Shown specifically for Cardinal Health contracts with `warning` status. Two acti
 - `rebateMissed` values feed into the recovery queue as exception type `missing_rebate`.
 
 ## Workflow
-1. **Page load**: All contracts render immediately (no loading state). Summary strip computes totals. Contracts sort by severity.
+1. **Page load**: 400ms simulated loading with skeleton placeholders for summary strip (4 cells), contract cards (4 skeleton cards with fake spend bars), and renewal timeline table (3 skeleton rows). Data loads via `useEffect` into state.
 2. **Review contracts**: Analyst scrolls through contract cards. Breached contracts appear first with red left borders and prominent breach blocks.
 3. **Assess spend**: Each card shows a progress bar comparing current spend to contract cap. Dual bars for contracts with both value and quantity caps.
 4. **Identify rebate gaps**: Amber "UNCLAIMED REBATE" alerts appear inline in affected contract cards.
@@ -85,8 +85,25 @@ Shown specifically for Cardinal Health contracts with `warning` status. Two acti
 6. **Review renewals**: Bottom table shows upcoming contract expirations with "Renew" links.
 7. **Export**: "Download Report" button in header (no implementation -- UI only).
 
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Exceptions | feeds into | Contract overage and tier pricing violations create exceptions |
+| Invoice Detail | reads from | Invoice line items compared against contract pricing |
+| Dashboard | feeds into | At-risk contract count and spend alerts on dashboard KPIs |
+| Vendor Scoring | feeds into | Contract compliance history influences vendor risk scores |
+
+## Forbidden Patterns
+
+- **NEVER allow contract price edits without audit trail** — Reason: Contract pricing is the legal reference for discrepancy detection. Unauthorized changes undermine the entire compliance system.
+- **NEVER show spend-vs-cap progress without the cap source** — Reason: Users must see which GPO contract defines the cap. Progress bars without context are meaningless.
+- **NEVER auto-dismiss breach alerts** — Reason: Contract breaches require explicit acknowledgment. Auto-dismissal creates compliance gaps that auditors will flag.
+- **NEVER display rebate percentages without the qualifying tier** — Reason: Rebate rates change by volume tier. Showing the rate without the tier misleads procurement into expecting wrong amounts.
+
 ## AJ Feedback (Parkland Demo)
 - Note: Pending -- no specific feedback for this module yet.
 
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
+<!-- 2026-05-14: Added 400ms loading state with skeleton placeholders (summary strip, contract cards, renewal table) -->

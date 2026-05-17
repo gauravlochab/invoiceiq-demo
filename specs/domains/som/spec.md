@@ -24,7 +24,7 @@ The SOM module spans three pages:
 
 **Stats Strip** (px-6 lg:px-8, py-4, grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4)
 - 4 metric cards:
-  1. **Orders in queue** (Activity icon) -- `sampleOrders.length`, subtitle: "{controlledCount} with controlled substances"
+  1. **Orders in queue** (Activity icon) -- `orders.length` (aliased from `sampleOrders` import), subtitle: "{controlledCount} with controlled substances"
   2. **Auto-blocked** (Lock icon) -- count of orders with pharmacy score < 60, red text, subtitle: "awaiting human override"
   3. **Flagged this batch** (ShieldCheck icon) -- percentage of orders with SOM exceptions, amber text, subtitle: "{flaggedCount} of {total} orders flagged"
   4. **Blocked exposure** (DollarSign icon) -- sum of flagged amounts from SOM exceptions, red text, subtitle: "across {count} SOM exceptions"
@@ -187,8 +187,8 @@ Each `TaskCard` shows:
 
 ## Workflow (Cross-Page)
 
-1. SOM analyst opens `/som` to see incoming order queue
-2. Reviews stats strip: orders in queue, auto-blocked count, flagged %, blocked exposure
+1. SOM analyst opens `/som` -- 400ms simulated loading with skeleton placeholders for stats strip (4 metric cards) and orders table (header + 5 skeleton rows)
+2. After loading, reviews stats strip: orders in queue, auto-blocked count, flagged %, blocked exposure
 3. For low-risk pharmacies (score >= 60): clicks "Run checks" to navigate to `/som/order/{id}`
 4. Verification pipeline auto-runs 4 checks with animated progress
 5. After all checks complete: makes Approve/Hold/Escalate decision
@@ -197,9 +197,51 @@ Each `TaskCard` shows:
 8. SOM exceptions appear at `/som/exceptions` with SOM-specific filtering and vocabulary
 9. "Review" from exceptions page navigates to `/exceptions/{id}` for full SOM exception detail
 
+## State Machine
+
+### Order Verification States
+```
+pending ──→ running ──→ passed
+                │
+                ├──→ flagged ──→ under_review ──→ cleared
+                │                      │
+                │                      └──→ reported
+                └──→ error
+```
+
+| From | To | Trigger | Actor |
+|------|----|---------|-------|
+| pending | running | Verification runner starts processing the order | System |
+| running | passed | All checks pass, no suspicious indicators | System |
+| running | flagged | One or more suspicious indicators detected | System |
+| running | error | Verification process fails (data unavailable, timeout) | System |
+| flagged | under_review | Analyst opens the flagged order for review | User |
+| under_review | cleared | Analyst determines order is legitimate | User |
+| under_review | reported | Analyst reports to DEA or internal compliance | User |
+
+Terminal states: `passed`, `cleared`, `reported`. DEA reporting is irreversible.
+
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Dashboard | feeds into | Suspicious order counts and DEA compliance stats on dashboard |
+| Exceptions | feeds into | Flagged orders create SOM-specific exceptions |
+| Pipeline | reads from | Pipeline agents may flag controlled substance invoices for SOM review |
+| Vendor Scoring | feeds into | SOM flags influence vendor risk scores for controlled substance distributors |
+
+## Forbidden Patterns
+
+- **NEVER auto-clear a flagged controlled substance order** -- Reason: DEA regulations require human review of every suspicious order. Auto-clearing creates criminal liability.
+- **NEVER delete SOM audit log entries** -- Reason: DEA requires complete audit trails for controlled substance monitoring. Deleted entries trigger regulatory penalties.
+- **NEVER bypass the NPI verification step** -- Reason: National Provider Identifier validation is a regulatory requirement for controlled substance transactions. Skipping it means the order cannot be verified.
+- **NEVER display patient information in the SOM queue** -- Reason: HIPAA compliance. SOM analysis operates on order-level data (quantities, frequencies, pharmacy details), never patient-level data.
+- **NEVER allow SOM exception resolution without documenting the rationale** -- Reason: DEA auditors require written justification for every cleared suspicious order. Missing rationale = regulatory finding.
+
 ## AJ Feedback (Parkland Demo)
 
 "Pending -- no specific feedback yet"
 
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase — covers all 3 SOM pages -->
+<!-- 2026-05-14: Added 400ms loading state with skeleton placeholders (stats strip + orders table); aliased sampleOrders to orders locally; removed "demo" from comments in audit-log and order detail pages -->

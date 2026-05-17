@@ -111,6 +111,22 @@ The Exceptions page is the primary work queue for AP analysts. It presents all d
 6. In duplicates view: review AI analysis, take action (Reject/Override/Escalate) via modals
 7. Duplicate actions show confirmation toast and update the card's action state inline
 
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Pipeline | reads from | Exceptions are created by the pipeline's Validation and Compliance agents |
+| Invoice Detail | navigates to | Clicking an exception row navigates to the invoice detail page |
+| Dashboard | feeds into | Exception counts and severity stats displayed on dashboard KPIs |
+| Extract | reads from | Exception records reference extracted invoice data |
+
+## Forbidden Patterns
+
+- **NEVER filter out exceptions by default** — Reason: Analysts must see the full queue on page load. Hidden exceptions create blind spots in the audit process.
+- **NEVER allow bulk resolution from the list view** — Reason: Each exception requires individual review with the three-way match detail. Bulk actions bypass the human-in-the-loop gate.
+- **NEVER display exception details inline in the list** — Reason: The list is for triage (scan severity, type, amount). Detail review happens in the dedicated invoice-detail page with full context.
+- **NEVER remove resolved exceptions from the list** — Reason: Resolved exceptions must remain visible (with status badge) for audit trail completeness. Use status filters instead.
+
 ## AJ Feedback (Parkland Demo)
 
 "Color-code by product category, don't look like a spreadsheet"

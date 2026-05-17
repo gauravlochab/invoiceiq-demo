@@ -102,6 +102,39 @@ If extracted flags include `no_po_reference`, the bottom action button changes f
 5. **Results view**: PDF displays on the left. Extracted fields reveal sequentially on the right. After all fields are shown, action buttons appear at the bottom.
 6. **Navigation from results**: "Match Against PO" goes to the exceptions page. "Back to Upload" returns to Stage 1.
 
+## State Machine
+
+```
+idle ──→ uploading ──→ processing ──→ results
+                          │
+                          └──→ error
+```
+
+| From | To | Trigger | Actor |
+|------|----|---------|-------|
+| idle | uploading | User selects or drops a document | User |
+| uploading | processing | Document upload completes, AI extraction begins | System |
+| processing | results | AI extraction succeeds, fields populated | System |
+| processing | error | AI extraction fails (corrupt file, unsupported format) | System |
+| results | idle | User starts a new extraction | User |
+| error | idle | User dismisses error and starts over | User |
+
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Pipeline | feeds into | Extracted invoice data enters the 5-agent pipeline for processing |
+| Exceptions | feeds into | Extraction flags (missing PO, suspicious amounts) create exceptions |
+| Invoice Detail | feeds into | Extracted fields populate the three-way match comparison view |
+| Dashboard | feeds into | Processing counts and extraction stats on dashboard |
+
+## Forbidden Patterns
+
+- **NEVER send actual invoice content to external APIs without PII scrubbing** -- Reason: Invoices may contain patient names, SSNs, or other PHI. HIPAA requires sanitization before any external transmission.
+- **NEVER auto-accept AI-extracted field values without user review** -- Reason: OCR and AI extraction have error rates. Users must verify critical fields (amounts, PO numbers, vendor IDs) before they enter the pipeline.
+- **NEVER store original documents in the database** -- Reason: Documents go to object storage (S3/MinIO). The database stores metadata and extracted fields only.
+- **NEVER retry a failed extraction more than 3 times** -- Reason: Repeated failures indicate a structural issue (corrupt file, unsupported format). Retries waste compute and delay the user. Surface the error.
+
 ## AJ Feedback (Parkland Demo)
 - Note: Pending -- no specific feedback for this module yet.
 

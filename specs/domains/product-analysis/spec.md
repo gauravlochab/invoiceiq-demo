@@ -77,9 +77,29 @@ The Product Category Analysis page provides a bird's-eye view of how invoice exc
 6. No drill-down navigation from this page -- it is an analytics view
 7. Category badges use the same color-coding as the exceptions list for visual consistency
 
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Exceptions | reads from | Exception distribution by product category drives the analysis charts |
+| Contracts | reads from | Contract pricing by product category for standardization analysis |
+| Extract | reads from | Product line items extracted from invoices provide the raw data |
+| Dashboard | feeds into | Category-level spend and anomaly stats for dashboard KPIs |
+
+## Forbidden Patterns
+
+- **NEVER merge product categories without showing the mapping** — Reason: Category standardization involves judgment calls (is "Surgical Gloves" the same as "Exam Gloves"?). Users must see and approve the mapping.
+- **NEVER show category spend without normalizing units** — Reason: Comparing spend across categories with different units (boxes vs. cases vs. each) produces meaningless totals.
+- **NEVER auto-flag a category as anomalous without baseline context** — Reason: Seasonal variations (flu season PPE spikes) are normal. Anomaly detection must account for historical baselines.
+
 ## AJ Feedback (Parkland Demo)
 
-"Pending -- no specific feedback yet"
+### AJ Feedback (Recording 17)
+
+- **Product category visual differentiation**: "Based on type of product, it should have a different background. So it's easily identifiable -- disposable, surgical, etc." Different background colors per product category.
+- **Sortable by category**: Users should be able to sort/filter by product category to spot patterns ("I'm always having problems with this area").
+- **Product analysis view**: AJ suggested a product analysis similar to existing vendor analysis. Rajesh agreed to build this.
 
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
+<!-- 2026-05-14: Added AJ feedback from Recording 17 — product category visual differentiation, sorting, product analysis view -->

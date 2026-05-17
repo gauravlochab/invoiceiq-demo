@@ -165,9 +165,60 @@ This is the `DiscrepancyView` component -- the revamped core of the product. It 
    i. Agent History updates with new recovery/escalation entry
 4. **Document change flow**: analyst clicks "Change" on PO or PS -> selects alternative document -> three-way match recalculates all flags dynamically -> toast confirms recalculation
 
+## State Machine
+
+```
+open ──→ under_review ──→ approved
+              │
+              ├──→ rejected
+              │
+              └──→ escalated ──→ approved
+                                   │
+                                   └──→ rejected
+```
+
+| From | To | Trigger | Actor |
+|------|----|---------|-------|
+| open | under_review | Analyst opens the exception detail page | User |
+| under_review | approved | Analyst clicks "Agree" + accepts legal disclaimer | User |
+| under_review | rejected | Analyst clicks "Disagree" + provides reason | User |
+| under_review | escalated | Analyst clicks "Escalate to Manager" | User |
+| escalated | approved | Manager approves the escalated exception | Manager |
+| escalated | rejected | Manager rejects the escalated exception | Manager |
+
+Terminal states: `approved`, `rejected`. Legal disclaimer is required before `approved` transition.
+
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Exceptions | reads from | Invoice detail page displays the full exception record |
+| Extract | reads from | Extracted invoice fields shown in the three-way match |
+| Contracts | reads from | GPO contract pricing used for comparison section |
+| Recovery | feeds into | Rejected invoices (confirmed overcharges) create recovery cases |
+| Dashboard | feeds into | Resolution counts update dashboard KPIs |
+| Vendor Scoring | feeds into | Exception outcomes influence vendor risk scores |
+
+## Forbidden Patterns
+
+- **NEVER auto-approve a flagged invoice without human Agree/Disagree action** -- Reason: Every flagged invoice requires explicit human judgment. Auto-approval bypasses the legal disclaimer and creates compliance liability.
+- **NEVER skip the legal disclaimer before any action that commits the organization** -- Reason: Regulatory requirement. The disclaimer protects the organization from unauthorized financial commitments.
+- **NEVER show the AI recommendation without its confidence score** -- Reason: Users must know how certain the AI is. A 95% confidence recommendation is very different from a 60% one.
+- **NEVER allow resolution of an escalated exception by the original analyst** -- Reason: Escalation exists specifically because the decision needs a higher authority. The original analyst reviewing their own escalation defeats the purpose.
+- **NEVER display vendor contact information in the exception detail** -- Reason: Exception review is about the invoice data, not vendor communication. Contact info belongs in the recovery workflow.
+
 ## AJ Feedback (Parkland Demo)
 
 "Only show problems not all items, dynamic columns not fixed, single unified table for N-way match, group by discrepancy type with expandable sections"
 
+### AJ Feedback (Recording 17)
+
+- **Legal disclaimer required**: Agree/Disagree actions must show a formal legal disclaimer popup. User must acknowledge before proceeding. "Is that legally binding if the company comes back and says, hey, why did you approve that?"
+- **Formal language**: Replace casual wording ("Why do you disagree with the AI finding?") with formal, professional language. Current tone is "pedestrian."
+- **Policy document link**: Add a "View Policy Document" button in the disagree flow linking to the company's internal policy.
+- **Disclaimer on invoice open**: Consider showing disclaimer when an invoice is first opened, not just at the action point.
+- **Consult attorney**: Legal language must be reviewed by counsel before Parkland pilot.
+
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase — documents the revamp from fixed 10-column spreadsheet to dynamic DiscrepancyView grouped by discrepancy type -->
+<!-- 2026-05-14: Added AJ feedback from Recording 17 — legal disclaimer, formal language, policy document link -->

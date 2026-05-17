@@ -110,8 +110,30 @@ Clicking a vendor row toggles an expanded sub-row showing that vendor's exceptio
 6. **Paginate**: Analyst uses pagination controls to navigate through vendors (10 per page default, adjustable).
 7. **Export**: "Export Report" button triggers a toast "Vendor risk report exported as PDF" (no actual file generated).
 
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Exceptions | reads from | Exception history per vendor drives the discrepancy component of risk score |
+| Recovery | reads from | Recovery success rates influence the financial reliability component |
+| Contracts | reads from | Contract compliance track record feeds into the compliance component |
+| Dashboard | feeds into | High-risk vendor count and top vendors displayed on dashboard |
+| Invoice Detail | reads from | Invoice patterns (late delivery, pricing inconsistency) per vendor |
+
+## Forbidden Patterns
+
+- **NEVER display a vendor risk score without showing the component breakdown** — Reason: A single number is opaque. Stakeholders need to see which factors (delivery, pricing, compliance, recovery) drive the score to take targeted action.
+- **NEVER auto-block a vendor based on risk score alone** — Reason: Vendor relationships are complex. A high-risk score triggers review, not automatic action. Blocking requires human decision with legal disclaimer.
+- **NEVER compare vendor scores across different time periods without noting the date range** — Reason: Scores are point-in-time calculations. Comparing Q1 scores to Q3 without context is misleading.
+- **NEVER expose raw exception data in the vendor scorecard** — Reason: Vendor scorecards may be shared with vendors during negotiations. Show aggregated metrics only, not individual invoice details.
+
 ## AJ Feedback (Parkland Demo)
-- Note: Pending -- no specific feedback for this module yet.
+
+### AJ Feedback (Recording 17)
+
+- **Company logos**: "Use the actual logo of the company... it validates a little bit better and it's legitimate." Replace plain text vendor names with actual company logos + brand colors. Applies to vendor scorecards and anywhere vendor names appear.
+- **Enterprise credibility**: "If you're providing an enterprise solution, it cannot look like a spreadsheet." Vendor cards must feel premium.
 
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
+<!-- 2026-05-14: Added AJ feedback from Recording 17 — company logos, enterprise credibility -->

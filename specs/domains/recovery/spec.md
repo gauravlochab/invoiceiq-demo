@@ -99,8 +99,49 @@ Selection clears after any bulk action.
 6. **Refresh**: Clicking "Refresh" reloads records from the mutable `recoveryQueue` array and shows a toast.
 7. **Navigation**: "Vendor Recovery Scores" card at the bottom-right links to `/vendor-scoring`.
 
+## State Machine
+
+```
+pending ──→ in_progress ──→ recovered
+                │              
+                ├──→ partial   
+                │              
+                └──→ closed    
+```
+
+| From | To | Trigger | Actor |
+|------|----|---------|-------|
+| pending | in_progress | Analyst opens case and begins review | User |
+| in_progress | recovered | Analyst records "Fully Recovered" with amount > 0 | User |
+| in_progress | partial | Analyst records "Partially Recovered" with amount > 0 | User |
+| in_progress | closed | Analyst records "Closed -- Write Off" | User |
+| in_progress | in_progress | Analyst records "Vendor Filed Dispute" or "Vendor Unresponsive" | User |
+
+Terminal states: `recovered`, `partial`, `closed`. No transitions out of terminal states.
+
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Exceptions | reads from | Each recovery record links to an exception via `exceptionId` |
+| Vendor Scoring | feeds into | Recovery success rates influence vendor risk scores |
+| Dashboard | feeds into | Recovery target/recovered amounts displayed on dashboard KPIs |
+| Pipeline | triggered by | Recovery agent in pipeline creates recovery cases |
+
+## Forbidden Patterns
+
+- **NEVER mark a recovery as "recovered" without a verified amount > 0** -- Reason: Zero-amount recoveries are data errors. A recovery must have actual money returned to be marked complete.
+- **NEVER auto-escalate without respecting SLA timelines** -- Reason: Premature escalation damages vendor relationships. Follow the Parkland AP Policy 4.3 SLA windows.
+- **NEVER delete or edit a recorded outcome** -- Reason: Outcomes are audit events. If a correction is needed, record a new outcome with a note referencing the original.
+- **NEVER send bulk follow-up emails without analyst review of the recipient list** -- Reason: Automated emails to wrong vendors or closed cases damages professional relationships and creates legal exposure.
+
 ## AJ Feedback (Parkland Demo)
-- Note: Pending -- no specific feedback for this module yet.
+
+### AJ Feedback (Recording 17)
+
+- **Positive reaction**: "Very good. I like that." Recovery tracking with progress/pending/denied status was well-received.
+- **Parkland policy alignment needed**: Recovery workflow must align with Parkland's specific vendor recovery policies. "We have to get with Parkland to understand what's your policy and how do you work with the vendors."
 
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
+<!-- 2026-05-14: Added AJ feedback from Recording 17 — positive reaction, Parkland policy alignment needed -->

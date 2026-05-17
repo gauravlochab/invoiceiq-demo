@@ -65,7 +65,7 @@ Each step takes 1,400ms in `running` state, then transitions to its result state
 - The `agentColor` in events matches the CSS custom property of the respective agent (e.g., `var(--agent-invoice)`).
 
 ## Workflow
-1. **Page load**: All 5 agent cards render in `idle` state showing "Active" badges and static stats. The activity feed shows 5 seed events.
+1. **Page load**: 400ms simulated loading with skeleton placeholders for 5 agent pipeline cards (icon, name, stats, badge) connected by arrow separators, plus activity feed skeleton (header + 5 row placeholders). After loading, all 5 agent cards render in `idle` state showing "Active" badges and static stats. The activity feed shows 5 seed events.
 2. **User clicks "Run Pipeline"**: Button disables (shows spinner + "Running..."). Progress bar appears.
 3. **Sequential processing**: Agents 1-5 activate one at a time. The active card gets a BorderBeam animation and "Processing..." badge. Its icon becomes a spinner.
 4. **Step completion**: After 1,400ms, the active card transitions to its result state (`done-warn`, `done-fail`, or `done`). The corresponding event is prepended to the activity feed. The progress bar advances.
@@ -73,8 +73,29 @@ Each step takes 1,400ms in `running` state, then transitions to its result state
 6. **Auto-reset**: 8 seconds after the run finishes, all cards return to `idle` state.
 7. **Navigation**: No outbound links. This is a standalone visualization page.
 
+## State Machine
+
+See `### Step State Machine` under Business Rules above. Each agent card transitions through: `idle -> running -> done | done-warn | done-fail`. The pipeline itself is sequential -- agent N+1 cannot start until agent N completes.
+
+## Dependencies
+
+| Domain | Relationship | Detail |
+|--------|-------------|--------|
+| Extract | triggered by | Pipeline runs after invoice extraction completes |
+| Exceptions | feeds into | Validation and Compliance agents create exceptions |
+| Dashboard | feeds into | Agent completion status and processing counts displayed on dashboard |
+| Recovery | feeds into | Recovery agent creates recovery cases from confirmed overcharges |
+
+## Forbidden Patterns
+
+- **NEVER skip an agent step in the pipeline sequence** -- Reason: Each agent depends on the previous agent's output. Skipping Validation means Compliance checks run on unvalidated data.
+- **NEVER run agents in parallel** -- Reason: The sequential handoff is by design. Agent N's output is Agent N+1's input. Parallel execution produces race conditions.
+- **NEVER auto-restart a failed pipeline run without user action** -- Reason: A failed step may indicate a data quality issue that requires investigation, not a retry.
+- **NEVER modify agent definitions at runtime** -- Reason: Agent configurations (colors, roles, stats) are static. Dynamic changes would break the pipeline visualization and audit trail.
+
 ## AJ Feedback (Parkland Demo)
 - Note: Pending -- no specific feedback for this module yet.
 
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
+<!-- 2026-05-14: Added 400ms loading state with skeleton placeholders (5 agent cards + activity feed) -->
