@@ -4,6 +4,48 @@
 
 The invoice detail page is the CORE product view of InvoiceIQ Detect. It renders a per-exception deep dive with template routing based on exception type. The most important template is the EX-006 three-way match analysis, which was recently revamped from a fixed 10-column spreadsheet into a dynamic discrepancy view that only shows flagged items grouped by discrepancy type. This page is where analysts make the actual approve/reject/escalate decisions on individual invoice line items.
 
+## Acceptance Criteria
+
+EARS notation.
+
+**App shell**
+- [ ] THE SYSTEM SHALL render the invoice detail page inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
+- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
+
+**Template routing**
+- [ ] WHEN the URL exception ID matches a known template mapping THE SYSTEM SHALL render that template's component (Ex003Page, Ex006Page, MatchExceptionDetail, DuplicateDetail, ContractOverageDetail, SuspiciousInvoiceDetail, MissingRebateDetail, TierPricingDetail, SOMExceptionDetail)
+- [ ] IF no template matches the exception type THEN THE SYSTEM SHALL render the fallback `PageShell` + `ActionPanel` template
+
+**Three-way match (EX-006)**
+- [ ] THE SYSTEM SHALL render the discrepancy summary as a shadcn `Card` with subtle `bg-muted` background, listing total line items, flagged items, and `Badge variant="outline"` per active discrepancy type
+- [ ] THE SYSTEM SHALL render each discrepancy group as a collapsible shadcn `Card` with header containing expand icon, type label, item count, and `Badge` of variant matching discrepancy severity
+- [ ] THE SYSTEM SHALL group discrepancies in fixed order: price → qty → description → unit
+- [ ] WHEN a user expands a discrepancy group THE SYSTEM SHALL render each item with three columns: identifier (item code + description), expected vs actual values, and Agree/Disagree action area
+- [ ] THE SYSTEM SHALL render row backgrounds using `bg-destructive/5` for price-flagged items and `bg-warning/5` for qty/unit/description-flagged items
+
+**Agree / Disagree actions**
+- [ ] WHEN a user clicks Agree or Disagree THE SYSTEM SHALL open `LegalDisclaimerDialog` (shadcn `Dialog`) before the action takes effect
+- [ ] WHEN a user clicks Disagree THE SYSTEM SHALL additionally open an "Override Automated Determination" shadcn `Dialog` requiring a justification `Textarea`
+- [ ] WHILE a line item is in `pending` state THE SYSTEM SHALL render Agree (`Button variant="default"` with Check icon) and Disagree (`Button variant="destructive"` with X icon) buttons
+- [ ] WHILE a line item is in `accepted` state THE SYSTEM SHALL render a `Badge` with `bg-success` "Agreed" + undo `Button variant="ghost" size="sm"`
+- [ ] WHILE a line item is in `rejected` state THE SYSTEM SHALL render a `Badge variant="destructive"` "Disagreed" + undo `Button variant="ghost" size="sm"`
+
+**Action panel (right column)**
+- [ ] THE SYSTEM SHALL render the right column as a shadcn `Card` containing Exception Details, Documents, Actions, and Agent History sections
+- [ ] WHILE any line item remains `pending` THE SYSTEM SHALL disable Initiate Recovery and Approve with Override buttons with a `text-muted-foreground` hint "Review all line items above to unlock actions"
+- [ ] IF any line item is in `rejected` state THEN THE SYSTEM SHALL keep Approve with Override disabled
+- [ ] WHEN a user changes the selected PO or Packing Slip document THE SYSTEM SHALL recalculate all line item flags via `sterisLineItemsByPO` / `sterisLineItemsByPS` lookups and fire a toast confirming recalculation
+
+**Invoice status stepper**
+- [ ] THE SYSTEM SHALL render the 4-step stepper (Pending Review → Waiting on Correction → Escalated to Manager → Approved) using semantic theme tokens — past steps use `bg-success`, active step uses `bg-primary`, future steps use `bg-muted`
+- [ ] THE SYSTEM SHALL render connecting lines between steps with `bg-success` for completed segments and `bg-border` for pending segments
+
+**Compliance and safety**
+- [ ] THE SYSTEM SHALL display `LegalDisclaimerDialog` before every action that commits the organization (Agree, Disagree, Block, Approve, Escalate, Recover, Dismiss)
+- [ ] THE SYSTEM SHALL render the AI Recommendation card with an inline confidence score (e.g., "AI confidence 98.7%") — never without
+- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all expand/collapse and entrance animations
+
 ## Template Routing
 
 The page uses `useParams()` to read the exception ID, then routes to a specific template function based on the exception type and ID:
@@ -23,22 +65,22 @@ The page uses `useParams()` to read the exception ID, then routes to a specific 
 
 ## Layout (EX-006 -- Primary Template)
 
-### Breadcrumb (pt-6, px-8)
-- "Back" button using `router.back()`
+### Breadcrumb (pt-6, px-4 lg:px-6)
+- shadcn `Button variant="ghost" size="sm"` "Back" using `router.back()`
 
-### Header (px-8, pt-3 pb-6)
-- Badge row: Exception ID (mono 11px), type badge ("Match Exception", warning), status badge ("Under Review", warning), `CategoryBadge` ("Sterilization")
-- Title: vendor name "Steris Corporation" (22px, semibold)
-- Subtitle: Invoice number, date, PO number
+### Header (px-4 lg:px-6, pt-3 pb-6)
+- Badge row: Exception ID (`font-mono text-xs text-muted-foreground`), type `Badge` (`variant="outline"` styled with `text-warning border-warning`), status `Badge` (`variant="outline"` styled with `text-warning border-warning`), `CategoryBadge` ("Sterilization", InvoiceIQ-specific component retained)
+- Title: vendor name "Steris Corporation" (`text-2xl font-semibold`)
+- Subtitle: Invoice number, date, PO number (`text-sm text-muted-foreground`)
 
-### Alert Bar (mx-8, mb-6)
-- Red left-border card (`border-l-4 border-red-600 bg-red-50`)
-- Dynamic text: "{N} discrepancies detected -- $4,600 flagged this invoice . recurrence . AI confidence 98.7%"
+### Alert Bar (mx-4 lg:mx-6, mb-6)
+- shadcn `Alert variant="destructive"` (uses `--destructive` token); left border emphasis via Tailwind `border-l-4 border-destructive bg-destructive/10`
+- Dynamic text: "{N} discrepancies detected — $4,600 flagged this invoice • recurrence • AI confidence 98.7%"
 
-### Escalation Banner (mx-8)
-- `EscalationBanner` component with flagged amount
+### Escalation Banner (mx-4 lg:mx-6)
+- `EscalationBanner` component (InvoiceIQ-specific, retained) — styled with `bg-warning/10 border-warning` per v2.0 Warning override
 
-### Two-Column Layout (px-8, pb-8, grid-cols-1 lg:grid-cols-[1fr_280px] gap-6)
+### Two-Column Layout (px-4 lg:px-6, pb-6, grid-cols-1 lg:grid-cols-[1fr_280px] gap-6)
 
 **LEFT COLUMN -- Three-Way Match Analysis**
 
@@ -63,11 +105,11 @@ This is the `DiscrepancyView` component -- the revamped core of the product. It 
     - Col 3 (w-140px): Agree/Disagree action buttons (EX-006 only)
 
 #### Agree/Disagree Actions (EX-006 only)
-- **Pending**: "Agree" (green, Check icon) + "Disagree" (red, X icon) buttons
-- **Agreed**: green pill "Agreed" with Check icon + "undo" text button
-- **Disagreed**: red pill "Disagreed" with X icon + "undo" text button
-- Each action triggers `LegalDisclaimerDialog` FIRST, then executes
-- Disagree additionally opens a "Override Automated Determination" modal requiring justification text
+- **Pending**: shadcn `Button variant="default"` "Agree" (Check icon) + `Button variant="destructive"` "Disagree" (X icon)
+- **Agreed**: shadcn `Badge` styled `bg-success text-success-foreground` "Agreed" with Check icon + `Button variant="ghost" size="sm"` "undo"
+- **Disagreed**: shadcn `Badge variant="destructive"` "Disagreed" with X icon + `Button variant="ghost" size="sm"` "undo"
+- Each action triggers `LegalDisclaimerDialog` (shadcn `Dialog`) FIRST, then executes
+- Disagree additionally opens an "Override Automated Determination" shadcn `Dialog` requiring justification `Textarea`
 
 #### Matched Items (collapsed by default)
 - Collapsible section at bottom: "{N} items matched -- no discrepancies"
@@ -134,7 +176,7 @@ This is the `DiscrepancyView` component -- the revamped core of the product. It 
   - Qty flag: `packingSlipQty !== invoiceQty`
   - Description flag: `poDescription !== invoiceDescription` (when both present)
   - Unit flag: `poUnit !== invoiceUnit` (when both present)
-- **Row background**: price-flagged items get `bg-red-50`, qty/unit/description-flagged items get `bg-amber-50`
+- **Row background**: price-flagged items get `bg-destructive/5`, qty/unit/description-flagged items get `bg-warning/5` (uses v2.0 destructive/warning tokens with Tailwind opacity)
 - **Reject reasons**: predefined list of 7 compliance-appropriate justifications plus "Other"
 - **Recovery initiation**: creates entry in recovery queue via `addToRecoveryQueue()`, updates exception status to "under_review"
 - **Invoice status transitions**: pending_review -> waiting_correction (after recovery) or waiting_manager (after escalation) or approved_override (after override)
@@ -201,11 +243,17 @@ Terminal states: `approved`, `rejected`. Legal disclaimer is required before `ap
 
 ## Forbidden Patterns
 
-- **NEVER auto-approve a flagged invoice without human Agree/Disagree action** -- Reason: Every flagged invoice requires explicit human judgment. Auto-approval bypasses the legal disclaimer and creates compliance liability.
-- **NEVER skip the legal disclaimer before any action that commits the organization** -- Reason: Regulatory requirement. The disclaimer protects the organization from unauthorized financial commitments.
-- **NEVER show the AI recommendation without its confidence score** -- Reason: Users must know how certain the AI is. A 95% confidence recommendation is very different from a 60% one.
-- **NEVER allow resolution of an escalated exception by the original analyst** -- Reason: Escalation exists specifically because the decision needs a higher authority. The original analyst reviewing their own escalation defeats the purpose.
-- **NEVER display vendor contact information in the exception detail** -- Reason: Exception review is about the invoice data, not vendor communication. Contact info belongs in the recovery workflow.
+Use affirmative phrasing per SpecLayer v1.1.
+
+- **Require explicit human Agree/Disagree on every flagged line item** — Reason: every flagged invoice needs human judgment; auto-approval bypasses the legal disclaimer and creates compliance liability.
+- **Route every commit action through `LegalDisclaimerDialog`** — Reason: regulatory requirement; the disclaimer protects the organization from unauthorized financial commitments.
+- **Display the AI recommendation's confidence score inline with the recommendation** — Reason: users must know how certain the AI is; a 95% confidence recommendation is very different from a 60% one.
+- **Restrict escalated-exception resolution to managers, not the originating analyst** — Reason: escalation exists because the decision needs higher authority; same-analyst resolution defeats the purpose.
+- **Surface vendor contact information only in the recovery workflow, not the exception detail** — Reason: exception review is about invoice data; vendor communication belongs downstream.
+- **Use shadcn `Dialog` for `LegalDisclaimerDialog`, Override modal, Recovery modal, Escalation modal** — Reason: custom modal implementations diverge in focus trap and keyboard handling; Radix-backed `Dialog` is accessible by default.
+- **Use shadcn `Button variant="default" | "destructive" | "outline" | "ghost"` for all action buttons** — Reason: deprecates ad-hoc styled buttons; ensures consistent disabled, hover, and focus states.
+- **Use shadcn `Badge` for type, status, and category indicators (via `variant` or theme-colored styling)** — Reason: deprecates `.badge.*` utility classes from ui-standard.md v1.
+- **Use theme tokens (`bg-card`, `text-foreground`, `text-destructive`, `text-warning`, `text-success`, `bg-destructive/5`, `bg-warning/5`) for all surfaces and emphasis colors** — Reason: hex tokens (`bg-red-50`, `bg-amber-50`, `--critical`, `--warning`) removed in v2.0.
 
 ## AJ Feedback (Parkland Demo)
 
@@ -222,3 +270,4 @@ Terminal states: `approved`, `rejected`. Legal disclaimer is required before `ap
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase — documents the revamp from fixed 10-column spreadsheet to dynamic DiscrepancyView grouped by discrepancy type -->
 <!-- 2026-05-14: Added AJ feedback from Recording 17 — legal disclaimer, formal language, policy document link -->
+<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Alert bar → shadcn `Alert variant="destructive"`. Discrepancy groups → collapsible shadcn `Card`. Agree/Disagree → shadcn `Button` (default/destructive/ghost variants) + `Badge` for resolved states. All modals (LegalDisclaimer, Override, Recovery, Escalation) → shadcn `Dialog`. Row backgrounds → `bg-destructive/5` and `bg-warning/5` (Tailwind opacity on v2 tokens). Invoice status stepper retokenized to semantic theme colors (success/primary/muted). Added 23 EARS Acceptance Criteria covering app shell, template routing, three-way match, agree/disagree actions, action panel, status stepper, compliance/safety. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
