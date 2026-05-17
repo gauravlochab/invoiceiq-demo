@@ -8,40 +8,59 @@ The main dashboard is the landing page of InvoiceIQ Detect. It provides a single
 
 EARS notation — `WHEN [trigger]`, `WHILE [state]`, `IF [condition] THEN`, or ubiquitous `THE SYSTEM SHALL`.
 
-**Initial render**
-- [ ] WHEN the dashboard mounts THE SYSTEM SHALL display skeleton placeholders for KPI cards, secondary stats, agent strip, and tabbed content for 400ms before real content
-- [ ] WHEN the 400ms skeleton state ends THE SYSTEM SHALL animate the four primary KPI values in via NumberTicker count-up with staggered slide-up entrance
+**App shell**
+- [ ] THE SYSTEM SHALL render the dashboard inside a `SidebarProvider` + `SidebarInset` shell with `AppSidebar` and `SiteHeader`
+- [ ] THE SYSTEM SHALL set `--sidebar-width: calc(var(--spacing) * 72)` and `--header-height: calc(var(--spacing) * 12)` as inline CSS variables on `SidebarProvider`
+- [ ] WHEN the sidebar is collapsed THE SYSTEM SHALL persist the collapsed state across page navigation
+- [ ] THE SYSTEM SHALL support both light and dark mode — every surface, text, and chart token reads from the active theme
 
-**Primary KPIs**
-- [ ] THE SYSTEM SHALL display exactly four primary KPI cards (Invoices Processed, Exceptions Found, Amount at Risk, Recovered) in a `grid-cols-2 sm:grid-cols-2 lg:grid-cols-4` grid
-- [ ] THE SYSTEM SHALL render an inline 64x24 SVG `Sparkline` in each primary KPI card, aligned bottom-right
+**Initial render**
+- [ ] WHEN the dashboard mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for the KPI grid, chart area, and data table for 400ms before real content
+
+**Primary KPIs (`<SectionCards />` pattern)**
+- [ ] THE SYSTEM SHALL display exactly four primary KPI cards (Invoices Processed, Exceptions Found, Amount at Risk, Recovered) in a container-query grid: `grid-cols-1 @xl/main:grid-cols-2 @5xl/main:grid-cols-4`
+- [ ] THE SYSTEM SHALL render each KPI using shadcn `Card` + `CardHeader` + `CardDescription` + `CardTitle` + `CardAction` + `CardFooter` primitives
+- [ ] THE SYSTEM SHALL render a trend `Badge variant="outline"` inside `CardAction` containing `IconTrendingUp` or `IconTrendingDown` plus a percentage delta
 - [ ] THE SYSTEM SHALL compute "Exceptions Found" as the length of AP exceptions (`!type.startsWith("som_")`)
-- [ ] THE SYSTEM SHALL compute "Amount at Risk" as the sum of `flaggedAmount` across all AP exceptions, formatted with a `$` prefix in `--critical` color
-- [ ] THE SYSTEM SHALL compute "Recovered" as the sum of `recoveredAmount` for recovery queue items with status "recovered", in `--success` color
+- [ ] THE SYSTEM SHALL compute "Amount at Risk" as the sum of `flaggedAmount` across all AP exceptions, formatted with a `$` prefix, with `CardTitle` styled `text-destructive`
+- [ ] THE SYSTEM SHALL compute "Recovered" as the sum of `recoveredAmount` for recovery queue items with status "recovered", with `CardTitle` styled `text-success`
+- [ ] THE SYSTEM SHALL apply `tabular-nums` to all KPI values so digits align across cards
+- [ ] WHEN the card container width crosses 250px THE SYSTEM SHALL upsize `CardTitle` from `text-2xl` to `text-3xl` via `@[250px]/card` container query
 
 **Secondary stats strip**
-- [ ] THE SYSTEM SHALL render exactly three secondary stats (Contracts at Risk, GPO Compliance, GPO Savings) in a compact inline flex row below the primary KPI grid
-- [ ] WHEN any secondary stat is hovered THE SYSTEM SHALL transition the text color from `--text-secondary` to `--text-primary`
+- [ ] THE SYSTEM SHALL render exactly three secondary stats (Contracts at Risk, GPO Compliance, GPO Savings) in a `flex flex-wrap gap-x-6` row below the primary KPI grid
+- [ ] THE SYSTEM SHALL prefix each stat with a `size-1.5 rounded-full` dot using `bg-warning` / `bg-success` / `bg-warning` respectively
+- [ ] WHEN any secondary stat is hovered THE SYSTEM SHALL transition the text color from `text-muted-foreground` to `text-foreground`
 
 **Agent strip**
-- [ ] THE SYSTEM SHALL render the five AI agents as a single clickable pill row
+- [ ] THE SYSTEM SHALL render the five AI agents as a single shadcn `Card`-wrapped inline row using container query `@container/main`
+- [ ] THE SYSTEM SHALL render each agent dot using `bg-[var(--agent-*)]` where `*` is one of `invoice|validation|compliance|recovery|insight`
+- [ ] WHEN the agent strip is hovered THE SYSTEM SHALL apply `hover:bg-accent`
 - [ ] WHEN the agent strip is clicked THE SYSTEM SHALL navigate to `/pipeline`
 
-**Tabbed content**
-- [ ] WHEN the page loads THE SYSTEM SHALL default the tabbed content section to the Overview tab
-- [ ] WHILE the Exceptions tab is active THE SYSTEM SHALL display only AP exceptions (`!type.startsWith("som_")`), sorted by severity, limited to the top 6
-- [ ] WHEN a user clicks a column header in the Recent Exceptions table THE SYSTEM SHALL sort by type, flaggedAmount, severity, or status
+**Chart section (`<ChartAreaInteractive />` pattern)**
+- [ ] THE SYSTEM SHALL render a single full-width `Card` containing a Recharts `AreaChart` with two series: invoice spend (`var(--chart-1)`, area fill gradient) and flagged amount (`var(--destructive)`, dashed line, no fill)
+- [ ] THE SYSTEM SHALL provide a `ToggleGroup` in `CardAction` with three options: "Last 3 months" (default), "Last 30 days", "Last 7 days"
+- [ ] WHEN a user selects a period toggle THE SYSTEM SHALL filter the chart data and update both series and the x-axis range
+
+**Recent Exceptions table (`<DataTable />` pattern)**
+- [ ] THE SYSTEM SHALL display only AP exceptions (`!type.startsWith("som_")`), sorted by severity (critical first), limited to top 6, inside a shadcn `Card`
+- [ ] THE SYSTEM SHALL render the table using shadcn `Table` primitives with seven columns: ID, Type, Vendor, Flagged, Severity, Status, Action
+- [ ] WHEN a user clicks a column header THE SYSTEM SHALL sort by Type, Flagged, Severity, or Status
+- [ ] THE SYSTEM SHALL render status badges using shadcn `Badge` variants (destructive / outline / secondary) — never inline-styled badges
+- [ ] THE SYSTEM SHALL render the Flagged column right-aligned with `tabular-nums`, color-coded `text-destructive` for critical/high, `text-warning` for medium, `text-foreground` for low
 
 **Run Scan and Export**
-- [ ] WHEN a user clicks "Run Scan" THE SYSTEM SHALL show a "Scanning..." state for 2 seconds, disable the button on completion, and fire a "2 new exceptions identified" toast
-- [ ] WHEN a user clicks "Export" THE SYSTEM SHALL open the `ExportDialog` for CSV or PDF download
+- [ ] WHEN a user clicks "Run Scan" THE SYSTEM SHALL show a "Scanning..." state for 2 seconds, disable the button on completion, and fire a toast: "2 new exceptions identified"
+- [ ] WHEN a user clicks "Export" THE SYSTEM SHALL open `ExportDialog` for CSV or PDF download
 
 **Navigation**
 - [ ] WHEN any KPI card or secondary stat is clicked THE SYSTEM SHALL navigate to its declared target page (Invoices Processed → `/pipeline`, Exceptions Found → `/exceptions`, Amount at Risk → `/exceptions`, Recovered → `/recovery`, all three secondary stats → `/contracts`)
 
 **Accessibility and safety**
-- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all KPI entrance animations and sparkline transitions
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all entrance animations and chart transitions
 - [ ] THE SYSTEM SHALL display a legal disclaimer dialog before any action that commits the organization
+- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements (cards, buttons, links, table rows)
 
 ## Layout
 
@@ -49,85 +68,141 @@ EARS notation — `WHEN [trigger]`, `WHILE [state]`, `IF [condition] THEN`, or u
 - Left: page title "Invoice Intelligence", customer name from `PARKLAND_CONFIG.customer`, period label ("Q1 2026"), invoice count
 - Right: "Export" button (opens `ExportDialog` for CSV/PDF), "Run Scan" button (simulated 2-second scan, transitions to "Last scan: just now" after completion, fires toast notification)
 
-### KPI Section (px-6 lg:px-8, pt-4 pb-3)
+### App Shell (NEW in v2.0 — shadcn pattern)
 
-**Primary KPIs**: 4 cards in `grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4`
+The entire authenticated app wraps in `SidebarProvider` + `SidebarInset` per `ui-standard.md` v2.0. The dashboard renders inside `SidebarInset` and inherits the shell. Layout sections below describe the dashboard content area only.
 
-Each card contains:
-- Section label (uppercase 10px)
-- `NumberTicker` animated value with optional prefix ($)
-- Subtitle (muted text)
-- `Sparkline` SVG component (64x24px) showing 6-point trend data, aligned bottom-right
-- Subtle gradient background with 3% accent tint
-- Staggered slide-up entrance animation
-- Hover: border highlight with `--acl-primary`
+```tsx
+<SidebarProvider style={{
+  "--sidebar-width": "calc(var(--spacing) * 72)",
+  "--header-height": "calc(var(--spacing) * 12)"
+}}>
+  <AppSidebar variant="inset" />
+  <SidebarInset>
+    <SiteHeader />
+    <main className="@container/main flex flex-1 flex-col">
+      {/* dashboard content (sections below) */}
+    </main>
+  </SidebarInset>
+</SidebarProvider>
+```
 
-Cards:
-1. **Invoices Processed** -- links to `/pipeline`, value: 1,847, subtitle: "Q1 2026", accent: `--acl-primary`, sparkline: invoices trend
-2. **Exceptions Found** -- links to `/exceptions`, value: `apExceptions.length`, subtitle: "{openCount} open", accent: `--warning`, sparkline: exceptions trend
-3. **Amount at Risk** -- links to `/exceptions`, value: sum of AP exception `flaggedAmount`, prefix "$", red text, subtitle: "22% of period spend", accent: `--critical`, sparkline: risk trend
-4. **Recovered** -- links to `/recovery`, value: sum of recovered amounts, prefix "$", green text, subtitle: "{recoveredCount} resolved", accent: `--success`, sparkline: recovered trend
+`SiteHeader` replaces the old custom topbar — it holds breadcrumb, search, sync status, notifications, and the page title "Invoice Intelligence".
 
-**Secondary Stats Strip**: Compact inline row (`flex flex-wrap gap-x-6`) below the KPI grid, `mt-3 px-1`
+### KPI Section — `<SectionCards />` pattern (px-4 lg:px-6, py-4 md:py-6)
 
-Three inline stats, each as a `<Link>` with:
-- Colored dot (1.5x1.5 rounded-full)
-- Label + value + optional suffix
-- Pipe separator between items
-- Hover: text color transitions from secondary to primary
+Adopts shadcn `dashboard-01` `section-cards.tsx` pattern: shadcn `Card` primitives with `CardHeader` / `CardDescription` / `CardTitle` / `CardAction` / `CardFooter`. Container query grid: `grid-cols-1 @xl/main:grid-cols-2 @5xl/main:grid-cols-4`.
+
+Each card structure:
+```tsx
+<Card className="@container/card">
+  <CardHeader>
+    <CardDescription>{label}</CardDescription>
+    <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+      {value}
+    </CardTitle>
+    <CardAction>
+      <Badge variant="outline">
+        {trend > 0 ? <IconTrendingUp /> : <IconTrendingDown />}
+        {trendPct}
+      </Badge>
+    </CardAction>
+  </CardHeader>
+  <CardFooter className="flex-col items-start gap-1.5 text-sm">
+    <div className="line-clamp-1 flex gap-2 font-medium">{trendLine}</div>
+    <div className="text-muted-foreground">{contextLine}</div>
+  </CardFooter>
+</Card>
+```
+
+**Inline `Sparkline` is REMOVED in v2.0.** The shadcn pattern conveys trend via `CardAction` badge (`IconTrendingUp` + percentage) and `CardFooter` text line. This is intentional — replaces the 64x24 SVG sparkline with a cleaner, more readable indicator. Sparkline component is kept in `components/Sparkline.tsx` for use elsewhere if needed.
+
+Cards (4 total, each is a `<Link>` wrapping the `<Card>`):
+1. **Invoices Processed** — links to `/pipeline`, value: 1,847, trendLine: "Trending up this period", contextLine: "Q1 2026", trend badge: chart-1 styled
+2. **Exceptions Found** — links to `/exceptions`, value: `apExceptions.length`, trendLine: "{openCount} open", contextLine: "Requires analyst attention", trend badge: derived from open count delta
+3. **Amount at Risk** — links to `/exceptions`, value: sum of AP exception `flaggedAmount`, prefix "$", `CardTitle` uses `text-destructive`, trendLine: "22% of period spend", contextLine: "Across {n} flagged invoices"
+4. **Recovered** — links to `/recovery`, value: sum of recovered amounts, prefix "$", `CardTitle` uses `text-success`, trendLine: "{recoveredCount} resolved this period", contextLine: "Recovery rate {pct}%"
+
+### Secondary Stats Strip (px-4 lg:px-6)
+
+Three inline stats below the KPI cards. Uses shadcn `text-muted-foreground` + small dots from theme tokens (`bg-warning`, `bg-success`, `bg-destructive`), `flex flex-wrap gap-x-6` row with pipe `|` separators (border-l + pl-6 on subsequent items).
 
 Stats:
-1. **Contracts at Risk** -- value: count of breached + warning contracts, suffix: "({breachedCount} breached)", links to `/contracts`, dot color: `--warning`
-2. **GPO Compliance** -- value: `getGPOComplianceRate()%`, links to `/contracts`, dot color: `--success`
-3. **GPO Savings** -- value: `formatCurrency(getGPOPotentialSavings())`, links to `/contracts`, dot color: `--warning`
+1. **Contracts at Risk** — value: count of breached + warning contracts, suffix: "({breachedCount} breached)", links to `/contracts`, dot: `bg-warning`
+2. **GPO Compliance** — value: `getGPOComplianceRate()%`, links to `/contracts`, dot: `bg-success`
+3. **GPO Savings** — value: `formatCurrency(getGPOPotentialSavings())`, links to `/contracts`, dot: `bg-warning`
 
-### Agent Status Strip (px-6 lg:px-8, pb-4)
+### Agent Status Strip (px-4 lg:px-6, pb-4)
 
-Single-row inline bar (`flex items-center gap-1`), wrapped in a `<Link>` to `/pipeline`:
-- `Activity` icon (13px, muted)
-- Section label "AI Agents"
-- 5 agent indicators, each showing:
-  - Colored dot (1.5x1.5 rounded-full) using agent CSS variable
-  - Agent name (11px)
-  - Count value (11px, font-semibold, primary color)
-  - Middle-dot separator between agents
-- `ArrowUpRight` icon at far right (ml-auto)
-- Hover: border highlight with `--acl-primary`
+Single-row inline bar wrapped in `<Link>` to `/pipeline`. Uses shadcn `Card` (compact variant — `py-2` instead of default) for surface, theme-driven `text-foreground` and `text-muted-foreground` for text:
+- `Activity` icon (size-4, `text-muted-foreground`)
+- Section label "AI Agents" (`text-xs text-muted-foreground`)
+- 5 agent indicators inline, each:
+  - Colored dot (`size-1.5 rounded-full`) using `bg-[var(--agent-*)]`
+  - Agent name (`text-xs`)
+  - Count value (`text-xs font-semibold text-foreground`)
+  - Middle-dot separator (`text-muted-foreground`) between agents
+- `ArrowUpRight` icon at far right (`ml-auto size-4 text-muted-foreground`)
+- Hover: `hover:bg-accent` (shadcn convention) — replaces custom `--acl-primary` border
 
 Agents displayed inline:
-1. Invoice (1,847) -- `--agent-invoice`
-2. Validation (188) -- `--agent-validation`
-3. Compliance (12) -- `--agent-compliance`
-4. Recovery (14) -- `--agent-recovery`
-5. Insight (9) -- `--agent-insight`
+1. Invoice (1,847) — `--agent-invoice`
+2. Validation (188) — `--agent-validation`
+3. Compliance (12) — `--agent-compliance`
+4. Recovery (14) — `--agent-recovery`
+5. Insight (9) — `--agent-insight`
 
-### Tabbed Content Section (px-6 lg:px-8, pb-6)
+### Chart Section — `<ChartAreaInteractive />` (px-4 lg:px-6)
 
-Uses `Tabs` component (Radix-based, `@/components/ui/tabs`) with three tabs:
+Adopts shadcn `chart-area-interactive.tsx` pattern. Single full-width `Card` containing:
+- `CardHeader` with `CardTitle` ("Spend & Exceptions"), `CardDescription` ("Last 3 months" / period selector), `CardAction` with `ToggleGroup` for "Last 3 months / Last 30 days / Last 7 days"
+- `CardContent` with Recharts `AreaChart` — two series:
+  - **Series 1 (chart-1):** invoice spend (area fill gradient from chart-1/30% to chart-1/0%)
+  - **Series 2 (destructive):** flagged amount overlay (destructive color, dashed line, no fill — semantic status, not chart palette)
+- X-axis: dates, ticks every 7 days, `text-muted-foreground`
+- Y-axis: hidden (shadcn convention) or muted ticks
+- Tooltip: shadcn `ChartTooltip` (built into `chart` block)
 
-**Overview tab** (default):
-- Two-column grid: `grid-cols-1 lg:grid-cols-[1fr_360px] gap-6`
-- **Left -- Spend & Exception Trend**: `ComposedChart` (Recharts), height 260px, Area for spend + Bar for exceptions, custom `SpendTooltip`, legend with inline indicators
-- **Right -- By Category**: Stacked horizontal bar for `flaggedByType`, total as "$XXK", legend list with color swatch, category name, percentage, and currency. Clicking navigates to `/exceptions`
+This **replaces the v1 Overview tab two-column grid** (Spend & Exception Trend left + By Category right). The "By Category" breakdown moves to the Exceptions section below or a separate `/product-analysis` view.
 
-**Exceptions tab**:
-- Card with header "Recent Exceptions" + "View all {count}" link to `/exceptions`
-- `data-table` with 7 columns:
-  1. **ID** -- mono font
-  2. **Type** -- sortable, badge (critical for contract_overage/suspicious_invoice, neutral otherwise)
-  3. **Vendor** -- `VendorBadge` + invoice number below
-  4. **Flagged** -- right-aligned, color-coded by severity
-  5. **Severity** -- sortable, status dot + label
-  6. **Status** -- sortable, badge (critical/warning/blue/success)
-  7. **Action** -- "Review ->" link to `/exceptions/{id}`
+### Recent Exceptions Section — `<DataTable />` (px-4 lg:px-6, pb-6)
 
-**Trends tab**:
-- Card containing `<DiscrepancyBarChart />` component
+Adopts shadcn `data-table.tsx` block. Single full-width `Card`:
+- `CardHeader` with `CardTitle` ("Recent Exceptions") and `CardAction` containing "View all {count}" link to `/exceptions`
+- `CardContent` with shadcn `Table` (TanStack-backed):
+  1. **ID** — `font-mono text-sm tabular-nums`
+  2. **Type** — sortable, `Badge variant="destructive"` for contract_overage/suspicious_invoice, `Badge variant="secondary"` otherwise
+  3. **Vendor** — `VendorBadge` + invoice number below (`text-xs text-muted-foreground`)
+  4. **Flagged** — right-aligned, `tabular-nums`, `text-destructive` for critical/high severity, `text-warning` for medium, `text-foreground` for low
+  5. **Severity** — sortable, dot + label
+  6. **Status** — sortable, `Badge` variant matching status
+  7. **Action** — "Review →" link to `/exceptions/{id}`
+
+**Tabs (Overview/Exceptions/Trends) are REMOVED in v2.0.** The shadcn pattern is linear — KPIs → chart → data table. Trends content moves into the chart (period toggle); category breakdown moves to `/product-analysis`.
 
 ## Components
 
-- `Sparkline` (`components/Sparkline.tsx`) -- Pure SVG sparkline, no external dependencies. Props: `data: number[]`, `width` (default 64), `height` (default 24), `color` (default `--acl-primary`), `fillOpacity` (default 0.1). Generates an SVG path (area fill + line stroke) from data points. Used in each primary KPI card.
-- `Tabs` (`components/ui/tabs.tsx`) -- Radix-based tab component (TabsList, TabsTrigger, TabsContent)
+shadcn primitives (from `components/ui/`, installed via `npx shadcn add`):
+- `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardFooter`, `CardContent` — surface container
+- `Badge` (variants: default, outline, secondary, destructive) — status indicators
+- `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell` — data table
+- `Sidebar`, `SidebarProvider`, `SidebarInset`, `SidebarTrigger` — app shell
+- `ToggleGroup`, `ToggleGroupItem` — period selector in chart
+- `Skeleton` — loading state
+- `Tabs` (TabsList, TabsTrigger, TabsContent) — still present in codebase, no longer used by dashboard in v2.0
+
+shadcn blocks (from `components/blocks/` or inlined):
+- `SectionCards` — 4-card KPI grid (replaces the v1 custom KPI cards + Sparkline)
+- `ChartAreaInteractive` — Recharts AreaChart with ToggleGroup period selector
+- `DataTable` — TanStack-backed table with shadcn `Table` primitives
+- `AppSidebar` — app navigation sidebar (replaces `components/Sidebar.tsx`)
+- `SiteHeader` — app header bar (replaces `components/TopBar.tsx`)
+
+InvoiceIQ-specific (preserved):
+- `VendorBadge` — vendor avatar + name, retained for table Vendor column
+- `ExportDialog` — CSV/PDF export modal
+- `LegalDisclaimerDialog` — legal confirmation before commit actions
+- `Sparkline` (`components/Sparkline.tsx`) — kept in codebase but **NOT used by dashboard in v2.0**. May be used by other domain pages if appropriate.
 
 ## Business Rules
 
@@ -137,10 +212,12 @@ Uses `Tabs` component (Radix-based, `@/components/ui/tabs`) with three tabs:
 - **Amount at Risk**: sum of `flaggedAmount` across all AP exceptions
 - **Recovered**: sum of `recoveredAmount` from recovery queue items with status "recovered"
 - **Contracts at Risk**: count of contracts with status "breached" or "warning"
-- **Flagged color logic**: critical/high = `--critical`, medium = `--warning`, low = `--neutral`
+- **Flagged color logic**: critical/high = `text-destructive`, medium = `text-warning`, low = `text-foreground`
+- **Trend badge logic**: positive delta → `IconTrendingUp`; negative delta → `IconTrendingDown`. Both use `Badge variant="outline"`.
+- **Period toggle (chart)**: defaults to "Last 3 months"; selecting "Last 30 days" or "Last 7 days" filters both series and updates x-axis
 - **Run Scan**: simulated 2-second delay, shows "Scanning..." state, disables after completion, fires "2 new exceptions identified" toast
 - **Export**: supports CSV and PDF formats via `exportToCSV` / `exportToPDF` from `lib/export`
-- **Loading state**: 400ms simulated loading with skeleton placeholders for all sections
+- **Loading state**: 400ms simulated loading with shadcn `Skeleton` placeholders for KPI grid, chart, and table
 
 ## Data Model
 
@@ -174,10 +251,16 @@ Uses `Tabs` component (Radix-based, `@/components/ui/tabs`) with three tabs:
 
 ## Forbidden Patterns
 
-- **NEVER show raw exception counts without severity breakdown** — Reason: It misleads stakeholders into thinking all exceptions are equal. Always show critical/high/medium/low split.
-- **NEVER hardcode KPI values** — Reason: KPI cards must compute from the underlying data arrays. Hardcoded numbers drift from reality as data changes.
-- **NEVER auto-refresh the dashboard without user action** — Reason: Mid-analysis refreshes cause data loss if the user is mid-review. Use the explicit "Run Scan" button.
-- **NEVER display financial amounts without proper formatting** — Reason: Enterprise users expect locale-aware currency formatting ($X,XXX.XX). Raw numbers look unprofessional.
+Use affirmative phrasing per SpecLayer v1.1 — "use X for Y" not "don't use Z".
+
+- **Show severity breakdown alongside any exception count** — Reason: raw counts mislead stakeholders into treating all exceptions as equal. Always split into critical/high/medium/low.
+- **Compute KPI values from underlying data arrays at render time** — Reason: hardcoded numbers drift from reality as data changes; KPIs must derive from `apExceptions`, `recoveryQueue`, `contracts`.
+- **Require explicit user action ("Run Scan" button) for all data refreshes** — Reason: mid-analysis auto-refresh causes data loss while the user is reviewing.
+- **Use `formatCurrency(amount)` from `lib/utils` for all monetary values** — Reason: enterprise users expect locale-aware `$X,XXX.XX`; raw numbers look unprofessional.
+- **Use shadcn `Card` + `CardHeader`/`CardTitle`/`CardAction`/`CardFooter` primitives for every KPI card** — Reason: ad-hoc `<div className="card">` markup deprecated in ui-standard.md v2.0; the primitives are the consistent surface.
+- **Use shadcn `Badge variant="..."` for all status indicators** — Reason: `.badge.critical` / `.badge.warning` utility classes deprecated in v2.0.
+- **Use theme tokens (`bg-card`, `text-foreground`, `text-muted-foreground`, `text-destructive`) for surfaces and text** — Reason: hex colors and v1 tokens (`--bg-surface`, `--critical`, `--text-primary`) are being removed.
+- **Use container queries (`@container/main`, `@xl/main:grid-cols-2`) for KPI grid responsive layout** — Reason: shadcn `dashboard-01` standard; replaces media-query-based `sm:` / `lg:` for the KPI grid specifically.
 
 ## AJ Feedback (Parkland Demo)
 
@@ -194,3 +277,5 @@ Uses `Tabs` component (Radix-based, `@/components/ui/tabs`) with three tabs:
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Updated spec to match dashboard modernization — reduced from 7 KPI cards (4+3) to 4 primary KPIs with sparklines + compact secondary stats strip; replaced 5-card agent grid with single-row inline agent bar; wrapped charts + exceptions table + discrepancy chart in 3-tab layout (Overview/Exceptions/Trends); removed <hr> separator; tightened padding; removed Category column from exceptions table (8→7 columns) -->
 <!-- 2026-05-18: Added Acceptance Criteria section using EARS notation (SpecLayer v1.1 worked example). 19 criteria covering initial render, primary KPIs, secondary stats, agent strip, tabbed content, Run Scan / Export, navigation, accessibility. Grounded in current code post-d59a2f2. -->
+<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system (Phase 2 of UI revamp, follows ui-standard.md v2.0). App shell wraps in SidebarProvider+SidebarInset (replaces custom topbar+sidebar). KPI grid uses shadcn `Card` primitives with `CardHeader`/`CardDescription`/`CardTitle`/`CardAction`/`CardFooter` and container queries (`@container/card`, `@xl/main:grid-cols-2 @5xl/main:grid-cols-4`). Inline `Sparkline` removed from KPI cards; trend conveyed via `IconTrendingUp`/`IconTrendingDown` badge in `CardAction`. Tabs (Overview/Exceptions/Trends) removed — layout is linear KPIs → ChartAreaInteractive → DataTable. Chart adds `ToggleGroup` period selector ("Last 3 months/30 days/7 days"). All tokens migrated to shadcn theme (`bg-card`, `text-destructive`, `text-warning`, `text-success`, `text-muted-foreground`) per ui-standard.md v1→v2 migration map. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-18 v2.0: Acceptance Criteria rewritten to match new layout — 28 EARS criteria covering app shell, container queries, shadcn Card/Badge/Table primitives, ChartAreaInteractive with period toggle, DataTable, and accessibility with `var(--ring)`. -->
