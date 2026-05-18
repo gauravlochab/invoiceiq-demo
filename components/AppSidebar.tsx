@@ -114,7 +114,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-2">
-          <img src="/branding/acl-icon-white.svg" alt="" className="h-7 w-auto shrink-0 dark:invert-0 invert" />
+          {/* Light theme: navy bulb; Dark theme: white bulb */}
+          <img
+            src="/branding/acl-icon-clean.svg"
+            alt="Agile C-Level"
+            className="h-7 w-auto shrink-0 dark:hidden"
+          />
+          <img
+            src="/branding/acl-icon-white.svg"
+            alt="Agile C-Level"
+            className="hidden h-7 w-auto shrink-0 dark:block"
+          />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <span className="block text-sm font-semibold tracking-tight">Agile C-Level</span>
             <p className="m-0 mt-0.5 text-[11px] font-medium tracking-wide text-muted-foreground">
