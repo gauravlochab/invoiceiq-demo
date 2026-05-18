@@ -181,11 +181,12 @@ export default function DashboardPage() {
             <CardTitle>Top {Math.min(6, topSix.length)} exceptions</CardTitle>
             {!loading && totalOpen > 6 && (
               <CardAction>
-                <Button
-                  variant="link"
-                  size="sm"
-                  render={<Link href="/exceptions">View all {totalOpen} →</Link>}
-                />
+                <Link
+                  href="/exceptions"
+                  className="text-sm text-primary no-underline hover:underline"
+                >
+                  View all {totalOpen} →
+                </Link>
               </CardAction>
             )}
           </CardHeader>
