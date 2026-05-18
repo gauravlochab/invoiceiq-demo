@@ -1,571 +1,339 @@
+// [Spec: domains/dashboard/spec.md v2.1] — triage-first inbox for AP analyst
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Area,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowUpRight, ArrowUpDown, Activity } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sparkline } from "@/components/Sparkline";
 import {
-  exceptions,
+  ChevronRight,
+  MoreHorizontal,
+  Sparkles,
+  FileDown,
+  FileText,
+} from "lucide-react";
+
+import {
   allExceptions,
-  flaggedByType,
-  spendTrend,
-  formatCurrency,
-  severityConfig,
-  statusConfig,
-  typeConfig,
   recoveryQueue,
-  contracts,
+  formatCurrency,
+  typeConfig,
+  type Exception,
+  type Severity,
 } from "@/lib/data";
-import { NumberTicker } from "@/components/magicui/number-ticker";
-import { useToast } from "@/components/Toast";
-import { CategoryBadge } from "@/components/CategoryBadge";
+
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import { VendorBadge } from "@/components/VendorBadge";
-import { DiscrepancyBarChart } from "@/components/DiscrepancyBarChart";
-import { ExportDialog } from "@/components/ExportDialog";
-import { exportToCSV, exportToPDF } from "@/lib/export";
-import { PARKLAND_CONFIG } from "@/lib/workflow-config";
-import { getGPOComplianceRate, getGPOPotentialSavings } from "@/lib/gpo-contracts";
+import { CategoryBadge } from "@/components/CategoryBadge";
+import { useToast } from "@/components/Toast";
 
-const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-const statusOrder: Record<string, number> = { open: 0, under_review: 1, escalated: 2, resolved: 3 };
+// ─── Color discipline helpers (per spec v2.1) ────────────────────────────
+// Color = action required. Counts, totals, currencies stay neutral unless
+// they're a problem.
 
-const topExceptions = exceptions
-  .filter((e) => !e.type.startsWith("som_"))
-  .sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
-  .slice(0, 6);
-
-const apExceptions = allExceptions.filter((e) => !e.type.startsWith("som_"));
-const openCount = apExceptions.filter(
-  (e) => e.status === "open" || e.status === "under_review" || e.status === "escalated"
-).length;
-
-const totalFlagged = flaggedByType.reduce((s, d) => s + d.value, 0);
-
-type SortKey = "type" | "flaggedAmount" | "severity" | "status";
-type SortDir = "asc" | "desc";
-
-function SpendTooltip({ active, payload, label }: {
-  active?: boolean;
-  payload?: { dataKey: string; value: number; name: string }[];
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-md shadow-md px-3 py-2.5 text-xs text-[var(--text-primary)]">
-      <p className="text-[var(--text-muted)] mb-1.5 text-[11px]">{label}</p>
-      {payload.map((p) => (
-        <p key={p.dataKey} className="mb-0.5">
-          <span style={{ color: p.dataKey === "spend" ? "var(--chart-spend)" : "var(--chart-flagged)" }}>
-            {p.dataKey === "spend" ? "Total spend" : "Flagged"}
-          </span>
-          {"  "}
-          <span className="font-medium">{formatCurrency(p.value)}</span>
-        </p>
-      ))}
-    </div>
-  );
+function flaggedAmountClass(severity: Severity): string {
+  // [Spec: dashboard.md#Acceptance Criteria — Color discipline]
+  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "medium") return "text-warning";
+  return "text-foreground";
 }
 
-function statusBadgeClass(status: string): string {
-  if (status === "open") return "badge critical";
-  if (status === "under_review") return "badge warning";
-  if (status === "escalated") return "badge blue";
-  return "badge success";
+function severityDotClass(severity: Severity): string {
+  // [Spec: dashboard.md#Triage list] — colored only if critical/high
+  if (severity === "critical") return "bg-destructive";
+  if (severity === "high") return "bg-destructive/60";
+  if (severity === "medium") return "bg-warning";
+  return "bg-border";
 }
 
-function flaggedColor(severity: string): string {
-  if (severity === "critical" || severity === "high") return "var(--critical)";
-  if (severity === "medium") return "var(--warning)";
-  return "var(--neutral)";
-}
-
-const metricValue = "text-2xl font-bold tracking-tight mt-1 leading-none";
-
-const sparklineData: Record<string, number[]> = {
-  invoices: [280, 310, 295, 340, 325, 297],
-  exceptions: [22, 28, 31, 26, 35, 42],
-  risk: [380000, 420000, 510000, 445000, 490000, 535000],
-  recovered: [1200, 1800, 2400, 3100, 2900, 4200],
-};
+const AMOUNT_AT_RISK_THRESHOLD = 1_000_000;
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { showToast } = useToast();
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [scanDone, setScanDone] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const [sortKey, setSortKey] = useState<SortKey>("severity");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(t);
   }, []);
 
-  const amountAtRisk = apExceptions.reduce((s, e) => s + e.flaggedAmount, 0);
-  const recoveredAmount = recoveryQueue.filter(r => r.status === 'recovered').reduce((s, r) => s + (r.recoveredAmount ?? 0), 0);
-  const recoveredCount = recoveryQueue.filter(r => r.status === 'recovered').length;
-  const contractsAtRiskCount = contracts.filter(c => c.status === 'breached' || c.status === 'warning').length;
-  const contractsBreachedCount = contracts.filter(c => c.status === 'breached').length;
+  // ─── Computed values ─────────────────────────────────────────────
+  const {
+    topSix,
+    openCount,
+    criticalCount,
+    totalOpen,
+    amountAtRisk,
+    recoveredAmount,
+    slaOverdueCount,
+  } = useMemo(() => {
+    const apExceptions = allExceptions.filter((e) => !e.type.startsWith("som_"));
 
-  const primaryKpis: {
-    label: string;
-    href: string;
-    value: number;
-    prefix?: string;
-    suffix?: string;
-    delay: number;
-    subtitle: string;
-    valueColor: string;
-    accentColor: string;
-    bgGradient: string;
-    stagger: string;
-    sparkline: string;
-  }[] = [
-    {
-      label: "Invoices Processed",
-      href: "/pipeline",
-      value: 1847,
-      delay: 0,
-      subtitle: "Q1 2026",
-      valueColor: "text-[var(--text-primary)]",
-      accentColor: "var(--acl-primary)",
-      bgGradient: "linear-gradient(135deg, var(--bg-surface) 80%, rgba(0,101,203,0.03))",
-      stagger: "stagger-1",
-      sparkline: "invoices",
-    },
-    {
-      label: "Exceptions Found",
-      href: "/exceptions",
-      value: apExceptions.length,
-      delay: 0,
-      subtitle: `${openCount} open`,
-      valueColor: "text-[var(--text-primary)]",
-      accentColor: "var(--warning)",
-      bgGradient: "linear-gradient(135deg, var(--bg-surface) 80%, rgba(180,83,9,0.03))",
-      stagger: "stagger-2",
-      sparkline: "exceptions",
-    },
-    {
-      label: "Amount at Risk",
-      href: "/exceptions",
-      value: amountAtRisk,
-      prefix: "$",
-      delay: 0.2,
-      subtitle: "22% of period spend",
-      valueColor: "text-[var(--critical)]",
-      accentColor: "var(--critical)",
-      bgGradient: "linear-gradient(135deg, var(--bg-surface) 80%, rgba(220,38,38,0.03))",
-      stagger: "stagger-3",
-      sparkline: "risk",
-    },
-    {
-      label: "Recovered",
-      href: "/recovery",
-      value: recoveredAmount,
-      prefix: "$",
-      delay: 0.3,
-      subtitle: `${recoveredCount} resolved`,
-      valueColor: "text-[var(--success-text)]",
-      accentColor: "var(--success)",
-      bgGradient: "linear-gradient(135deg, var(--bg-surface) 80%, rgba(5,150,105,0.03))",
-      stagger: "stagger-4",
-      sparkline: "recovered",
-    },
-  ];
+    const openExceptions = apExceptions.filter(
+      (e) => e.status === "open" || e.status === "under_review" || e.status === "escalated"
+    );
 
-  const secondaryStats = [
-    { label: "Contracts at Risk", value: contractsAtRiskCount, suffix: ` (${contractsBreachedCount} breached)`, href: "/contracts", color: "var(--warning)" },
-    { label: "GPO Compliance", value: `${getGPOComplianceRate()}%`, href: "/contracts", color: "var(--success)" },
-    { label: "GPO Savings", value: formatCurrency(getGPOPotentialSavings()), href: "/contracts", color: "var(--warning)" },
-  ];
+    const severityOrder: Record<Severity, number> = {
+      critical: 0,
+      high: 1,
+      medium: 2,
+      low: 3,
+    };
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
-
-  const sortedExceptions = useMemo(() => {
-    const dir = sortDir === "asc" ? 1 : -1;
-    return [...topExceptions].sort((a, b) => {
-      switch (sortKey) {
-        case "type": {
-          const labelA = typeConfig[a.type].label;
-          const labelB = typeConfig[b.type].label;
-          return dir * labelA.localeCompare(labelB);
-        }
-        case "flaggedAmount":
-          return dir * (a.flaggedAmount - b.flaggedAmount);
-        case "severity":
-          return dir * (severityOrder[a.severity] - severityOrder[b.severity]);
-        case "status":
-          return dir * (statusOrder[a.status] - statusOrder[b.status]);
-        default:
-          return 0;
-      }
+    const sortedOpen = [...openExceptions].sort((a, b) => {
+      const sevDiff = severityOrder[a.severity] - severityOrder[b.severity];
+      if (sevDiff !== 0) return sevDiff;
+      return b.flaggedAmount - a.flaggedAmount;
     });
-  }, [sortKey, sortDir]);
 
-  const renderKpiCard = (card: typeof primaryKpis[0]) => (
-    <Link
-      key={card.label}
-      href={card.href}
-      className={`group card-metric card-interactive px-5 py-4 animate-slide-up ${card.stagger} cursor-pointer no-underline border border-transparent hover:border-[var(--acl-primary)] transition-all duration-200 relative`}
-      style={{
-        "--accent-color": card.accentColor,
-        background: card.bgGradient,
-      } as React.CSSProperties}
-      aria-label={`${card.label}: ${card.prefix ?? ""}${card.value}${card.suffix ?? ""}`}
-    >
-      <p className="section-label">{card.label}</p>
-      <div className="flex items-end justify-between gap-2">
-        <div>
-          <p className={`${metricValue} ${card.valueColor}`}>
-            <NumberTicker value={card.value} prefix={card.prefix} suffix={card.suffix} delay={card.delay} />
-          </p>
-          <p className="text-xs text-[var(--text-muted)] mt-1.5">{card.subtitle}</p>
-        </div>
-        <Sparkline data={sparklineData[card.sparkline]} color={card.accentColor} />
-      </div>
-    </Link>
-  );
+    const now = Date.now();
+
+    return {
+      topSix: sortedOpen.slice(0, 6),
+      openCount: openExceptions.length,
+      criticalCount: openExceptions.filter((e) => e.severity === "critical").length,
+      totalOpen: openExceptions.length,
+      amountAtRisk: openExceptions.reduce((s, e) => s + e.flaggedAmount, 0),
+      recoveredAmount: recoveryQueue
+        .filter((r) => r.status === "recovered")
+        .reduce((s, r) => s + (r.recoveredAmount ?? 0), 0),
+      slaOverdueCount: recoveryQueue.filter((r) => {
+        if (r.status === "recovered" || r.status === "closed") return false;
+        if (!r.slaDeadline) return false;
+        return new Date(r.slaDeadline).getTime() < now;
+      }).length,
+    };
+  }, []);
+
+  function handleRunScan() {
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      showToast("Scan complete — 2 new exceptions identified", "success");
+    }, 2000);
+  }
+
+  function handleExport(format: "csv" | "pdf") {
+    showToast(`Export started — generating ${format.toUpperCase()}…`, "info");
+  }
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
-
-      {/* ── Dashboard Header ─────────────────────────────────────────────── */}
-      <div className="px-6 lg:px-8 pt-6 pb-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="page-header">
-              <h1 className="text-lg font-semibold text-[var(--text-primary)] tracking-tight leading-tight">
-                Invoice Intelligence
-              </h1>
-            </div>
-            <p className="text-[13px] text-[var(--text-secondary)] mt-3">
-              {PARKLAND_CONFIG.customer} · Q1 2026 · 1,847 invoices processed
+    <main className="@container/main flex flex-1 flex-col">
+      {/* Header strip */}
+      <div className="flex items-start justify-between gap-4 px-4 lg:px-6 pt-6 pb-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
+          {loading ? (
+            <Skeleton className="mt-2 h-4 w-72" />
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {openCount} open · {criticalCount} critical · Q1 2026
             </p>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-[var(--acl-primary)] bg-[var(--acl-primary-subtle)] rounded-md ml-2">
-              Q1 2026
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setExportDialogOpen(true)}
-              className="px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] active:scale-[0.98] transition-all cursor-pointer"
-            >
-              Export
-            </button>
-            <button
-              onClick={() => {
-                if (!scanDone) {
-                  setScanning(true);
-                  setTimeout(() => {
-                    setScanning(false);
-                    setScanDone(true);
-                    showToast("Scan complete — 2 new exceptions identified for review", "info");
-                  }, 2000);
-                }
-              }}
-              disabled={scanning || scanDone}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] active:scale-[0.98] transition-all cursor-pointer border-none disabled:opacity-60"
-            >
-              {scanning ? "Scanning..." : scanDone ? "Last scan: just now" : "Run Scan"}
-            </button>
-          </div>
+          )}
         </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="outline" size="icon" aria-label="More actions">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={handleRunScan} disabled={scanning}>
+              <Sparkles className="size-4" />
+              {scanning ? "Scanning…" : "Run Scan"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleExport("csv")}>
+              <FileDown className="size-4" />
+              Export as CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("pdf")}>
+              <FileText className="size-4" />
+              Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* ── KPI Cards ────────────────────────────────────────────────────── */}
-      {loading ? (
-        <div className="px-6 lg:px-8 pt-4 pb-3">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="card px-5 py-4">
-                <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse mb-3" />
-                <div className="flex items-end justify-between">
-                  <div>
-                    <div className="h-7 w-16 bg-[var(--border)] rounded animate-pulse mb-2" />
-                    <div className="h-2.5 w-14 bg-[var(--border)] rounded animate-pulse" />
-                  </div>
-                  <div className="h-6 w-16 bg-[var(--border)] rounded animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-6 mt-3 px-1">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-3 w-32 bg-[var(--border)] rounded animate-pulse" />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="px-6 lg:px-8 pt-4 pb-3">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {primaryKpis.map(renderKpiCard)}
-          </div>
-          {/* Secondary stats — compact inline strip */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-3 px-1">
-            {secondaryStats.map((s, i) => (
-              <Link key={s.label} href={s.href} className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] no-underline transition-colors group/stat">
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                <span>{s.label}:</span>
-                <span className="font-semibold text-[var(--text-primary)]">{typeof s.value === "number" ? s.value : s.value}</span>
-                {s.suffix && <span className="text-[var(--text-muted)]">{s.suffix}</span>}
-                {i < secondaryStats.length - 1 && <span className="text-[var(--border)] ml-3">|</span>}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Agent Status Strip ───────────────────────────────────────────── */}
-      {!loading && (
-        <div className="px-6 lg:px-8 pb-4">
-          <Link href="/pipeline" className="no-underline">
-            <div className="flex items-center gap-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg px-4 py-2.5 hover:border-[var(--acl-primary)] transition-all cursor-pointer">
-              <Activity size={13} className="text-[var(--text-muted)] mr-1.5 flex-shrink-0" />
-              <span className="section-label mr-3" style={{ marginBottom: 0 }}>AI Agents</span>
-              {[
-                { name: "Invoice",    count: "1,847", color: "var(--agent-invoice)" },
-                { name: "Validation", count: "188",   color: "var(--agent-validation)" },
-                { name: "Compliance", count: "12",    color: "var(--agent-compliance)" },
-                { name: "Recovery",   count: "14",    color: "var(--agent-recovery)" },
-                { name: "Insight",    count: "9",     color: "var(--agent-insight)" },
-              ].map((agent, i) => (
-                <span key={agent.name} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)] ml-2">
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: agent.color }} />
-                  <span>{agent.name}</span>
-                  <span className="font-semibold text-[var(--text-primary)]">{agent.count}</span>
-                  {i < 4 && <span className="text-[var(--border)] ml-1">·</span>}
-                </span>
-              ))}
-              <ArrowUpRight size={12} className="text-[var(--text-muted)] ml-auto flex-shrink-0" />
-            </div>
-          </Link>
-        </div>
-      )}
-
-      {/* ── Tabbed Content Section ─────────────────────────────────────── */}
-      {loading ? (
-        <div className="px-6 lg:px-8 pb-6">
-          <div className="h-9 w-64 bg-[var(--border)] rounded-lg animate-pulse mb-4" />
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-            <div className="card p-5 pb-4">
-              <div className="h-4 w-40 bg-[var(--border)] rounded animate-pulse mb-4" />
-              <div className="h-[260px] bg-[var(--border)] rounded animate-pulse opacity-40" />
-            </div>
-            <div className="card p-5 pb-4">
-              <div className="h-4 w-24 bg-[var(--border)] rounded animate-pulse mb-4" />
-              <div className="h-8 w-full bg-[var(--border)] rounded animate-pulse opacity-40 mb-4" />
-              <div className="flex flex-col gap-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[var(--border)] animate-pulse" />
-                    <div className="h-3 flex-1 bg-[var(--border)] rounded animate-pulse" />
-                    <div className="h-3 w-12 bg-[var(--border)] rounded animate-pulse" />
+      {/* HERO — triage list */}
+      <div className="px-4 lg:px-6 pb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top {Math.min(6, topSix.length)} exceptions</CardTitle>
+            {!loading && totalOpen > 6 && (
+              <CardAction>
+                <Button
+                  variant="link"
+                  size="sm"
+                  render={<Link href="/exceptions">View all {totalOpen} →</Link>}
+                />
+              </CardAction>
+            )}
+          </CardHeader>
+          <CardContent className="px-0">
+            {loading ? (
+              <div className="divide-y divide-border">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-6 py-4">
+                    <Skeleton className="size-2 rounded-full" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-48 ml-2" />
+                    <Skeleton className="ml-auto h-4 w-24" />
                   </div>
                 ))}
               </div>
-            </div>
+            ) : topSix.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                Inbox zero — no open exceptions.
+              </div>
+            ) : (
+              <ul className="m-0 list-none divide-y divide-border p-0">
+                {topSix.map((ex) => (
+                  <TriageRow key={ex.id} ex={ex} />
+                ))}
+              </ul>
+            )}
+          </CardContent>
+          {!loading && totalOpen > 6 && (
+            <CardFooter className="justify-center text-xs text-muted-foreground">
+              Showing {topSix.length} of {totalOpen} open exceptions ·{" "}
+              <Link href="/exceptions" className="ml-1 text-primary hover:underline">
+                View all →
+              </Link>
+            </CardFooter>
+          )}
+        </Card>
+      </div>
+
+      {/* Secondary metrics strip — compact, no Card decoration */}
+      <div className="px-4 lg:px-6 pb-6">
+        {loading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : (
+          <div className="flex divide-x divide-border overflow-hidden rounded-lg border bg-card">
+            <StatCell
+              label="Open Exceptions"
+              value={String(openCount)}
+              href="/exceptions"
+              tone="neutral"
+            />
+            <StatCell
+              label="Amount at Risk"
+              value={formatCurrency(amountAtRisk)}
+              href="/exceptions"
+              tone={amountAtRisk > AMOUNT_AT_RISK_THRESHOLD ? "destructive" : "neutral"}
+            />
+            <StatCell
+              label="Recovered (Q1)"
+              value={formatCurrency(recoveredAmount)}
+              href="/recovery"
+              tone="success"
+            />
+            <StatCell
+              label="SLA Overdue"
+              value={String(slaOverdueCount)}
+              href="/recovery"
+              tone={slaOverdueCount > 0 ? "destructive" : "neutral"}
+            />
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+// ─── Triage row ──────────────────────────────────────────────────────────
+
+function TriageRow({ ex }: { ex: Exception }) {
+  const typeLabel = typeConfig[ex.type]?.label ?? ex.type;
+
+  return (
+    <li className="p-0">
+      <Link
+        href={`/exceptions/${ex.id}`}
+        className="group flex items-center gap-4 px-6 py-4 no-underline transition-colors hover:bg-accent"
+      >
+        {/* Severity dot — colored only when actionable */}
+        <span
+          className={`size-2 shrink-0 rounded-full ${severityDotClass(ex.severity)}`}
+          aria-label={`Severity ${ex.severity}`}
+        />
+
+        {/* Vendor + invoice number */}
+        <div className="min-w-0 flex-shrink-0">
+          <VendorBadge name={ex.vendor} size="sm" />
+          <div className="mt-0.5 font-mono text-xs text-muted-foreground">
+            {ex.invoiceNumber}
           </div>
         </div>
-      ) : (
-        <div className="px-6 lg:px-8 pb-6">
-          <Tabs defaultValue="overview">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
-              <TabsTrigger value="trends">Trends</TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="overview">
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-                <div className="card p-5 pb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm font-medium text-[var(--text-primary)]">
-                      Spend &amp; Exception Trend
-                    </p>
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
-                        <span className="inline-block w-6 h-0.5 rounded-sm bg-[var(--chart-spend)]" />
-                        Total spend
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
-                        <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[var(--chart-flagged)] opacity-70" />
-                        Flagged
-                      </span>
-                    </div>
-                  </div>
-                  <div role="img" aria-label="Spend and exception trend chart showing monthly totals">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <ComposedChart data={spendTrend} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="0" horizontal={true} vertical={false} stroke="var(--bg-subtle)" />
-                        <YAxis tick={{ fontSize: 10, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}K`} width={50} />
-                        <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<SpendTooltip />} cursor={{ stroke: "var(--border)", strokeWidth: 1 }} />
-                        <Area type="monotone" dataKey="spend" stroke="var(--chart-spend)" strokeWidth={1.5} fill="var(--chart-area-fill)" dot={false} />
-                        <Bar dataKey="exceptions" fill="var(--chart-flagged)" opacity={0.7} barSize={16} radius={[2, 2, 0, 0]} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="card p-5 pb-4 flex flex-col">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-[var(--text-primary)]">By Category</p>
-                    <span className="text-lg font-bold text-[var(--text-primary)] tracking-tight">
-                      ${Math.round(totalFlagged / 1000)}K
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[var(--text-muted)] mb-4">Amount at risk by exception type</p>
-                  <div role="img" aria-label="Exception amount breakdown by category" className="w-full h-8 rounded-md overflow-hidden flex cursor-pointer" onClick={() => router.push('/exceptions')}>
-                    {flaggedByType.map((item) => (
-                      <div key={item.name} className="h-full transition-opacity hover:opacity-80" style={{ width: `${(item.value / totalFlagged) * 100}%`, backgroundColor: item.color }} title={`${item.name}: ${formatCurrency(item.value)}`} />
-                    ))}
-                  </div>
-                  <div className="flex flex-col gap-2 mt-4">
-                    {flaggedByType.map((item) => (
-                      <div key={item.name} className="flex items-center cursor-pointer hover:bg-[var(--bg-subtle)] rounded px-1 -mx-1 py-0.5 transition-all duration-150" onClick={() => router.push('/exceptions')}>
-                        <span className="w-2.5 h-2.5 rounded-sm shrink-0 mr-2" style={{ background: item.color }} />
-                        <span className="text-xs text-[var(--text-secondary)] flex-1 min-w-0">{item.name}</span>
-                        <span className="text-[10px] text-[var(--text-muted)] tabular-nums mr-2">{((item.value / totalFlagged) * 100).toFixed(0)}%</span>
-                        <span className="text-xs font-medium text-[var(--text-primary)] tabular-nums shrink-0">{formatCurrency(item.value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="exceptions">
-              <div className="card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)]">
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">Recent Exceptions</p>
-                  <Link href="/exceptions" className="flex items-center gap-1 text-xs text-[var(--acl-primary)] font-medium no-underline hover:underline transition-colors">
-                    View all {allExceptions.length} <ArrowUpRight size={12} />
-                  </Link>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th className="cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none" onClick={() => handleSort("type")}>
-                          <span className="inline-flex items-center gap-1">Type <ArrowUpDown size={12} className={sortKey === "type" ? "text-[var(--acl-primary)]" : "text-[var(--text-muted)]"} /></span>
-                        </th>
-                        <th>Vendor</th>
-                        <th className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none" onClick={() => handleSort("flaggedAmount")}>
-                          <span className="inline-flex items-center gap-1 justify-end">Flagged <ArrowUpDown size={12} className={sortKey === "flaggedAmount" ? "text-[var(--acl-primary)]" : "text-[var(--text-muted)]"} /></span>
-                        </th>
-                        <th className="cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none" onClick={() => handleSort("severity")}>
-                          <span className="inline-flex items-center gap-1">Severity <ArrowUpDown size={12} className={sortKey === "severity" ? "text-[var(--acl-primary)]" : "text-[var(--text-muted)]"} /></span>
-                        </th>
-                        <th className="cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none" onClick={() => handleSort("status")}>
-                          <span className="inline-flex items-center gap-1">Status <ArrowUpDown size={12} className={sortKey === "status" ? "text-[var(--acl-primary)]" : "text-[var(--text-muted)]"} /></span>
-                        </th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedExceptions.map((ex) => {
-                        const sev = severityConfig[ex.severity];
-                        const sta = statusConfig[ex.status];
-                        const typ = typeConfig[ex.type];
-                        const isCriticalType = ex.type === "contract_overage" || ex.type === "suspicious_invoice";
-                        return (
-                          <tr key={ex.id} className="group">
-                            <td className="mono">{ex.id}</td>
-                            <td><span className={isCriticalType ? "badge critical" : "badge neutral"}>{typ.label}</span></td>
-                            <td>
-                              <div className="mb-0.5"><VendorBadge name={ex.vendor} size="sm" /></div>
-                              <p className="text-[11px] text-[var(--text-muted)] mt-px pl-8">{ex.invoiceNumber}</p>
-                            </td>
-                            <td className="amount right">
-                              <span className="font-medium" style={{ color: flaggedColor(ex.severity) }}>{formatCurrency(ex.flaggedAmount)}</span>
-                            </td>
-                            <td>
-                              <span className="flex items-center gap-1.5">
-                                <span className="status-dot" style={{ background: sev.color }} />
-                                <span className="text-xs" style={{ color: sev.color }}>{sev.label}</span>
-                              </span>
-                            </td>
-                            <td><span className={statusBadgeClass(ex.status)}>{sta.label}</span></td>
-                            <td>
-                              <Link href={`/exceptions/${ex.id}`} className="text-xs text-[var(--text-muted)] group-hover:text-[var(--acl-primary)] font-medium no-underline hover:underline transition-colors">
-                                Review &rarr;
-                              </Link>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="trends">
-              <div className="card p-5 pb-4">
-                <DiscrepancyBarChart />
-              </div>
-            </TabsContent>
-          </Tabs>
+        {/* Type + category */}
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="truncate text-sm text-foreground">{typeLabel}</span>
+          {ex.category && <CategoryBadge category={ex.category} />}
         </div>
-      )}
 
-      <ExportDialog
-        open={exportDialogOpen}
-        onClose={() => setExportDialogOpen(false)}
-        title="Export Dashboard Data"
-        onExport={(format) => {
-          if (format === "csv") {
-            const headers = ["Exception ID", "Type", "Vendor", "Amount", "Severity", "Status"];
-            const rows = topExceptions.map((e) => [
-              e.id,
-              typeConfig[e.type].label,
-              e.vendor,
-              e.flaggedAmount,
-              e.severity,
-              e.status,
-            ]);
-            exportToCSV(headers, rows as any, `invoiceiq-dashboard-Q1-2026.csv`);
-            showToast("CSV export downloaded successfully", "success");
-          } else {
-            const headers = ["Exception ID", "Type", "Vendor", "Amount", "Severity", "Status"];
-            const rows = topExceptions.map((e) => [
-              e.id,
-              typeConfig[e.type].label,
-              e.vendor,
-              formatCurrency(e.flaggedAmount),
-              e.severity,
-              e.status,
-            ]);
-            exportToPDF("InvoiceIQ Dashboard — Q1 2026", headers, rows, [
-              { label: "Total Exceptions", value: String(openCount) },
-              { label: "Period", value: "Q1 2026" },
-            ]);
-          }
-        }}
-      />
-    </div>
+        {/* Flagged amount — color per discipline rule */}
+        <div className={`shrink-0 text-base font-semibold tabular-nums ${flaggedAmountClass(ex.severity)}`}>
+          {formatCurrency(ex.flaggedAmount)}
+        </div>
+
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-foreground" />
+      </Link>
+    </li>
+  );
+}
+
+// ─── Secondary stat cell ────────────────────────────────────────────────
+
+function StatCell({
+  label,
+  value,
+  href,
+  tone,
+}: {
+  label: string;
+  value: string;
+  href: string;
+  tone: "neutral" | "destructive" | "warning" | "success";
+}) {
+  const toneClass =
+    tone === "destructive"
+      ? "text-destructive"
+      : tone === "warning"
+      ? "text-warning"
+      : tone === "success"
+      ? "text-success"
+      : "text-foreground";
+
+  return (
+    <Link
+      href={href}
+      className="group flex flex-1 flex-col gap-1 px-4 py-3 no-underline transition-colors hover:bg-accent/50"
+    >
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+      <span className={`text-lg font-semibold tabular-nums ${toneClass}`}>{value}</span>
+    </Link>
   );
 }
