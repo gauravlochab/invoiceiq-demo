@@ -904,7 +904,7 @@ function Ex006Page() {
       <div className="mx-8 mb-6">
         <div className="border-l-4 border-red-600 bg-red-50 px-5 py-3.5 rounded-md">
           <span className="text-xs text-red-900">
-            {dynamicLineItems.reduce((sum, item) => sum + (item.flags?.length || 0), 0)} discrepancies detected — $4,600 flagged this invoice · recurrence · AI confidence 98.7%
+            {dynamicLineItems.reduce((sum, item) => sum + (item.flags?.length || 0), 0)} discrepancies detected — $4,600 overbilled across 23 recurrences this quarter · AI confidence 98.7%
           </span>
         </div>
       </div>
@@ -1066,7 +1066,7 @@ function Ex006Page() {
           <p className="section-label mb-0">Exception Details</p>
 
           {[
-            { label: "Assigned to", value: "Rajesh Jaluka" },
+            { label: "Assigned to", value: "James Park" },
             { label: "Detected", value: "Mar 1, 2026" },
             { label: "Recurrences", value: "23 invoices this quarter" },
             { label: "Cumulative impact", value: "$4,600" },

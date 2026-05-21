@@ -102,6 +102,14 @@ export default function ProductAnalysisPage() {
 
   const totalCategories = categoryData.length;
 
+  // Overall resolution rate — computed from real data (replaces a hard-coded figure).
+  const resolvedRate =
+    allExceptions.length > 0
+      ? Math.round(
+          (allExceptions.filter((e) => e.status === "resolved").length / allExceptions.length) * 100
+        )
+      : 0;
+
   const mostFlagged = useMemo(() => {
     const top = [...categoryData].sort((a, b) => b.exceptionCount - a.exceptionCount)[0];
     return top ? { name: top.category, count: top.exceptionCount } : { name: "N/A", count: 0 };
@@ -188,9 +196,9 @@ export default function ProductAnalysisPage() {
             <div className="flex-1 px-6 py-4">
               <p className="section-label flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5" />
-                Avg Resolution Time
+                Resolution Rate
               </p>
-              <p className="text-2xl font-bold text-emerald-600 mt-1 m-0">3.2 days</p>
+              <p className="text-2xl font-bold text-emerald-600 mt-1 m-0">{resolvedRate}%</p>
             </div>
           </div>
         </div>

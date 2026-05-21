@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { useToast } from "@/components/Toast";
+import { allExceptions } from "@/lib/data";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,10 @@ interface FeedEvent {
 type StepState = "idle" | "running" | "done" | "done-warn" | "done-fail";
 
 // ── Agent definitions ─────────────────────────────────────────────────────────
+
+// AP exception count — derived from lib/data.ts, never hard-coded, so the
+// pipeline agrees with the dashboard and exceptions list.
+const AP_EXCEPTION_COUNT = allExceptions.filter((e) => !e.type.startsWith("som_")).length;
 
 const AGENTS = [
   {
@@ -44,7 +49,7 @@ const AGENTS = [
     color: "var(--agent-validation)",
     bgColor: "var(--agent-validation-subtle)",
     Icon: GitCompare,
-    stat: "188 exceptions",
+    stat: `${AP_EXCEPTION_COUNT} exceptions`,
     subStat: "6 escalated",
     step: 2,
   },

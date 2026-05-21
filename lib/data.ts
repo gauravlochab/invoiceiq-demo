@@ -1175,6 +1175,9 @@ export const exceptionsByMonth = [
   { month: "Mar", duplicate: 0, match_exception: 1, missing_rebate: 2, suspicious: 0, tier_pricing: 1, contract_overage: 1 },
 ];
 
+// Legacy hand-authored breakdown — retained for non-dashboard callers only.
+// The dashboard uses `exceptionTypeBreakdown` (derived) so its By-Category total
+// reconciles exactly with the Amount-at-Risk KPI. See domains/dashboard/spec.md.
 export const flaggedByType = [
   { name: "Contract Overage", value: 123890, color: "#ef4444" },
   { name: "Missing Rebate", value: 96280, color: "#f59e0b" },
@@ -1436,7 +1439,7 @@ const SEVERITIES: Severity[] = ["critical", "high", "medium", "low"];
 const STATUSES: Status[] = ["open", "under_review", "escalated", "resolved"];
 
 function seed(n: number) {
-  let x = Math.sin(n + 1) * 10000;
+  const x = Math.sin(n + 1) * 10000;
   return x - Math.floor(x);
 }
 
@@ -1511,3 +1514,48 @@ export function updateExceptionStatus(id: string, status: Status): void {
   const idx = allExceptions.findIndex((e) => e.id === id);
   if (idx !== -1) allExceptions[idx].status = status;
 }
+
+// ─── DASHBOARD: RECONCILED EXCEPTION-TYPE BREAKDOWN ─────────────────────────
+// [Spec: domains/dashboard/spec.md#Business Rules — flaggedByType reconciliation]
+// Derived from the AP exception set so the dashboard By-Category total equals
+// the Amount-at-Risk KPI exactly (audit Front 3, finding R3). `chartKey` maps to
+// a distinct --chart-N token so no two categories share a color (WCAG 1.4.1).
+
+export interface ExceptionTypeBreakdownEntry {
+  type: ExceptionType;
+  name: string;
+  value: number;
+  count: number;
+  /** Distinct chart token slot, 1..6 — guarantees per-category color separation. */
+  chartKey: 1 | 2 | 3 | 4 | 5 | 6;
+}
+
+export const exceptionTypeBreakdown: ExceptionTypeBreakdownEntry[] = (() => {
+  // AP exceptions only — SOM rows are a separate vertical.
+  const ap = allExceptions.filter((e) => !e.type.startsWith("som_"));
+  const order: ExceptionType[] = [
+    "contract_overage",
+    "missing_rebate",
+    "tier_pricing",
+    "suspicious_invoice",
+    "duplicate",
+    "match_exception",
+  ];
+  const totals = new Map<ExceptionType, { value: number; count: number }>();
+  for (const e of ap) {
+    const cur = totals.get(e.type) ?? { value: 0, count: 0 };
+    cur.value += e.flaggedAmount;
+    cur.count += 1;
+    totals.set(e.type, cur);
+  }
+  return order
+    .filter((t) => totals.has(t))
+    .map((t, i) => ({
+      type: t,
+      name: typeConfig[t].label,
+      value: totals.get(t)!.value,
+      count: totals.get(t)!.count,
+      // 6 AP types → 6 distinct --chart-N tokens; no two categories collide.
+      chartKey: (Math.min(i, 5) + 1) as 1 | 2 | 3 | 4 | 5 | 6,
+    }));
+})();

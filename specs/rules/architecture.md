@@ -43,7 +43,6 @@ app/
 │   ├── pharmacy-scoring/ → Pharmacy risk scores
 │   ├── manufacturers/    → Manufacturer directory
 │   └── audit-log/        → DEA audit trail
-├── agents/page.tsx       → Agent management
 └── api/
     ├── extract/          → Invoice extraction API
     └── som/npi/          → NPI lookup API

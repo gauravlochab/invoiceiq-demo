@@ -105,7 +105,7 @@ Container queries (`@container/main`) drive responsive grids — preferred over 
 
 | Component | shadcn block | Use for |
 |-----------|--------------|---------|
-| `Card` + `CardHeader`/`CardTitle`/`CardDescription`/`CardAction`/`CardFooter` | `ui/card` | All surface containers (replaces `.card`) |
+| `Card` + `CardHeader`/`CardTitle`/`CardDescription`/`CardAction`/`CardFooter` | `ui/card` | All surface containers (replaces `.card`). Note: `CardTitle` and `CardDescription` render `<div>`s, not headings — render a real `<h2>`/`<h3>` inside `CardTitle` when a region needs a heading in the document outline. |
 | `Badge` (variants: default, outline, secondary, destructive) | `ui/badge` | Status indicators (replaces `.badge.*` classes) |
 | `Table` + `TableHeader`/`TableRow`/`TableCell` (or `DataTable` block) | `ui/table` | Data tables (replaces `.data-table`) |
 | `Sidebar` + `SidebarProvider`/`SidebarInset` | `ui/sidebar` | App navigation |
@@ -144,8 +144,8 @@ Container queries (`@container/main`) drive responsive grids — preferred over 
 | Use | Class | Notes |
 |-----|-------|-------|
 | KPI value | `text-2xl font-semibold tabular-nums @[250px]/card:text-3xl` | Container-responsive |
-| Card title | `CardTitle` (built-in) | semantic h3, font-semibold |
-| Card description | `CardDescription` (built-in) | text-muted-foreground, text-sm |
+| Card title | `CardTitle` (built-in) | **Renders a `<div>`, NOT a heading** (corrected 2026-05-21 audit). For a semantic heading, pass an `asChild`-style child or render the `<h3>` yourself inside `CardTitle`, or place an `<h3>` adjacent. `font-medium`, `text-base`. |
+| Card description | `CardDescription` (built-in) | Renders a `<div>`, `text-muted-foreground`, `text-sm` |
 | Body text | `text-sm` | 14px |
 | Labels | `text-xs text-muted-foreground` | 12px muted |
 | Monospace IDs | `font-mono text-sm tabular-nums` | tabular-nums for alignment |
@@ -156,12 +156,14 @@ Container queries (`@container/main`) drive responsive grids — preferred over 
 
 ## Accessibility (WCAG 2.1 AA)
 
-- `prefers-reduced-motion` — all animations/transitions disabled
+- `prefers-reduced-motion` — all **CSS** animations/transitions disabled via the `globals.css` media block. **JS-driven animation (Framer Motion springs, e.g. `NumberTicker`) is NOT covered by that block** — it must guard itself with `useReducedMotion()` and render the final value immediately when reduced motion is set.
 - Focus-visible rings via `--ring` token on all interactive elements
-- ARIA labels on chart containers (`role="img" aria-label="..."`)
+- ARIA labels on chart containers (`role="img" aria-label="..."`) — the label must describe the **data shown**, not just the chart type
+- Sortable table headers expose `aria-sort` (`ascending` / `descending` / `none`)
 - `strokeDasharray` on chart lines for colorblind differentiation
 - Minimum touch target: 44x44px on mobile
-- Color contrast: OKLCH tokens are tuned for AA in both modes — never override foreground/background pairs
+- **Color contrast — corrected (2026-05-21 audit):** The neutral pairs (`--foreground` / `--background` / `--card`, `--muted-foreground`) are tuned for AA. **The semantic status tokens `--warning` and `--success` are NOT AA-safe as text** — on `--background` they measure ~2.15:1 (`--warning`) and ~2.50:1 (`--success`); AA body text needs 4.5:1. Use the dedicated `--warning-text` / `--success-text` tokens for any `text-*` status coloring; reserve `--warning` / `--success` for fills, dots, and borders only. See "Warning + Success Overrides" below.
+- Color is never the only signal — pair every status color with a text label or an icon (WCAG 1.4.1)
 
 ## Interaction Patterns
 
@@ -173,10 +175,11 @@ Container queries (`@container/main`) drive responsive grids — preferred over 
 ## Chart Standards
 
 - Use Recharts `ResponsiveContainer` (100% width)
-- Default series colors: `var(--chart-1)` through `var(--chart-5)`
-- Status overlays: `var(--destructive)` for critical, `var(--warning)` for warn, `var(--success)` for success (semantic, not chart-N)
-- Grid lines: `var(--border)` at 0.5 opacity
-- Tick labels: `var(--muted-foreground)`, 11px
+- Default series colors: `var(--chart-1)` through `var(--chart-5)` — categorical charts assign one distinct `--chart-N` per category (no two categories share a color)
+- Status overlays: `var(--destructive)` for critical, `var(--warning)` for warn, `var(--success)` for success (semantic, not chart-N) — these are fills, not text
+- Grid lines: `var(--border)` (semantic token — never `var(--chart-grid)` v1 hex)
+- Tick labels: `var(--muted-foreground)`, 11px (never `var(--chart-tick)` v1 hex)
+- Chart surfaces use `bg-card` / `bg-popover` tokens — never `bg-white` (breaks dark mode)
 - Target/risk lines: `strokeDasharray="5 3"` for visual differentiation
 - Chart area fills: gradient from `--chart-N/30%` to `--chart-N/0%` (matches shadcn `chart-area-interactive` pattern)
 
@@ -196,8 +199,10 @@ This is the mapping that the 10 domain specs and all components must follow. Eve
 | `--text-inverse` | `--primary-foreground` | Text on primary buttons |
 | `--critical` | `--destructive` | Error/critical states |
 | `--critical-subtle` | `bg-destructive/10` | Tailwind opacity modifier |
-| `--warning` | (new) `--warning` token — see Warning Override below | shadcn has no built-in warning |
-| `--success` | (new) `--success` token — see Success Override below | shadcn has no built-in success |
+| `--warning` | (new) `--warning` (fills/dots/borders) + `--warning-text` (text) — see Warning + Success Overrides | shadcn has no built-in warning; two tokens by role |
+| `--success` | (new) `--success` (fills/dots/borders) + `--success-text` (text) — see Warning + Success Overrides | shadcn has no built-in success; two tokens by role |
+| `--warning-text` (v1, HTML artifacts) | `--warning-text` (v2 OKLCH) | AA-safe amber text token |
+| `--success-text` (v1, HTML artifacts) | `--success-text` (v2 OKLCH) | AA-safe emerald text token |
 | `--info` | `--chart-2` or `--primary` | Repurpose, no dedicated info token |
 | `--agent-invoice` / `-validation` / `-compliance` / `-recovery` / `-insight` | Keep as InvoiceIQ-specific extension layer | Agent colors are domain-specific; preserve as `--agent-*` tokens alongside shadcn theme |
 | `--pipeline-pass-*` | `bg-success/10 border-success` | Use new `--success` + opacity |
@@ -211,20 +216,26 @@ This is the mapping that the 10 domain specs and all components must follow. Eve
 
 ### Warning + Success Overrides
 
-shadcn does not ship `--warning` or `--success` semantic tokens (only `--destructive`). InvoiceIQ requires both for amber/green status states. Add these to `:root` and `.dark` in `globals.css`:
+shadcn does not ship `--warning` or `--success` semantic tokens (only `--destructive`). InvoiceIQ requires both for amber/green status states.
+
+**Two roles, two tokens (corrected 2026-05-21 audit).** The 4-agent audit found `text-warning` (~2.15:1) and `text-success` (~2.50:1) fail WCAG 1.4.3. The vivid `--warning` / `--success` are kept for **fills, dots, and borders** (large non-text elements, where AA needs only 3:1), and dedicated darker `--warning-text` / `--success-text` tokens are added for **text** (where AA needs 4.5:1). Add to `:root` and `.dark` in `globals.css`:
 
 ```css
 :root {
-  --warning: oklch(0.769 0.188 70.08);          /* amber-500-ish */
-  --warning-foreground: oklch(0.985 0 0);
-  --success: oklch(0.7 0.15 162);               /* emerald-500-ish */
+  --warning: oklch(0.769 0.188 70.08);          /* amber — fills/dots/borders only */
+  --warning-foreground: oklch(0.205 0 0);
+  --warning-text: oklch(0.52 0.13 70);          /* darker amber — AA-safe as text */
+  --success: oklch(0.7 0.15 162);               /* emerald — fills/dots/borders only */
   --success-foreground: oklch(0.985 0 0);
+  --success-text: oklch(0.52 0.12 162);         /* darker emerald — AA-safe as text */
 }
 .dark {
   --warning: oklch(0.828 0.189 84.429);
   --warning-foreground: oklch(0.205 0 0);
+  --warning-text: oklch(0.85 0.15 85);          /* light amber — AA-safe on dark bg */
   --success: oklch(0.7 0.15 162);
   --success-foreground: oklch(0.205 0 0);
+  --success-text: oklch(0.8 0.14 162);          /* light emerald — AA-safe on dark bg */
 }
 ```
 
@@ -233,12 +244,22 @@ Register in `@theme inline`:
 @theme inline {
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-text: var(--warning-text);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-text: var(--success-text);
 }
 ```
 
-This lets Tailwind classes `bg-warning`, `text-warning-foreground`, `bg-success`, etc. work natively.
+This lets `bg-warning` / `bg-success` (fills), `border-warning` / `border-success` (borders), and `text-warning-text` / `text-success-text` (AA-safe text) all work natively.
+
+**Token-role table:**
+
+| Token | Role | Use for | AA target |
+|-------|------|---------|-----------|
+| `--warning` / `--success` | fill, dot, border | progress fills, status dots, chip backgrounds, borders | 3:1 (non-text) |
+| `--warning-text` / `--success-text` | text | any `text-*` status coloring (amounts, labels, KPI values) | 4.5:1 (body text) |
+| `--destructive` | text + fill | critical/error states (already AA-safe as text) | 4.5:1 |
 
 ### Agent Color Extension (InvoiceIQ-specific)
 
@@ -267,3 +288,4 @@ Use affirmative phrasing per SpecLayer v1.1 — every "don't" gets ignored.
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial v1 ui-standard.md (Linear/Stripe/Vercel inspired, hex tokens, light-only) -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system (dashboard-01 block, new-york-v4 registry). OKLCH color space, dark mode native, sidebar+inset layout, container queries, Card/Badge/Sidebar primitives. Added v1→v2 migration map and Warning/Success override (shadcn ships destructive only). Agent palette preserved as InvoiceIQ extension. Domain specs and components must follow Phase 2/3 of revamp. -->
+<!-- 2026-05-21 v2.0.1: Corrected two false claims found by the 2026-05-21 dashboard audit. (1) "OKLCH tokens are tuned for AA — never override" was FALSE for --warning/--success as TEXT (~2.15:1 / ~2.50:1, AA needs 4.5:1) — added --warning-text/--success-text tokens for text use, kept --warning/--success for fills/dots/borders only, updated the Accessibility section, the Warning+Success Overrides section (now with a token-role table), and the v1→v2 migration map. (2) "CardTitle (built-in) — semantic h3" was FALSE — CardTitle/CardDescription render <div>s; corrected the Typography Scale and Component Patterns tables to require a real <h2>/<h3> inside CardTitle when a heading is needed. Also: reduced-motion note now distinguishes CSS vs JS animation; chart standards now require distinct per-category colors and forbid v1 chart hex tokens / bg-white. -->

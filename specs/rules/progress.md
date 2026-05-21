@@ -3,6 +3,29 @@ _Append only — newest entries at top_
 
 ---
 
+## 2026-05-21 (dashboard v2.3 — all-in-one rebuild)
+
+**Done:**
+- `specs/domains/dashboard/spec.md` → v2.3 "Active — supersedes v2.2" (decluttered layout, 4 new stakeholder features, data-integrity rules, WCAG 2.1 AA criteria, EARS ACs, < 400 lines)
+- `specs/rules/ui-standard.md` → v2.0.1: corrected two false claims found by the 2026-05-21 audit — (1) `--warning`/`--success` are NOT AA-safe as text → added `--warning-text`/`--success-text` tokens + token-role table; (2) `CardTitle` renders a `<div>`, not a semantic `h3`
+- `app/globals.css` — added `--warning-text`/`--success-text` (`:root` + `.dark` + `@theme inline`); recolored `--chart-1..6` as a distinct-hue categorical palette (added `--chart-6`)
+- `app/page.tsx` — full v2.3 rebuild: Amount-at-Risk hero (~1.6fr, one sparkline) + calm KPI trio; merged Pipeline + Contracts&GPO context band (no glyph separators); promoted exceptions table; invoice-status overview; 2-tab analysis (Trends / By Category) with category + vendor-risk donuts; computed agent counts; honest Run Scan toast; non-color severity cue; `aria-sort`; per-region `<h2>` + `<h3>` card titles
+- `components/magicui/number-ticker.tsx` — `useReducedMotion()` guard (public API unchanged)
+- `components/DiscrepancyBarChart.tsx` — moved off raw hex / v1 tokens onto shadcn v2 + `--chart-*` (dark-mode correct)
+- `lib/data.ts` — added derived `exceptionTypeBreakdown` (reconciles By-Category total with Amount at Risk)
+- `app/exceptions/page.tsx` — honors `?severity=` / `?status=` / `?type=` filter param (pre-filtered drill-through); `Suspense`-wrapped for `useSearchParams`
+
+**Verify:** `npm run build` ✓ · `tsc --noEmit` ✓ · `npm run lint` ✓ for all touched files (pre-existing repo-wide lint issues in untouched files unchanged)
+
+**Decisions:**
+- All-in-one v2.3 over phased A/B — product-owner decision (see dashboard spec Decision Log)
+- `--warning-text`/`--success-text` + `--chart-6` added to `globals.css` — required for the WCAG criticals and the distinct-category-color fix; documented in `ui-standard.md`
+- `CardTitle asChild` not used — `CardTitle` has no Slot; render `<h3>`/`<h2>` nested inside `CardTitle` instead (valid HTML, heading in the outline) rather than risk a shared-component change
+
+**Spec updates:** `domains/dashboard/spec.md` (v2.3), `rules/ui-standard.md` (v2.0.1)
+
+---
+
 ## 2026-05-18 (session 2 — framework research synthesis)
 
 **Done:**

@@ -1,201 +1,225 @@
 # Dashboard — Specification
 
-> **Version:** 2.1 — May 2026
-> **Status:** Active — supersedes v2.0
-> **Driver:** Senior UX audit (2026-05-18) found v2.0 was still trying to show too much. v2.1 commits to a single job-to-be-done.
+> **Version:** 2.3 — May 2026
+> **Status:** Active — supersedes v2.2
+> **Driver:** Product-owner decision (2026-05-21) — all-in-one v2.3 rebuild after the 2026-05-21 4-agent audit (`dashboard-audit-2026-05-21.html`). v2.3 declutters the crammed v2.2 layout, fixes data-integrity defects, adds 4 stakeholder features, fixes WCAG criticals, and fixes chart theming — without removing any v2.2 feature.
 
 ## Overview
 
-The dashboard is the **daily triage queue** for AP analysts at Northfield Medical Center. Its single job is: "Show me the 5 things requiring my attention right now, so I can decide which to work on first."
+The dashboard is the **command surface** for the AP analyst and the supply-chain VP at Northfield Medical Center. It answers, at a glance: "How much is at risk right now, what is the pipeline doing, what needs triage, and how is recovery tracking?"
 
-It is NOT a status display, NOT a sales-deck visualization of the agent pipeline, and NOT an executive summary. Those are different surfaces (Pipeline, marketing site, future Executive view). This is a work surface for the analyst who lives in it 6 hours a day.
+v2.3 keeps every v2.2 feature but reorganizes the page so it reads top-to-bottom as **one hero answer → grouped context → the work → the analysis**. The 4-agent audit found v2.2 crammed ~17 figures into the first viewport with no hierarchy, contradicted its own numbers, and failed WCAG 2.1 AA. v2.3 fixes all five fronts: declutter, stakeholder gaps, data integrity, accessibility, theming.
 
 ## Acceptance Criteria
 
 EARS notation.
 
-**Job-to-be-done**
-- [ ] THE SYSTEM SHALL render the dashboard such that an AP analyst can identify the top 5 exceptions requiring action within 3 seconds of page load
-- [ ] WHEN any exception in the triage list is clicked THE SYSTEM SHALL navigate to `/exceptions/{id}` for detailed review
-
 **App shell**
-- [ ] THE SYSTEM SHALL render the dashboard inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
-- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
+- [ ] THE SYSTEM SHALL render only page content inside the `<main>` provided by `app/layout.tsx` — `SidebarProvider` + `SidebarInset` + `AppSidebar` + `SiteHeader` are owned by the layout and SHALL NOT be duplicated on this page
+- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens (`bg-card`, `text-foreground`, `text-muted-foreground`, `text-destructive`, `text-warning-text`, `text-success-text`, `border-border`, `bg-accent`, `--chart-1..5`)
 
-**Page header (compact)**
-- [ ] THE SYSTEM SHALL render a single-line page header: title "Inbox" (`text-2xl font-semibold`) + subtitle ("{open count} open · {critical count} critical · Q1 2026") in `text-sm text-muted-foreground`
-- [ ] THE SYSTEM SHALL render a single `•••` `DropdownMenu` action button top-right containing: "Run Scan", "Export as CSV", "Export as PDF"
+**Page header**
+- [ ] THE SYSTEM SHALL render a page header: title "Invoice Intelligence" (`text-2xl font-semibold`) + subtitle ("{customer} · Q1 2026") in `text-sm text-muted-foreground` — the subtitle SHALL NOT restate the invoice count (shown once, in the secondary trio)
+- [ ] THE SYSTEM SHALL render two header actions top-right: an "Export" `Button variant="outline"` opening `ExportDialog`, and a "Run Scan" `Button variant="default"` that runs a read-only scan
+- [ ] WHEN "Run Scan" completes THE SYSTEM SHALL toast a truthful message that claims no data change (e.g. "Scan complete — no new exceptions") because the scan does not mutate the dataset
 
-**Triage list (HERO — primary surface, ~70% of viewport)**
-- [ ] THE SYSTEM SHALL render the top 6 AP exceptions (`!type.startsWith("som_")`), sorted by severity (critical first) then `flaggedAmount` desc, as the largest visual element on the page
-- [ ] THE SYSTEM SHALL render each row as a shadcn `Card`-bordered list item (NOT a `Table`) with: severity dot (`size-2 rounded-full`, colored only if critical/high), vendor name + invoice number (mono), exception type + category, flagged amount (`text-base font-semibold tabular-nums`, color-coded per rule below), and "Review →" action
-- [ ] WHEN a row is hovered THE SYSTEM SHALL apply `hover:bg-accent`, raising visual affordance for click
-- [ ] THE SYSTEM SHALL render below the list: "Showing 6 of {total} open exceptions · View all →" as a shadcn `Button variant="link"` linking to `/exceptions`
+**Hero KPI — Amount at Risk**
+- [ ] THE SYSTEM SHALL render an asymmetric hero band: an "Amount at Risk" hero card spanning ~1.6fr and a secondary KPI trio spanning ~1fr each, in a `@container/main`-driven grid that stacks on narrow widths
+- [ ] THE hero card SHALL render the Amount at Risk value larger than the trio values (`text-3xl @[300px]/card:text-4xl`), in `text-destructive`, animated with `NumberTicker`
+- [ ] THE hero card SHALL render exactly ONE `Sparkline` on the page — no other KPI renders a sparkline
+- [ ] THE hero card SHALL render an action line linking to the pre-filtered triage view (`/exceptions?severity=critical`) showing the open critical count
 
-**Color discipline (rule applies to all numbers everywhere on this page)**
-- [ ] THE SYSTEM SHALL color a number `text-destructive` ONLY when it represents a problem requiring action (critical/high severity exception's `flaggedAmount`; overdue counts; breached counts)
-- [ ] THE SYSTEM SHALL color a number `text-warning` ONLY when it represents a deadline approaching or attention recommended (medium severity; at-risk counts)
-- [ ] THE SYSTEM SHALL color a number `text-success` ONLY when it represents a positive completion event (recovered amounts)
-- [ ] THE SYSTEM SHALL render all other numbers (totals, counts, currencies that are simply data) in `text-foreground` — never colored
-- [ ] WHEN a critical/high severity exception's flaggedAmount is rendered THE SYSTEM SHALL color it `text-destructive`; for medium `text-warning`; for low `text-foreground`
+**Secondary KPI trio**
+- [ ] THE SYSTEM SHALL render exactly 3 secondary KPI `Card`s — Invoices Processed, Exceptions Found, Recovery Rate — each with `CardHeader` (`CardDescription` label + `CardTitle` value) and `CardFooter` (context line); NONE renders a sparkline
+- [ ] WHEN a secondary KPI card is clicked THE SYSTEM SHALL navigate to its target (Invoices → `/pipeline`, Exceptions → `/exceptions`, Recovery Rate → `/recovery`)
 
-**Secondary metrics row (compact, below the triage list)**
-- [ ] THE SYSTEM SHALL render exactly 4 stats as a single horizontal flex row with `divide-x divide-border`, total height ≤ 64px: Open Exceptions, Amount at Risk, Recovered (Q1), SLA Overdue
-- [ ] THE SYSTEM SHALL render each stat as label (`text-xs uppercase text-muted-foreground`) + value (`text-lg font-semibold tabular-nums`), NOT as `Card` (no card border, no padding-heavy KPI treatment)
-- [ ] THE SYSTEM SHALL apply color discipline rules above — only "SLA Overdue > 0" and "Amount at Risk" (when total > policy threshold) get colored; counts and totals stay `text-foreground`
-- [ ] WHEN any secondary stat is clicked THE SYSTEM SHALL navigate to its target page (Open Exceptions → `/exceptions`, Amount at Risk → `/exceptions`, Recovered → `/recovery`, SLA Overdue → `/recovery`)
+**Context band (merged)**
+- [ ] THE SYSTEM SHALL render ONE bordered context row split into two labelled groups: "Pipeline" (the 5 agents) and "Contracts & GPO" (3 stats: Contracts at Risk, GPO Compliance, GPO Savings)
+- [ ] THE context band SHALL NOT render `|` or `·` glyph separators — groups are separated by a labelled heading and whitespace/border only
+- [ ] THE SYSTEM SHALL color each agent dot with its InvoiceIQ agent token (`--agent-invoice` … `--agent-insight`); the "Pipeline" group links to `/pipeline`, each "Contracts & GPO" stat links to `/contracts`
+- [ ] THE GPO Savings stat SHALL be labelled "GPO Savings (potential)" because the figure is missed/potential savings, not realized
 
-**REMOVED from dashboard in v2.1 (compared to v2.0)**
-- [ ] THE SYSTEM SHALL NOT render: sparklines, trend chart, By Category breakdown, agent strip, Run Scan as a primary button, Export as primary buttons, KPI cards with `CardHeader`/`CardDescription`/`CardTitle`/`CardAction`/`CardFooter` treatment, Tabs (Overview/Exceptions/Trends), Contracts at Risk / GPO Compliance / GPO Savings secondary stats
-- [ ] THE "By Category" content SHALL live at `/product-analysis`
-- [ ] THE agent strip SHALL be available on `/pipeline` only (already its primary content)
-- [ ] THE spend trend chart SHALL be available on `/recovery` (already specced there) and a future `/analytics` page
+**Exceptions work table (promoted)**
+- [ ] THE SYSTEM SHALL render the recent-exceptions table always visible, directly under the context band — NOT inside a tab
+- [ ] THE table SHALL list the top 6 AP exceptions (`!type.startsWith("som_")`) with columns ID, Type, Vendor, Flagged, Severity, Status, Review — default-sorted by severity (critical=0 … low=3)
+- [ ] WHEN a sortable column header is clicked THE SYSTEM SHALL re-sort by that column, toggle direction, and set `aria-sort` on that header to `ascending`/`descending` (other sortable headers `none`)
+- [ ] THE flagged-amount column SHALL convey severity with a non-color cue (a severity icon) in addition to color — color SHALL NOT be the only severity signal
+- [ ] WHEN a row's "Review" link is clicked THE SYSTEM SHALL navigate to `/exceptions/{id}`
+
+**Invoice-status overview**
+- [ ] THE SYSTEM SHALL render an aggregate count-by-status breakdown of all AP exceptions (Open, Under Review, Escalated, Resolved) with a count per status; each status links to `/exceptions` pre-filtered where a filter exists
+
+**Analysis section (2 tabs)**
+- [ ] THE SYSTEM SHALL render a 2-tab section using shadcn `Tabs`: "Trends" and "By Category"
+- [ ] THE Trends tab SHALL render the spend & exception trend chart plus `<DiscrepancyBarChart />`
+- [ ] THE By-Category tab SHALL render the amount-at-risk breakdown by exception type as a Recharts donut plus a single legend list — the distribution SHALL be shown once, not duplicated as a separate segmented bar
+- [ ] THE SYSTEM SHALL render a vendor-risk donut (`/vendor-scoring`-linked) in the analysis area showing the distribution of vendors across risk tiers
+
+**Data integrity**
+- [ ] THE SYSTEM SHALL derive the 5 agent counts from computed values of `lib/data.ts` — no hardcoded count literals
+- [ ] THE Amount at Risk hero value and the By-Category breakdown total SHALL derive from the same source (the AP exception set) OR be labelled to make the distinct scope explicit
+- [ ] THE Exceptions-Found count and the Validation-agent count SHALL be consistent (both derive from the AP exception set)
+- [ ] THE SYSTEM SHALL NOT display a frozen "% of period spend" string — the percentage SHALL be computed from data or omitted
+- [ ] THE "Recovered" framing SHALL handle the Q4-2025 case — the Recovery Rate metric SHALL count only recovery cases initiated in the reporting period (2026), excluding prior-period carry-over
+
+**Accessibility (WCAG 2.1 AA)**
+- [ ] THE SYSTEM SHALL color status text with the AA-contrast `--warning-text` / `--success-text` tokens; `--warning` / `--success` are reserved for fills and dots only
+- [ ] IF `prefers-reduced-motion` is set THEN `NumberTicker` SHALL skip the spring animation and render the final value immediately
+- [ ] THE By-Category chart SHALL render each category in a distinct color (no two categories share a color)
+- [ ] THE SYSTEM SHALL render one `<h2>` per page region (sr-only where the region has no visible heading) and render card titles as `<h3>` (`CardTitle asChild` wrapping an `<h3>`, since `CardTitle` renders a `<div>`)
+- [ ] THE SYSTEM SHALL render chart containers with a meaningful `aria-label` describing the data shown (not just the chart type) and `role="img"`
+- [ ] THE SYSTEM SHALL render focus rings via `var(--ring)` on all interactive elements
 
 **Loading and safety**
-- [ ] WHEN the page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for the triage list (6 row skeletons) and the 4-stat strip for 300ms before real content
-- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all entrance animations
-- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
-- [ ] THE SYSTEM SHALL display a legal disclaimer dialog before any action that commits the organization (no action on the dashboard itself triggers commitment — actions live on `/exceptions/{id}`)
+- [ ] WHEN the page mounts THE SYSTEM SHALL display `Skeleton` placeholders for the hero band, context band, table, and analysis section for ~300ms before real content
+- [ ] THE SYSTEM SHALL render a legal disclaimer before any action that commits the organization — Run Scan and Export are read-only and require none
 
 ## Layout
 
-Renders inside `SidebarProvider` + `SidebarInset` (per `ui-standard.md` v2.0).
-
-### Header strip (px-4 lg:px-6, pt-6 pb-4)
-- Left: title `text-2xl font-semibold` "Inbox" + subtitle `text-sm text-muted-foreground` ("{openCount} open · {criticalCount} critical · Q1 2026")
-- Right: single shadcn `DropdownMenu` triggered by `Button variant="outline" size="icon"` with `MoreHorizontal` icon. Menu items: "Run Scan" (with `Sparkles` icon), separator, "Export as CSV", "Export as PDF"
-
-### Triage list (px-4 lg:px-6, pb-6) — HERO
+Renders inside the layout-provided `<main>` (per `ui-standard.md` v2.0). The page is a `@container/main` flex column. Section gutters use `gap-6 py-6` per `ui-standard.md` Vertical rhythm (32px rhythm); horizontal padding `px-4 lg:px-6`.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Top 6 exceptions                              View all 188→ │
-├─────────────────────────────────────────────────────────────┤
-│ ● BME · BME-2026-Q1-047 · Contract Overage    $123,890  →  │
-│ ● MS  · MS-2026-0923  · Duplicate Billing      $47,320  →  │
-│ ● MT  · MTS-INV-00291 · Suspicious Invoice     $45,200  →  │
-│ ● STE · STC-2026-19847· Match Exception         $4,600  →  │
-│ ◐ STC · STC-2026-19211· Tier Pricing            $3,200  →  │
-│ ◐ CH  · CHE-2026-0089 · Missing Rebate          $2,150  →  │
-└─────────────────────────────────────────────────────────────┘
-                Showing 6 of 188 open exceptions · View all →
+┌───────────────────────────────────────────────────────────────┐
+│ Invoice Intelligence            [Export] [Run Scan]            │  header
+├───────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐│
+│ │ AMOUNT AT RISK          │ │ Invoices │ │Exceptions│ │Recov.││  hero band
+│ │ $2.2M        ╱╲╱╲       │ │  1,847   │ │   184    │ │ 86%  ││  (~1.6fr + 3×1fr)
+│ │ 4 critical open → triage│ │  Q1 2026 │ │ 146 open │ │ rate ││
+│ └─────────────────────────┘ └──────────┘ └──────────┘ └──────┘│
+├───────────────────────────────────────────────────────────────┤
+│ PIPELINE                          CONTRACTS & GPO              │  context band
+│ ● Invoice 1847 ● Validation 184…  ● At Risk 3 ● GPO 87%  …     │  (one bordered row)
+├───────────────────────────────────────────────────────────────┤
+│ Recent Exceptions                              View all 184 → │  work table
+│ [ID][Type][Vendor][⚠ Flagged][Severity][Status][Review]        │  (always visible)
+├───────────────────────────────────────────────────────────────┤
+│ Invoice Status   ● Open 92  ● Under Review 41  ● Escalated …   │  status overview
+├───────────────────────────────────────────────────────────────┤
+│ [ Trends | By Category ]                                       │  analysis (2 tabs)
+│   trend chart + discrepancy bars   /   donut + vendor-risk     │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-- Outer container: shadcn `Card` with `CardHeader` (`CardTitle` "Top 6 exceptions" + `CardAction` "View all {total} →" `Button variant="link"`)
-- `CardContent` containing a list of 6 rows separated by `divide-y divide-border` — NOT a `Table`. List feels lighter, more inbox-like.
-- Each row:
-  - 8px severity dot (`bg-destructive` for critical, `bg-destructive/60` for high, `bg-warning` for medium, `bg-border` for low)
-  - Vendor (`VendorBadge` — name + avatar) + invoice number below (`font-mono text-xs text-muted-foreground`)
-  - Exception type as plain text (`text-sm`) + `CategoryBadge` (existing InvoiceIQ component preserved)
-  - Flagged amount, right-aligned, `tabular-nums font-semibold text-base`, color per discipline rule
-  - `ChevronRight` icon (`size-4 text-muted-foreground`) on hover
-- Row wraps in a `<Link>` to `/exceptions/{id}` — entire row is the click target
-- `CardFooter`: "Showing 6 of {totalOpen} open exceptions · View all →"
+### Hero band (`px-4 lg:px-6`, `py-6`)
+- Grid: `grid-cols-1 @3xl/main:grid-cols-[1.6fr_1fr_1fr_1fr] gap-4`
+- Hero card: shadcn `Card` `@container/card` — `CardDescription` "Amount at Risk", `CardTitle` (`h3`) value `text-3xl @[300px]/card:text-4xl text-destructive` wrapping `NumberTicker`, one `Sparkline` in `CardAction`, `CardFooter` an action `<Link>` to `/exceptions?severity=critical`
+- Trio cards: shadcn `Card` `@container/card` — `CardDescription` label, `CardTitle` (`h3`) `text-2xl tabular-nums`, `CardFooter` context line; no sparkline
 
-### Secondary metrics strip (px-4 lg:px-6, pb-6)
+### Context band (`px-4 lg:px-6`, `py-6`)
+- One `rounded-lg border bg-card` row; on `@3xl/main` a 2-column grid, stacks below
+- Left group: small-caps `<h3>` "Pipeline" + 5 agents (colored `--agent-*` dot + name + computed count), wrapped in a `<Link>` to `/pipeline`
+- Right group: small-caps `<h3>` "Contracts & GPO" + 3 stats (colored dot + label + value), each a `<Link>` to `/contracts`
+- A vertical `border-l` divides the two groups on wide widths; no glyph separators inside either group
 
-```
-OPEN EXCEPTIONS │ AMOUNT AT RISK │ RECOVERED (Q1) │ SLA OVERDUE
-146             │ $2,209,166     │ $14,458        │ 4
-```
+### Exceptions work table (`px-4 lg:px-6`, `py-6`)
+- A `Card` (`py-0`) with a header row ("Recent Exceptions" `<h3>` + "View all {total} →" link) and a shadcn `Table`
+- Sortable headers (Type, Flagged, Severity, Status) carry `aria-sort`; Flagged cell shows a severity icon + amount
 
-- Single horizontal flex row, `divide-x divide-border`, max height 64px
-- 4 cells, each a `<Link>` to its target page
-- Each cell: label (`text-xs uppercase text-muted-foreground tracking-wider`) + value (`text-lg font-semibold tabular-nums`)
-- Color applied ONLY per discipline rule: `SLA Overdue` colored `text-destructive` IF > 0; `Amount at Risk` colored `text-destructive` IF > $1M policy threshold; otherwise neutral `text-foreground`
+### Invoice-status overview (`px-4 lg:px-6`, `py-6`)
+- A `Card` — `<h3>` "Invoice Status" + a `flex flex-wrap` of 4 status chips (colored dot + label + count); resolvable statuses link to `/exceptions`
+
+### Analysis section (`px-4 lg:px-6`, `py-6`)
+- shadcn `Tabs defaultValue="trends"` with `TabsList`: Trends / By Category
+- **Trends**: `Card` with the Spend & Exception Trend `ComposedChart`, and `Card` with `<DiscrepancyBarChart />`
+- **By Category**: a 2-column grid — left `Card` a Recharts donut of `flaggedByType` + one legend list; right `Card` a Recharts donut of vendor risk-tier distribution, the whole card a `<Link>` to `/vendor-scoring`
 
 ## Components
 
-shadcn primitives:
-- `Card`, `CardHeader`, `CardTitle`, `CardAction`, `CardContent`, `CardFooter` — for the triage list outer container
-- `Button` (`variant="link"`, `variant="outline" size="icon"`) — for "View all" and `•••` menu trigger
-- `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`, `DropdownMenuSeparator` — for Run Scan / Export menu
-- `Skeleton` — loading state
+shadcn primitives: `Card` (+ header/title/description/action/content/footer), `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent`, `Table` (+ header/body/row/head/cell), `Badge`, `Button`, `Skeleton`.
 
-InvoiceIQ extensions preserved:
-- `VendorBadge` — vendor avatar + name in triage rows
-- `CategoryBadge` — color-coded category pill in triage rows
-- `ExportDialog` — opened from Export menu items
-- `LegalDisclaimerDialog` — opened from Run Scan if it triggers commitment (currently no — Run Scan is read-only)
+InvoiceIQ extensions reused (public APIs unchanged): `NumberTicker`, `Sparkline`, `DiscrepancyBarChart`, `VendorBadge`, `ExportDialog`.
 
-Removed in v2.1:
-- `Sparkline` — not on this page anymore
-- `Tabs` — not on this page anymore
-- `Section card` pattern (CardDescription/CardTitle big number) — not on this page anymore; secondary stats are inline strip
+New on this page (page-local, no new shared components): `StatusOverview` count-by-status strip, `CategoryDonut` (Recharts `PieChart`), `VendorRiskDonut` (Recharts `PieChart`) — all inline in `app/page.tsx`.
+
+> The work table follows the v2.0 column set (ID, Type, Vendor, Flagged, Severity, Status); the Category column was dropped at v2.0 — `CategoryBadge` is not used here.
 
 ## Business Rules
 
-- **Triage filtering**: dashboard shows only AP exceptions (`!type.startsWith("som_")`)
-- **Triage sorting**: by severity (critical=0, high=1, medium=2, low=3), then `flaggedAmount` desc within each tier
-- **Triage limit**: top 6 rows; everything else hidden behind "View all"
-- **Status filter**: only `open`, `under_review`, `escalated` shown in triage; `resolved` hidden (out of inbox)
-- **Open Exceptions count**: total of statuses `open` + `under_review` + `escalated` for AP exceptions
-- **Amount at Risk**: sum of `flaggedAmount` across open AP exceptions
-- **Recovered (Q1)**: sum of `recoveredAmount` for recovery queue items with status `recovered`
-- **SLA Overdue**: count of recovery queue items where `slaDeadline < now` AND status is not `recovered`/`closed`
-- **Color discipline (cross-cutting)**: see Acceptance Criteria — color = action required. Never decorate.
-- **Loading state**: 300ms shadcn `Skeleton` placeholders
+- **AP exceptions filter**: dashboard metrics use only AP exceptions (`!type.startsWith("som_")`) from `allExceptions`
+- **Top exceptions**: the work table shows the top 6 AP exceptions from `exceptions`, sorted by severity by default
+- **Open count**: count of AP exceptions with status `open`, `under_review`, or `escalated`
+- **Amount at Risk** (hero): sum of `flaggedAmount` across all AP exceptions
+- **Agent counts** (data integrity, Front 4): computed from `lib/data.ts` — Invoice = AP invoices processed (`kpiSummary.totalInvoicesProcessed`); Validation = AP exception count (`apCount`); Compliance = AP exceptions of compliance types (`contract_overage`, `missing_rebate`, `tier_pricing`); Recovery = `recoveryQueue.length`; Insight = distinct AP vendors with exceptions. No hardcoded literals.
+- **flaggedByType** reconciliation: `lib/data.ts#exceptionTypeBreakdown` derives the by-type breakdown from the AP exception set so the By-Category total equals the Amount at Risk hero value. The legacy hand-authored `flaggedByType` array is retained for non-dashboard callers but is not used by the dashboard.
+- **Recovery Rate** (Front 2, Bala): `recovered ÷ total` over `recoveryQueue` cases **initiated in 2026** (excludes the REC-008 Q4-2025 carry-over). "Recovered" counts `status === "recovered"`. Shown against an ~85% historical baseline (from `recoveryTrendData`).
+- **Amount in recovery**: sum of `targetAmount` for `recoveryQueue` items with an in-progress status (`pending`, `in_progress`, `partial`) — surfaced on the Recovery Rate card footer as a forward-looking figure.
+- **Invoice-status overview**: count of AP exceptions grouped by `status`
+- **Vendor risk distribution**: count of `vendorScores` grouped by `rating` tier (Critical / High Risk / Medium Risk / Low Risk)
+- **Contracts at Risk**: count of `contracts` with status `breached` or `warning`; "breached" sub-count is status `breached`
+- **GPO Compliance / GPO Savings**: from `getGPOComplianceRate()` / `getGPOPotentialSavings()` — GPO Savings labelled "(potential)"
+- **% of period spend**: not displayed (the v2.2 frozen "22% of period spend" string is removed) — the hero card footer shows the critical-open triage line instead
+- **Color discipline**: status text uses `--warning-text` / `--success-text` / `text-destructive`; fills and dots use `--warning` / `--success` / `--destructive`. Color always pairs with a label or icon — never the sole signal.
+- **Run Scan honesty**: the scan is read-only and mutates nothing; its toast claims no data change
+- **Loading state**: ~300ms `Skeleton` placeholders
 
 ## Data Model
 
-- **Source files**: `lib/data.ts` (allExceptions, recoveryQueue, formatCurrency, severityConfig, statusConfig, typeConfig), `lib/workflow-config.ts` (PARKLAND_CONFIG)
-- **Computed values**: `apExceptions`, `openExceptions`, `criticalCount`, `topSix` (sorted slice), `openCount`, `amountAtRisk`, `recoveredAmount`, `slaOverdueCount`
-- **No hardcoded sparkline data, no spend trend, no flaggedByType import** — those moved to other pages
+- **Source files**: `lib/data.ts` (`exceptions`, `allExceptions`, `recoveryQueue`, `contracts`, `flaggedByType`, `exceptionTypeBreakdown`, `spendTrend`, `recoveryTrendData`, `vendorScores`, `kpiSummary`, `formatCurrency`, `severityConfig`, `statusConfig`, `typeConfig`), `lib/workflow-config.ts` (`PARKLAND_CONFIG`), `lib/gpo-contracts.ts` (`getGPOComplianceRate`, `getGPOPotentialSavings`)
+- **Computed values**: `topExceptions`, `apExceptions`, `apCount`, `openCount`, `amountAtRisk`, `agentCounts`, `recoveryRate`, `amountInRecovery`, `statusCounts`, `vendorRiskCounts`, `categoryBreakdown`
+- **`lib/data.ts` change authorized for v2.3**: a new exported `exceptionTypeBreakdown` (derived from the AP exception set) reconciles the by-category total with the Amount at Risk hero
+- **Sparkline data**: one fixed 6-point trend array for the hero only, defined locally in the page
 
 ## Workflow
 
-1. AP analyst opens `/` first thing in the morning
-2. 300ms `Skeleton` while data loads
-3. Triage list renders — analyst scans the 6 rows, sees the top critical at the top
-4. Analyst clicks the top row → navigates to `/exceptions/{id}` for the three-way match review
-5. After resolving, returns to `/` (or to `/exceptions` via "View all") to pick the next item
-6. Secondary strip (Open Exceptions, Amount at Risk, Recovered, SLA Overdue) provides peripheral awareness — clicked when analyst wants to see the broader queue or recovery status
-7. `•••` menu used occasionally: Run Scan to refresh, Export for stakeholder reports
+1. Analyst/VP opens `/` first thing in the morning
+2. ~300ms `Skeleton` while data loads
+3. The eye lands on the **Amount at Risk** hero — the single number the dashboard exists to answer — and follows its action line to triage
+4. The context band confirms the pipeline is healthy and surfaces contract/GPO posture
+5. The analyst scans the always-visible exceptions table, clicks "Review →" on a row → `/exceptions/{id}`
+6. The Invoice-status overview shows how the backlog is distributed
+7. The analyst opens the Trends / By-Category tabs for deeper analysis after triage
+8. Export / Run Scan used occasionally for stakeholder reports and refresh
 
 ## Dependencies
 
 | Domain | Relationship | Detail |
 |--------|-------------|--------|
-| Exceptions | reads from | The 6 triage rows are derived from `allExceptions` filtered + sorted |
-| Recovery | reads from | Recovered (Q1) and SLA Overdue stats |
-| Invoice Detail | navigates to | Clicking any triage row goes to `/exceptions/{id}` |
-| Pipeline | (no direct dependency in v2.1) | Agent strip removed from dashboard — Pipeline page owns that |
-| Product Analysis | (no direct dependency in v2.1) | By Category breakdown moved to `/product-analysis` |
-| Contracts | (no direct dependency in v2.1) | Contracts at Risk / GPO stats removed from dashboard — Contracts page owns those |
+| Exceptions | reads from + links to | KPI counts, Amount at Risk, work table, status overview; KPIs link to pre-filtered `/exceptions?severity=…` |
+| Recovery | reads from | Recovery Rate KPI + amount-in-recovery from `recoveryQueue` |
+| Contracts | reads from | Contracts at Risk + GPO Compliance / GPO Savings |
+| Pipeline | links to + reads from | Agent counts (computed); the Pipeline group links to `/pipeline` |
+| Vendor Scoring | reads from + links to | Vendor-risk donut from `vendorScores`; links to `/vendor-scoring` |
+| Invoice Detail | navigates to | "Review →" goes to `/exceptions/{id}` |
+| Product Analysis | (related) | By-Category donut is summary-level; the full breakdown lives on `/product-analysis` |
 
 ## Forbidden Patterns
 
 Use affirmative phrasing per SpecLayer v1.1.
 
-- **Render the triage list as the largest visual element on the page** — Reason: this is the page's single job; everything else is secondary.
-- **Apply status color (destructive/warning/success) only to values that represent an action required** — Reason: when everything is colored, nothing stands out; color discipline is the single biggest lever for enterprise credibility (per AJ Parkland feedback).
-- **Render Run Scan and Export inside a `DropdownMenu` triggered by `•••`** — Reason: these are infrequent actions; primary buttons steal attention from the triage list.
-- **Cap the triage list at 6 rows; route to `/exceptions` for the rest** — Reason: an inbox should fit on one screen; longer than 6 invites scrolling and dilutes the "next action" framing.
-- **Use shadcn `Card` + `divide-y` list pattern for the triage**, not `Table` — Reason: list feels lighter and more inbox-like; tables imply browseable data, lists imply work queue.
-- **Use shadcn primitives (`Card`, `Button`, `DropdownMenu`, `Skeleton`) for all surfaces and controls** — Reason: deprecates ad-hoc `<div className="card">` and inline-styled buttons from v1; consistent disabled/focus/hover states.
-- **Use theme tokens (`bg-card`, `text-foreground`, `text-muted-foreground`, `text-destructive`, `text-warning`, `text-success`, `bg-accent`, `border-border`) for all surfaces, text, and emphasis** — Reason: hex tokens and v1 design system removed in v2.0; consistent light/dark behavior.
-- **Render the secondary stats strip in ≤ 64px total height, with no Card border** — Reason: v2.0 used full KPI Cards for these (160px+); v2.1 audit found that pattern stole attention from the triage hero.
+- **Render only page content inside the layout-provided `<main>`** — Reason: `app/layout.tsx` owns the shell; duplicating chrome breaks it.
+- **Use shadcn primitives (`Card`, `Tabs`, `Table`, `Badge`, `Button`, `Skeleton`) for all surfaces and controls** — Reason: deprecates ad-hoc v1 markup; consistent disabled/focus/hover states.
+- **Use shadcn theme tokens and `--chart-*` for all surfaces, text, emphasis, and charts** — Reason: raw hex and v1 tokens (`var(--text-muted)`, `var(--chart-grid)`, `bg-white`) break dark mode.
+- **Color status text with `--warning-text` / `--success-text`; reserve `--warning` / `--success` for fills and dots** — Reason: `--warning`/`--success` measure < 4.5:1 as text and fail WCAG 1.4.3.
+- **Pair every status color with a label or icon** — Reason: color alone fails WCAG 1.4.1.
+- **Derive on-screen numbers from `lib/data.ts` computed values** — Reason: hardcoded literals drift from the data and contradict each other (audit Front 3).
+- **Reuse `NumberTicker`, `Sparkline`, `DiscrepancyBarChart`, `VendorBadge` without changing their public APIs** — Reason: shared across pages; an API change is a cross-module regression.
+- **Keep the page calm — one hero, one sparkline, grouped context, 32px section rhythm** — Reason: the audit's core finding was cramming; feature-completeness must not re-crowd the first viewport.
 
 ## AJ Feedback (Parkland Demo)
 
-"Customizable dashboard — widget arrangement per user role"
+"Customizable dashboard — widget arrangement per user role" → v2.3: still a deferred future enhancement; v2.3 decluttering makes the eventual per-role mode easier to slot in.
 
 ### AJ Feedback (Recording 17)
 
-- **Trend analysis bar charts**: Horizontal bars showing discrepancy volume by time period (monthly by day, quarterly by month). Referenced IPO dashboards as inspiration. → **v2.1 decision: moved to `/recovery` (already specced) and a future `/analytics` page. Dashboard is not the place for trends.**
-- **Dashboard customization**: Two modes — full dashboard (all metrics) + personal daily dashboard (user-selectable). → **v2.1 decision: dashboard IS the "personal daily" view. The "all metrics" view is the sum of individual domain pages (Exceptions, Recovery, Contracts, etc.).**
-- **Enterprise UI quality**: "Cannot look like a spreadsheet." Infographic-quality visuals. → **v2.1 decision: addressed by aggressive color discipline + hero-list pattern + removal of stat-card overload.**
-- **Company logos**: Replace plain vendor names with actual company logos + brand colors. → **v2.1 decision: `VendorBadge` already supports this; ensure brand colors render in dark mode.**
+- **Trend analysis bar charts** → v2.3: the Trends tab renders the spend trend + `DiscrepancyBarChart`.
+- **Dashboard customization** (full + personal daily) → v2.3: full view shipped; per-role widgets remain future.
+- **Enterprise UI quality** ("cannot look like a spreadsheet") → v2.3: hero hierarchy, donuts, grouped context, color discipline, 32px rhythm.
+- **Company logos** → `VendorBadge` renders brand colors in both modes.
 
 ## Decision Log
 
-<!-- 2026-05-18: v2.1 — adopted single job-to-be-done framing (triage > status > sales-deck). Audit found v2.0 was still showing 17+ items in first viewport; reduced to triage list + 4-stat strip + nothing else. Primary user clarified as AP analyst (not VP) — VP gets summary via the 4-stat strip. Color discipline made absolute: color = action required, no decoration. Run Scan + Export demoted to `•••` dropdown. Removed sparklines, tabs, by-category, agent strip, contracts stats from dashboard — they live on their owner pages. Justified by 8-finding senior UX audit (2026-05-18). -->
-<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system (Phase 2 of UI revamp, follows ui-standard.md v2.0). App shell SidebarProvider+SidebarInset. KPI grid shadcn Card primitives. Tabs removed. Linear layout. Token migration. -->
-<!-- 2026-05-14: Updated spec to match dashboard modernization — reduced from 7 KPI cards (4+3) to 4 primary KPIs with sparklines + compact secondary stats strip; replaced 5-card agent grid with single-row inline agent bar; wrapped charts + exceptions table + discrepancy chart in 3-tab layout (Overview/Exceptions/Trends); removed <hr> separator; tightened padding; removed Category column from exceptions table (8→7 columns) -->
+<!-- 2026-05-21 v2.3: All-in-one rebuild per product-owner decision after the 2026-05-21 4-agent audit. Declutters the v2.2 layout (hero + grouped context band + promoted work table + 2-tab analysis), fixes data-integrity defects, adds 4 stakeholder features (recovery score/stage, vendor risk donut, invoice-status overview, pre-filtered drill-through), fixes 4 WCAG criticals, fixes chart theming. All v2.2 features retained. -->
+<!-- 2026-05-21 v2.2: Product-owner decision — full revert to the v2.0 rich dashboard. The v2.1 triage-first design and its senior-UX-audit rationale are noted but overridden. SUPERSEDED by v2.3 — the 2026-05-21 audit found v2.2 crammed, with data-integrity, WCAG, and theming defects; v2.3 fixes all five fronts without removing features. -->
+<!-- 2026-05-18: v2.1 — adopted single job-to-be-done framing (triage > status > sales-deck). SUPERSEDED by v2.2, then v2.3. -->
+<!-- 2026-05-18 v2.0: Adopted shadcn/ui design system (Phase 2 of UI revamp, follows ui-standard.md v2.0). App shell SidebarProvider+SidebarInset. KPI grid shadcn Card primitives. Token migration. -->
+<!-- 2026-05-14: Updated spec to match dashboard modernization — 4 primary KPIs with sparklines + compact secondary stats strip; single-row inline agent bar; 3-tab layout. -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 
 <!-- CHANGELOG -->
-<!-- 2026-05-18 v2.1: Senior UX audit-driven rewrite. Single job: AP analyst triage. Hero: 6-row exceptions list (Card + divide-y, NOT Table). Secondary: 4-stat compact strip (≤64px, no Card border). Removed from dashboard: sparklines, trend chart, by-category, agent strip, tabs, Contracts/GPO stats, Run Scan/Export as primary buttons. Run Scan + Export moved into `•••` DropdownMenu. Aggressive color discipline: only action-required values get colored. Acceptance Criteria: 21 EARS criteria. Forbidden Patterns: 8 affirmative rules including "color = action required" cross-cutting rule. -->
+<!-- 2026-05-21 v2.3: All-in-one rebuild per product-owner decision after the 2026-05-21 4-agent audit. Declutters the v2.2 layout (hero + grouped context band + promoted work table + 2-tab analysis), fixes data-integrity defects, adds 4 stakeholder features (recovery score/stage, vendor risk donut, invoice-status overview, pre-filtered drill-through), fixes 4 WCAG criticals, fixes chart theming. All v2.2 features retained. Layout: Amount-at-Risk hero (~1.6fr, one sparkline) + calm 3-KPI trio; merged Pipeline + Contracts&GPO context band (no glyph separators); promoted exceptions table; Invoice-status overview; 2-tab analysis (Trends / By Category) with category + vendor-risk donuts. Data integrity: computed agent counts, exceptionTypeBreakdown reconciliation, honest Run Scan toast, removed frozen "22% of period spend", Recovery Rate excludes Q4-2025 carry-over, GPO Savings labelled potential. A11y: --warning-text/--success-text tokens, reduced-motion NumberTicker guard, non-color severity cue, distinct category colors, h2-per-region + h3 card titles, aria-sort, meaningful chart aria-labels. Theming: DiscrepancyBarChart + By-Category moved to --chart-* / shadcn tokens. -->
+<!-- 2026-05-21 v2.2: Product-owner-driven revert to the v2.0 rich dashboard. SUPERSEDED by v2.3. -->
+<!-- 2026-05-18 v2.1: Senior UX audit-driven rewrite to triage-first inbox. SUPERSEDED by v2.2. -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system. App shell, Card primitives, container queries, tokens migrated. -->
 <!-- 2026-05-18: Added Acceptance Criteria section using EARS notation (SpecLayer v1.1 worked example). -->
 <!-- 2026-05-14: Initial spec + dashboard modernization (sparklines + tabs + agent strip). -->

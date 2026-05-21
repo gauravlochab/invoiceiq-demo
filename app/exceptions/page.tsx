@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { Suspense, useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { X, ChevronDown, Check, ArrowUpDown, Search } from "lucide-react";
 import {
   allExceptions as exceptions,
@@ -53,6 +54,19 @@ const filterOptions: { key: FilterKey; label: string }[] = [
   { key: "duplicate", label: `Duplicate (${counts.duplicate})` },
   { key: "match_exception", label: `Match Exception (${counts.match_exception})` },
 ];
+
+// [Spec: domains/dashboard/spec.md#Dependencies — pre-filtered drill-through]
+// Dashboard KPIs link here with a filter param (e.g. /exceptions?severity=critical).
+// This maps a URL param onto an existing FilterKey — no redesign of this page.
+function filterFromParams(params: URLSearchParams): FilterKey {
+  const severity = params.get("severity");
+  const status = params.get("status");
+  const type = params.get("type");
+  if (severity === "critical" || severity === "high") return severity;
+  if (status === "open") return "open";
+  if (type === "duplicate" || type === "match_exception") return type;
+  return "all";
+}
 
 function applyFilter(filter: FilterKey) {
   switch (filter) {
@@ -372,11 +386,18 @@ const managers = [
 
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 
-export default function ExceptionsPage() {
+function ExceptionsPageInner() {
   const { showToast } = useToast();
 
+  // Pre-filtered drill-through: a dashboard KPI may link here with a filter
+  // param. Read once for the initial filter state.
+  // [Spec: domains/dashboard/spec.md#Dependencies — pre-filtered drill-through]
+  const searchParams = useSearchParams();
+
   // Exception list state
-  const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
+  const [activeFilter, setActiveFilter] = useState<FilterKey>(() =>
+    filterFromParams(new URLSearchParams(searchParams.toString()))
+  );
   const [vendorFilter, setVendorFilter] = useState<string>("all");
   const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
   const vendorRef = useRef<HTMLDivElement>(null);
@@ -432,15 +453,14 @@ export default function ExceptionsPage() {
   }, [searchedExceptions, sortKey, sortDir]);
 
   const pageCount = Math.max(1, Math.ceil(sortedExceptions.length / pageSize));
+  // Clamp during render so a filter/search change that shrinks the result set
+  // never strands the view on an out-of-range page. (Replaces a setState-in-
+  // effect reset — avoids cascading renders, react-hooks/set-state-in-effect.)
+  const safePageIndex = Math.min(pageIndex, pageCount - 1);
   const paginatedExceptions = sortedExceptions.slice(
-    pageIndex * pageSize,
-    (pageIndex + 1) * pageSize
+    safePageIndex * pageSize,
+    (safePageIndex + 1) * pageSize
   );
-
-  // Reset to page 0 when filter/search changes
-  useEffect(() => {
-    setPageIndex(0);
-  }, [activeFilter, vendorFilter, tableSearch]);
 
   // View toggle state
   const [viewMode, setViewMode] = useState<"list" | "duplicates">("list");
@@ -466,11 +486,13 @@ export default function ExceptionsPage() {
   const exportRef = useRef<HTMLDivElement>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const closeModal = useCallback(() => {
+  // Plain function — the React Compiler memoizes automatically; a manual
+  // useCallback here trips react-hooks/preserve-manual-memoization.
+  const closeModal = () => {
     setActiveModal(null);
     setModalNote("");
     setSelectedManager("");
-  }, []);
+  };
 
   // Select-all checkbox indeterminate state
   useEffect(() => {
@@ -864,7 +886,7 @@ export default function ExceptionsPage() {
                 </tbody>
               </table>
               <DataTablePagination
-                pageIndex={pageIndex}
+                pageIndex={safePageIndex}
                 pageCount={pageCount}
                 pageSize={pageSize}
                 totalRows={sortedExceptions.length}
@@ -1116,5 +1138,14 @@ export default function ExceptionsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// useSearchParams() requires a Suspense boundary in the App Router.
+export default function ExceptionsPage() {
+  return (
+    <Suspense fallback={<div className="px-6 lg:px-8 pt-8 text-xs text-[var(--text-muted)]">Loading exceptions…</div>}>
+      <ExceptionsPageInner />
+    </Suspense>
   );
 }

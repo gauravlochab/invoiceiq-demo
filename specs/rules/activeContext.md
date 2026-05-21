@@ -1,27 +1,28 @@
 # Active Context
-_Last updated: 2026-05-18 by Claude_
+_Last updated: 2026-05-21 by Claude_
 
 ## Current Focus
 
-SpecLayer v1.1 — framework improvements from 8-source research synthesis (BMAD, Spec-Kit, Kiro, OpenSpec, Temporal, EARS, Karpathy context engineering, gstack, LLM Wiki).
+Dashboard v2.3 — all-in-one rebuild after the 2026-05-21 4-agent audit. Declutter + 4 new stakeholder features + data integrity + WCAG 2.1 AA + chart theming. Spec-first per SpecLayer.
 
 ## Recent Changes
 
-- `specs/rules/memory.md` — Updated: EARS notation for Acceptance Criteria, Token Efficiency section expanded with 400-line ceiling, spec citation in code, affirmative Forbidden Patterns rule
-- `specs/rules/boundaries.md` — Updated: HITL checkpoint declaration, spec citation in code, Confusion Protocol (halt on ambiguity, do not guess)
-- `specs/rules/activeContext.md` — This file, updated to reflect current session
-- `speclayer/SPECLAYER.md` — v1.1: EARS in AC template, 400-line ceiling, spec citations, affirmative Forbidden Patterns, HITL + readiness gate in workflow (step 2a), HANDOFF.md at step 6, Confusion Protocol in boundaries, 3 new Framework Principles (8-10)
-- vigorAI branch `speclayer-framework` — Pushed: boundaries.md, activeContext.md, progress.md, speclayer.md, html-outputs.md, README.md
+- `specs/domains/dashboard/spec.md` — rewritten to v2.3 "Active — supersedes v2.2": decluttered layout (hero + grouped context band + promoted table + 2-tab analysis), 4 new features, data-integrity rules, WCAG criteria, EARS ACs
+- `specs/rules/ui-standard.md` — v2.0.1: corrected the false "OKLCH tokens tuned for AA" claim (added `--warning-text`/`--success-text`) and the false "CardTitle = semantic h3" claim
+- `app/globals.css` — `--warning-text`/`--success-text` tokens; distinct-hue `--chart-1..6` categorical palette
+- `app/page.tsx` — v2.3 dashboard: Amount-at-Risk hero, calm KPI trio, merged context band, promoted exceptions table, invoice-status overview, 2-tab analysis with category + vendor-risk donuts, computed agent counts, honest Run Scan, a11y fixes
+- `components/magicui/number-ticker.tsx` — reduced-motion guard
+- `components/DiscrepancyBarChart.tsx` — re-themed onto shadcn v2 / `--chart-*`
+- `lib/data.ts` — derived `exceptionTypeBreakdown`
+- `app/exceptions/page.tsx` — pre-filtered drill-through via `?severity=`/`?status=`/`?type=`
 
 ## Open Questions
 
-- P2 improvements to plan next: Constitution.md/CLAUDE.md split, sprint-status.yaml, implementation readiness gate, HANDOFF.md, supersession over deletion
-- Which InvoiceIQ domain spec to use as first EARS AC reference example?
-- Push SpecLayer v1.1 changes to vigorAI branch?
+- AJ's customizable / two-mode per-role dashboard remains deferred — v2.3 decluttering makes it easier to slot in later
+- Pre-existing repo-wide lint issues (15 errors in untouched files: `Sidebar.tsx`, `scripts/generate-pdfs.js`, several pages) — out of v2.3 scope, candidate for a separate cleanup pass
 
 ## Next Steps
 
-- **Immediate:** Apply EARS notation to at least one domain spec as a worked example (dashboard or exceptions spec is highest visibility)
-- **Upcoming:** AJ Parkland feedback UI overhaul (9 change areas identified) — priority after spec framework stabilizes
-- **Upcoming:** Commit all graph view changes + spec rule changes to git
-- **Upcoming (P2):** Constitution.md pattern, sprint-status.yaml, HANDOFF.md artifact on commits
+- **Immediate:** Product-owner review of the v2.3 dashboard (not committed — per task constraints)
+- **Upcoming:** Optional shared `CardTitle` Slot/`asChild` support so headings nest without a wrapper `<div>`
+- **Upcoming:** Repo-wide lint cleanup pass for the pre-existing issues

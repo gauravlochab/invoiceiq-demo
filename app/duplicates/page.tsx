@@ -326,7 +326,7 @@ export default function DuplicatesPage() {
                 Duplicate Detection
               </h1>
               <p className="text-xs text-[var(--text-secondary)] mt-1 mb-0">
-                AI scanned 1,847 invoices &middot; 3 pairs flagged &middot; $56,070 at risk
+                AI scanned 1,847 invoices &middot; {duplicatePairs.length} pairs flagged &middot; {formatCurrency(duplicatePairs.reduce((s, p) => s + p.flaggedAmount, 0))} at risk
               </p>
             </div>
             <button className="text-xs font-medium text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] rounded-md px-3.5 py-1.5 cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
