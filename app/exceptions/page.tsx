@@ -1,11 +1,17 @@
+// [Spec: domains/exceptions/spec.md] — Exceptions list (work queue).
+// v2.0 shadcn migration (cluster 1, 2026-05-22): off the v1 token set per the
+// ui-standard.md v1→v2 map. Tabs/ToggleGroup/Table/Card/Badge/Dialog/Select/
+// Input/Checkbox/DropdownMenu/Progress/Alert/Skeleton primitives. SOM rows
+// excluded consistently via a single derived `apExceptions` set. aria-sort on
+// sortable headers. Dark mode works.
 "use client";
 
-import { Suspense, useState, useRef, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { X, ChevronDown, Check, ArrowUpDown, Search } from "lucide-react";
+import { ArrowUpDown, Search, FileSearch } from "lucide-react";
 import {
-  allExceptions as exceptions,
+  allExceptions,
   duplicatePairs,
   formatCurrency,
   formatDate,
@@ -22,9 +28,56 @@ import { CategoryBadge } from "@/components/CategoryBadge";
 import { VendorBadge } from "@/components/VendorBadge";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { EmptyState } from "@/components/EmptyState";
-import { FileSearch } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Progress, ProgressTrack, ProgressIndicator } from "@/components/ui/progress";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 // ─── EXCEPTION TABLE HELPERS ─────────────────────────────────────────────────
+
+// AP-only exception set — SOM rows excluded once, here, so the header subtitle,
+// tab count, filter-chip counts, and table rows never disagree.
+// [Spec: domains/exceptions/spec.md#Acceptance Criteria — View toggle]
+const apExceptions = allExceptions.filter((e) => !e.type.startsWith("som_"));
 
 type FilterKey =
   | "all"
@@ -34,30 +87,28 @@ type FilterKey =
   | "duplicate"
   | "match_exception";
 
-// Filter-chip labels include LIVE counts derived from `exceptions[]` so they
-// stay correct as SOM rows (or any other vertical's rows) are added / removed.
-// Previous version hardcoded "All (10)" etc. and went stale silently.
+// Filter-chip counts derive from `apExceptions[]` so they stay correct as the
+// underlying data changes.
 const counts = {
-  all: exceptions.length,
-  open: exceptions.filter((e) => e.status === "open" || e.status === "under_review" || e.status === "escalated").length,
-  critical: exceptions.filter((e) => e.severity === "critical").length,
-  high: exceptions.filter((e) => e.severity === "high").length,
-  duplicate: exceptions.filter((e) => e.type === "duplicate").length,
-  match_exception: exceptions.filter((e) => e.type === "match_exception").length,
+  all: apExceptions.length,
+  open: apExceptions.filter((e) => e.status === "open" || e.status === "under_review" || e.status === "escalated").length,
+  critical: apExceptions.filter((e) => e.severity === "critical").length,
+  high: apExceptions.filter((e) => e.severity === "high").length,
+  duplicate: apExceptions.filter((e) => e.type === "duplicate").length,
+  match_exception: apExceptions.filter((e) => e.type === "match_exception").length,
 };
 
-const filterOptions: { key: FilterKey; label: string }[] = [
-  { key: "all", label: `All (${counts.all})` },
-  { key: "open", label: `Open (${counts.open})` },
-  { key: "critical", label: `Critical (${counts.critical})` },
-  { key: "high", label: `High (${counts.high})` },
-  { key: "duplicate", label: `Duplicate (${counts.duplicate})` },
-  { key: "match_exception", label: `Match Exception (${counts.match_exception})` },
+const filterOptions: { key: FilterKey; label: string; count: number }[] = [
+  { key: "all", label: "All", count: counts.all },
+  { key: "open", label: "Open", count: counts.open },
+  { key: "critical", label: "Critical", count: counts.critical },
+  { key: "high", label: "High", count: counts.high },
+  { key: "duplicate", label: "Duplicate", count: counts.duplicate },
+  { key: "match_exception", label: "Match Exception", count: counts.match_exception },
 ];
 
 // [Spec: domains/dashboard/spec.md#Dependencies — pre-filtered drill-through]
 // Dashboard KPIs link here with a filter param (e.g. /exceptions?severity=critical).
-// This maps a URL param onto an existing FilterKey — no redesign of this page.
 function filterFromParams(params: URLSearchParams): FilterKey {
   const severity = params.get("severity");
   const status = params.get("status");
@@ -71,51 +122,66 @@ function filterFromParams(params: URLSearchParams): FilterKey {
 function applyFilter(filter: FilterKey) {
   switch (filter) {
     case "open":
-      return exceptions.filter(
+      return apExceptions.filter(
         (e) =>
           e.status === "open" ||
           e.status === "under_review" ||
           e.status === "escalated"
       );
     case "critical":
-      return exceptions.filter((e) => e.severity === "critical");
+      return apExceptions.filter((e) => e.severity === "critical");
     case "high":
-      return exceptions.filter((e) => e.severity === "high");
+      return apExceptions.filter((e) => e.severity === "high");
     case "duplicate":
-      return exceptions.filter((e) => e.type === "duplicate");
+      return apExceptions.filter((e) => e.type === "duplicate");
     case "match_exception":
-      return exceptions.filter((e) => e.type === "match_exception");
+      return apExceptions.filter((e) => e.type === "match_exception");
     default:
-      return exceptions;
+      return apExceptions;
   }
 }
 
-function typeBadgeClass(type: ExceptionType): string {
-  if (type === "suspicious_invoice" || type === "contract_overage")
-    return "badge critical";
-  if (type === "duplicate" || type === "tier_pricing") return "badge warning";
-  return "badge neutral";
+// Type badge — shadcn Badge variant. [Spec: domains/exceptions/spec.md#Business Rules]
+function typeBadgeVariant(type: ExceptionType): "destructive" | "outline" | "secondary" {
+  if (type === "suspicious_invoice" || type === "contract_overage") return "destructive";
+  if (type === "duplicate" || type === "tier_pricing") return "outline";
+  return "secondary";
 }
 
-function statusBadgeClass(status: Status): string {
-  if (status === "open") return "badge critical";
-  if (status === "under_review") return "badge warning";
-  if (status === "escalated") return "badge blue";
-  if (status === "resolved") return "badge success";
-  return "badge neutral";
+// Status badge — shadcn Badge variant. Resolved uses a custom success class.
+function statusBadgeVariant(status: Status): "destructive" | "outline" | "secondary" | "success" {
+  if (status === "open") return "destructive";
+  if (status === "under_review") return "secondary";
+  if (status === "escalated") return "outline";
+  return "success"; // resolved
 }
 
+function StatusBadge({ status }: { status: Status }) {
+  const variant = statusBadgeVariant(status);
+  if (variant === "success") {
+    return (
+      <Badge className="border-success bg-success/10 text-success-text">
+        {statusConfig[status].label}
+      </Badge>
+    );
+  }
+  return <Badge variant={variant}>{statusConfig[status].label}</Badge>;
+}
+
+// Severity dot — vivid token fill (non-text, AA 3:1).
 function severityDotClass(severity: Severity): string {
-  if (severity === "critical") return "status-dot critical";
-  if (severity === "high") return "status-dot warning";
-  if (severity === "medium") return "status-dot blue";
-  return "status-dot neutral";
+  if (severity === "critical") return "bg-destructive";
+  if (severity === "high") return "bg-destructive/60";
+  if (severity === "medium") return "bg-warning";
+  return "bg-border";
 }
 
-function flaggedColor(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "#DC2626";
-  if (severity === "medium") return "#B45309";
-  return "var(--text-secondary)";
+// Flagged-amount text — AA-safe *-text tokens.
+// [Spec: domains/exceptions/spec.md#Acceptance Criteria — Data table]
+function flaggedAmountClass(severity: Severity): string {
+  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "medium") return "text-warning-text";
+  return "text-foreground";
 }
 
 // ─── DUPLICATE VIEW HELPERS ──────────────────────────────────────────────────
@@ -138,23 +204,24 @@ const aiAnalysis: Record<string, string[]> = {
   ],
 };
 
+// Similarity bar — shadcn Progress. >=99% uses --destructive fill, else --warning.
+// [Spec: domains/exceptions/spec.md#Business Rules — Similarity bar color]
 function SimilarityBar({ score }: { score: number }) {
-  const fillColor = score >= 99 ? "#DC2626" : "#B45309";
-  const textColor = fillColor;
-
+  const high = score >= 99;
   return (
     <div className="flex items-center gap-3">
-      <span className="section-label">Similarity</span>
-      <div className="w-32 h-1.5 rounded-full overflow-hidden bg-[var(--border)]">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${Math.min(score, 100)}%`, background: fillColor }}
-        />
-      </div>
-      <span className="text-[13px] font-medium" style={{ color: textColor }}>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+        Similarity
+      </span>
+      <Progress value={Math.min(score, 100)} className="w-32">
+        <ProgressTrack className="h-1.5">
+          <ProgressIndicator className={high ? "bg-destructive" : "bg-warning"} />
+        </ProgressTrack>
+      </Progress>
+      <span className={`text-[13px] font-medium ${high ? "text-destructive" : "text-warning-text"}`}>
         {score}%
       </span>
-      <span className="text-[13px] text-[var(--border-strong)]">|</span>
+      <span className="text-[13px] text-border">|</span>
     </div>
   );
 }
@@ -174,43 +241,28 @@ function DuplicatePairCard({
 }) {
   const analysis = aiAnalysis[pair.id] ?? [];
 
-  let badgeClass = "badge neutral";
-  let badgeLabel = "Open";
-  if (pair.status === "open") {
-    badgeClass = "badge critical";
-    badgeLabel = "Open";
-  } else if (pair.status === "under_review") {
-    badgeClass = "badge warning";
-    badgeLabel = "Under Review";
-  } else if (pair.status === "resolved") {
-    badgeClass = "badge success";
-    badgeLabel = "Resolved";
-  }
-
   function renderActions() {
     if (pair.status === "resolved") {
       return (
-        <span className="text-xs font-medium text-green-700">
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-success-text">
           Resolved — {formatCurrency(pair.flaggedAmount)} saved
-          <Check className="w-3.5 h-3.5 inline ml-1" />
         </span>
       );
     }
 
     if (pairActions[pair.id]) {
+      const action = pairActions[pair.id];
+      const cls =
+        action === "reject"
+          ? "border-destructive bg-destructive/10 text-destructive"
+          : action === "override"
+            ? "border-success bg-success/10 text-success-text"
+            : "border-border bg-muted text-foreground";
       return (
-        <div
-          className={`px-3 py-2 rounded-md text-xs font-medium text-center ${
-            pairActions[pair.id] === "reject"
-              ? "bg-red-50 text-red-700 border border-red-200"
-              : pairActions[pair.id] === "override"
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                : "bg-purple-50 text-purple-700 border border-purple-200"
-          }`}
-        >
-          {pairActions[pair.id] === "reject"
+        <div className={`rounded-md border px-3 py-2 text-center text-xs font-medium ${cls}`}>
+          {action === "reject"
             ? "Rejected"
-            : pairActions[pair.id] === "override"
+            : action === "override"
               ? "Approved with Override"
               : "Escalated to Manager"}
         </div>
@@ -219,48 +271,42 @@ function DuplicatePairCard({
 
     return (
       <div className="flex items-center gap-2">
-        <button
-          onClick={onReject}
-          className="bg-red-600 text-white px-3 py-1.5 text-xs font-medium rounded-md border-none cursor-pointer hover:bg-red-700 transition-colors"
-        >
+        <Button variant="destructive" size="sm" onClick={onReject}>
           Reject
-        </button>
-        <button
-          onClick={onOverride}
-          className="bg-[var(--bg-surface)] text-[var(--text-secondary)] px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-        >
+        </Button>
+        <Button variant="outline" size="sm" onClick={onOverride}>
           Approve with Override
-        </button>
-        <button
-          onClick={onEscalate}
-          className="bg-[var(--bg-surface)] text-[var(--text-secondary)] px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-        >
+        </Button>
+        <Button variant="outline" size="sm" onClick={onEscalate}>
           Escalate to Manager
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="card mb-4">
+    <Card className="mb-4 gap-0 py-0">
       {/* Card header */}
-      <div className="px-5 pt-4 pb-3 border-b border-[var(--border)] flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-border px-5 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <VendorBadge name={pair.vendor} size="md" />
-          <span className="text-[11px] text-[var(--text-muted)] ml-1">{pair.id}</span>
+          {/* h3 — gives screen-reader heading navigation a target per spec */}
+          <h3 className="ml-1 m-0 text-[11px] font-normal text-muted-foreground">
+            {pair.id}
+          </h3>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="text-sm font-medium text-[var(--text-primary)]">
+          <span className="text-sm font-medium tabular-nums text-foreground">
             {formatCurrency(pair.flaggedAmount)}
           </span>
-          <span className={badgeClass}>{badgeLabel}</span>
+          <StatusBadge status={pair.status as Status} />
         </div>
       </div>
 
       {/* Similarity score row */}
-      <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--bg-base)] flex items-center gap-3">
+      <div className="flex items-center gap-3 border-b border-border bg-muted px-5 py-2">
         <SimilarityBar score={pair.similarity} />
-        <span className="text-xs text-[var(--text-secondary)]">
+        <span className="text-xs text-muted-foreground">
           {pair.amountDelta > 0
             ? `Δ ${formatCurrency(pair.amountDelta)} · ${pair.daysDelta} days apart`
             : `${pair.daysDelta} days apart · no amount delta`}
@@ -268,40 +314,44 @@ function DuplicatePairCard({
       </div>
 
       {/* Side-by-side comparison */}
-      <div className="px-5 py-4 grid grid-cols-[1fr_auto_1fr] items-start">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start px-5 py-4">
         {/* Invoice A */}
         <div>
-          <div className="section-label mb-2">Invoice A</div>
-          <div className="font-mono text-xs font-medium text-[var(--text-primary)]">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            Invoice A
+          </div>
+          <div className="font-mono text-xs font-medium text-foreground">
             {pair.invoice1.number}
           </div>
-          <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {formatDate(pair.invoice1.date)}
           </div>
-          <div className="text-[15px] font-semibold text-[var(--text-primary)] mt-1">
+          <div className="mt-1 text-base font-semibold tabular-nums text-foreground">
             {formatCurrency(pair.invoice1.amount)}
           </div>
-          <div className="text-[11px] text-[var(--text-muted)] mt-1">
+          <div className="mt-1 text-[11px] text-muted-foreground">
             {pair.invoice1.submittedVia}
           </div>
         </div>
 
         {/* Center divider */}
-        <div className="w-px bg-[var(--border)] self-stretch mx-8" />
+        <div className="mx-8 w-px self-stretch bg-border" />
 
         {/* Invoice B */}
         <div>
-          <div className="section-label mb-2">Invoice B</div>
-          <div className="font-mono text-xs font-medium text-[var(--text-primary)]">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            Invoice B
+          </div>
+          <div className="font-mono text-xs font-medium text-foreground">
             {pair.invoice2.number}
           </div>
-          <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {formatDate(pair.invoice2.date)}
           </div>
-          <div className="text-[15px] font-semibold text-[var(--text-primary)] mt-1">
+          <div className="mt-1 text-base font-semibold tabular-nums text-foreground">
             {formatCurrency(pair.invoice2.amount)}
           </div>
-          <div className="text-[11px] text-[var(--text-muted)] mt-1">
+          <div className="mt-1 text-[11px] text-muted-foreground">
             {pair.invoice2.submittedVia}
           </div>
         </div>
@@ -310,12 +360,14 @@ function DuplicatePairCard({
       {/* AI analysis */}
       {analysis.length > 0 && (
         <div className="px-5 pb-4">
-          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-            <div className="section-label mb-2">Analysis</div>
+          <div className="rounded-md border border-border bg-muted px-4 py-3">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+              Analysis
+            </div>
             <div className="flex flex-col gap-1.5">
               {analysis.map((line, i) => (
-                <div key={i} className="text-xs text-[var(--text-secondary)] flex gap-2">
-                  <span className="text-[var(--text-muted)] shrink-0">&ndash;</span>
+                <div key={i} className="flex gap-2 text-sm text-muted-foreground">
+                  <span className="shrink-0 text-muted-foreground">&ndash;</span>
                   <span>{line}</span>
                 </div>
               ))}
@@ -326,7 +378,7 @@ function DuplicatePairCard({
 
       {/* Actions */}
       <div className="px-5 pb-4">{renderActions()}</div>
-    </div>
+    </Card>
   );
 }
 
@@ -352,26 +404,26 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <div className="border border-[var(--border)] rounded-lg bg-[var(--bg-surface)] px-6 py-4 flex items-center mb-6">
+    <Card className="mb-6 flex-row items-center gap-0 px-6 py-4">
       {steps.map((s, i) => (
-        <div key={s.step} className="flex items-center flex-1 min-w-0">
-          <div className="flex-1 min-w-0">
-            <div className="section-label">{s.step}</div>
-            <div className="text-[13px] font-medium text-[var(--text-primary)] mt-0.5">
+        <div key={s.step} className="flex min-w-0 flex-1 items-center">
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+              {s.step}
+            </div>
+            <div className="mt-0.5 text-[13px] font-medium text-foreground">
               {s.name}
             </div>
-            <div className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-snug">
+            <div className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
               {s.desc}
             </div>
           </div>
           {i < steps.length - 1 && (
-            <span className="text-[var(--border-strong)] text-lg mx-6 shrink-0">
-              &rarr;
-            </span>
+            <span className="mx-6 shrink-0 text-lg text-border">&rarr;</span>
           )}
         </div>
       ))}
-    </div>
+    </Card>
   );
 }
 
@@ -384,13 +436,13 @@ const managers = [
   "Jennifer Walsh",
 ];
 
+type SortKey = "flaggedAmount" | "severity" | "category" | null;
+
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 
 function ExceptionsPageInner() {
   const { showToast } = useToast();
 
-  // Pre-filtered drill-through: a dashboard KPI may link here with a filter
-  // param. Read once for the initial filter state.
   // [Spec: domains/dashboard/spec.md#Dependencies — pre-filtered drill-through]
   const searchParams = useSearchParams();
 
@@ -399,8 +451,6 @@ function ExceptionsPageInner() {
     filterFromParams(new URLSearchParams(searchParams.toString()))
   );
   const [vendorFilter, setVendorFilter] = useState<string>("all");
-  const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
-  const vendorRef = useRef<HTMLDivElement>(null);
 
   // Table search
   const [tableSearch, setTableSearch] = useState("");
@@ -410,7 +460,7 @@ function ExceptionsPageInner() {
   const [pageSize, setPageSize] = useState(25);
 
   // Get unique vendors
-  const vendors = Array.from(new Set(exceptions.map((e) => e.vendor))).sort();
+  const vendors = Array.from(new Set(apExceptions.map((e) => e.vendor))).sort();
 
   // Apply both filters
   const filtered = applyFilter(activeFilter).filter(
@@ -418,7 +468,7 @@ function ExceptionsPageInner() {
   );
 
   // Sort state
-  const [sortKey, setSortKey] = useState<"flaggedAmount" | "severity" | "category" | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const searchedExceptions = useMemo(() => {
@@ -454,8 +504,7 @@ function ExceptionsPageInner() {
 
   const pageCount = Math.max(1, Math.ceil(sortedExceptions.length / pageSize));
   // Clamp during render so a filter/search change that shrinks the result set
-  // never strands the view on an out-of-range page. (Replaces a setState-in-
-  // effect reset — avoids cascading renders, react-hooks/set-state-in-effect.)
+  // never strands the view on an out-of-range page.
   const safePageIndex = Math.min(pageIndex, pageCount - 1);
   const paginatedExceptions = sortedExceptions.slice(
     safePageIndex * pageSize,
@@ -475,54 +524,39 @@ function ExceptionsPageInner() {
   const [pairActions, setPairActions] = useState<Record<string, string>>({});
 
   // Header button state
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
   const [selectedExceptions, setSelectedExceptions] = useState<string[]>([]);
 
   // Simulated loading state
   const [loading, setLoading] = useState(true);
 
-  const assignRef = useRef<HTMLDivElement>(null);
-  const exportRef = useRef<HTMLDivElement>(null);
-  const selectAllRef = useRef<HTMLInputElement>(null);
+  // aria-sort header helper.
+  // [Spec: domains/exceptions/spec.md#Acceptance Criteria — Data table]
+  function ariaSortFor(key: Exclude<SortKey, null>): "ascending" | "descending" | "none" {
+    if (sortKey !== key) return "none";
+    return sortDir === "asc" ? "ascending" : "descending";
+  }
 
-  // Plain function — the React Compiler memoizes automatically; a manual
-  // useCallback here trips react-hooks/preserve-manual-memoization.
+  function handleSort(key: Exclude<SortKey, null>) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "category" ? "asc" : "desc");
+    }
+    setPageIndex(0);
+  }
+
+  // Plain function — the React Compiler memoizes automatically.
   const closeModal = () => {
     setActiveModal(null);
     setModalNote("");
     setSelectedManager("");
   };
 
-  // Select-all checkbox indeterminate state
-  useEffect(() => {
-    if (selectAllRef.current) {
-      selectAllRef.current.indeterminate =
-        selectedExceptions.length > 0 && selectedExceptions.length < paginatedExceptions.length;
-    }
-  }, [selectedExceptions.length, paginatedExceptions.length]);
-
   // Simulated loading
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 350);
     return () => clearTimeout(timer);
-  }, []);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (assignRef.current && !assignRef.current.contains(e.target as Node)) {
-        setAssignOpen(false);
-      }
-      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
-        setExportOpen(false);
-      }
-      if (vendorRef.current && !vendorRef.current.contains(e.target as Node)) {
-        setVendorDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   function handleSubmit() {
@@ -538,10 +572,10 @@ function ExceptionsPageInner() {
     closeModal();
   }
 
-  const activeTabClass =
-    "text-xs px-2.5 py-1 rounded-md cursor-pointer transition-all duration-150 text-[var(--text-primary)] font-medium bg-[var(--bg-subtle)] border border-[var(--border)]";
-  const inactiveTabClass =
-    "text-xs px-2.5 py-1 rounded-md cursor-pointer transition-all duration-150 text-[var(--text-secondary)] font-normal bg-transparent border border-transparent hover:bg-[var(--bg-subtle)]";
+  const allSelected =
+    selectedExceptions.length === paginatedExceptions.length && paginatedExceptions.length > 0;
+  const someSelected =
+    selectedExceptions.length > 0 && selectedExceptions.length < paginatedExceptions.length;
 
   const duplicateAtRisk = formatCurrency(
     duplicatePairs
@@ -550,601 +584,559 @@ function ExceptionsPageInner() {
   );
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
+    <main className="min-h-screen bg-background">
       {/* Page header */}
-      <div className="px-6 lg:px-8 pt-8">
+      {/* [Spec: domains/exceptions/spec.md#Layout — Header] */}
+      <div className="px-4 pt-8 lg:px-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-[var(--text-primary)] m-0 leading-tight">
+            <h1 className="m-0 text-2xl font-semibold leading-tight text-foreground">
               Exceptions
             </h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              {exceptions.length} exceptions · {duplicatePairs.length} duplicate pairs · Q1 2026
+            <p className="mt-1 text-sm text-muted-foreground">
+              {apExceptions.length} exceptions · {duplicatePairs.length} duplicate pairs · Q1 2026
             </p>
           </div>
           <div className="flex gap-2">
-            <div className="relative" ref={assignRef}>
-              <button onClick={() => setAssignOpen(!assignOpen)} className="border border-[var(--border-strong)] bg-[var(--bg-surface)] text-xs font-medium px-3 py-1.5 rounded-md cursor-pointer text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors">
-                Assign{selectedExceptions.length > 0 ? ` (${selectedExceptions.length})` : ""}
-              </button>
-              {assignOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-md shadow-md py-1 z-20 w-52">
-                  <p className="px-3 py-1 text-xs text-[var(--text-muted)] m-0">Assign to:</p>
-                  {managers.map(name => (
-                    <button key={name} onClick={() => { setAssignOpen(false); showToast(`${selectedExceptions.length || "All"} exception(s) assigned to ${name} for review`, "success"); setSelectedExceptions([]); }} className="block w-full text-left px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] cursor-pointer bg-transparent border-none">
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="relative" ref={exportRef}>
-              <button onClick={() => setExportOpen(!exportOpen)} className="border border-[var(--border-strong)] bg-[var(--bg-surface)] text-xs font-medium px-3 py-1.5 rounded-md cursor-pointer text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors">
-                Export
-              </button>
-              {exportOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-md shadow-md py-1 z-20 w-44">
-                  {["Export as PDF", "Export as CSV", "Email to Stakeholder"].map(opt => (
-                    <button key={opt} onClick={() => { setExportOpen(false); showToast(`${opt} — report generated successfully`, "success"); }} className="block w-full text-left px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] cursor-pointer bg-transparent border-none">
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Assign — shadcn DropdownMenu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="sm">
+                    Assign{selectedExceptions.length > 0 ? ` (${selectedExceptions.length})` : ""}
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>Assign to:</DropdownMenuLabel>
+                {managers.map((name) => (
+                  <DropdownMenuItem
+                    key={name}
+                    onClick={() => {
+                      showToast(
+                        `${selectedExceptions.length || "All"} exception(s) assigned to ${name} for review`,
+                        "success"
+                      );
+                      setSelectedExceptions([]);
+                    }}
+                  >
+                    {name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Export — shadcn DropdownMenu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="sm">
+                    Export
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-44">
+                {["Export as PDF", "Export as CSV", "Email to Stakeholder"].map((opt) => (
+                  <DropdownMenuItem
+                    key={opt}
+                    onClick={() => showToast(`${opt} — report generated successfully`, "success")}
+                  >
+                    {opt}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
 
-      <hr className="divider mt-4" />
+      <hr className="mt-4 border-border" />
 
       {/* View toggle tabs */}
-      <div className="px-6 lg:px-8 pt-3 flex gap-1.5">
-        <button
-          className={viewMode === "list" ? activeTabClass : inactiveTabClass}
-          onClick={() => setViewMode("list")}
-        >
-          Exceptions ({exceptions.filter(e => !e.type.startsWith("som_")).length})
-        </button>
-        <button
-          className={
-            viewMode === "duplicates" ? activeTabClass : inactiveTabClass
-          }
-          onClick={() => setViewMode("duplicates")}
-        >
-          Duplicates ({duplicatePairs.length})
-        </button>
-      </div>
+      {/* [Spec: domains/exceptions/spec.md#Layout — View Toggle] */}
+      <Tabs
+        value={viewMode}
+        onValueChange={(v) => setViewMode(v as "list" | "duplicates")}
+        className="gap-0"
+      >
+        <div className="px-4 pt-3 lg:px-6">
+          <TabsList>
+            <TabsTrigger value="list">
+              Exceptions ({apExceptions.length})
+            </TabsTrigger>
+            <TabsTrigger value="duplicates">
+              Duplicates ({duplicatePairs.length})
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
-      {viewMode === "list" && (
-        <>
+        {/* ── LIST VIEW ──────────────────────────────────────────────────────── */}
+        <TabsContent value="list">
           {/* Filter row */}
-          <div className="px-6 lg:px-8 py-3 flex items-center gap-3 flex-wrap">
-            <div className="flex gap-1.5 flex-wrap">
-              {filterOptions.map((f) => {
-                const isActive = activeFilter === f.key;
-                return (
-                  <button
-                    key={f.key}
-                    onClick={() => setActiveFilter(f.key)}
-                    className={`text-xs px-2.5 py-1 rounded-md cursor-pointer transition-all duration-150 ${
-                      isActive
-                        ? "text-[var(--text-primary)] font-medium bg-[var(--bg-subtle)] border border-[var(--border)]"
-                        : "text-[var(--text-secondary)] font-normal bg-transparent border border-transparent hover:bg-[var(--bg-subtle)]"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                );
-              })}
-            </div>
+          {/* [Spec: domains/exceptions/spec.md#Layout — Filter Row] */}
+          <div className="flex flex-wrap items-center gap-3 px-4 py-3 lg:px-6">
+            {/* Single-select filter: base-ui ToggleGroup is array-valued; we
+                keep exactly one chip pressed and ignore empty deselection so
+                the queue is never unfiltered. */}
+            <ToggleGroup
+              value={[activeFilter]}
+              onValueChange={(v) => {
+                const next = v.find((k) => k !== activeFilter) ?? activeFilter;
+                setActiveFilter(next as FilterKey);
+                setPageIndex(0);
+              }}
+              variant="outline"
+              size="sm"
+            >
+              {filterOptions.map((f) => (
+                <ToggleGroupItem
+                  key={f.key}
+                  value={f.key}
+                  className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+                >
+                  {f.label}
+                  <Badge variant="secondary" className="ml-1">
+                    {f.count}
+                  </Badge>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
 
-            {/* Vendor filter */}
-            <div className="relative" ref={vendorRef}>
-              <button
-                onClick={() => setVendorDropdownOpen(!vendorDropdownOpen)}
-                className={`text-xs px-2.5 py-1 rounded-md cursor-pointer transition-all duration-150 inline-flex items-center gap-1 ${
-                  vendorFilter !== "all"
-                    ? "text-[var(--acl-primary)] font-medium bg-[#e8f1fc] border border-[#b0d0f0]"
-                    : "text-[var(--text-secondary)] bg-transparent border border-[var(--border)] hover:bg-[var(--bg-subtle)]"
-                }`}
-              >
-                {vendorFilter === "all" ? "All Vendors" : vendorFilter}
-                <ChevronDown className="w-3 h-3" />
-              </button>
-              {vendorDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-md shadow-md py-1 z-20 w-56 max-h-60 overflow-auto">
-                  <button
-                    onClick={() => { setVendorFilter("all"); setVendorDropdownOpen(false); }}
-                    className={`block w-full text-left px-3 py-1.5 text-xs cursor-pointer bg-transparent border-none ${
-                      vendorFilter === "all" ? "text-[var(--acl-primary)] font-medium bg-[var(--bg-subtle)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
-                    }`}
-                  >
-                    All Vendors
-                  </button>
-                  {vendors.map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => { setVendorFilter(v); setVendorDropdownOpen(false); }}
-                      className={`block w-full text-left px-3 py-1.5 text-xs cursor-pointer bg-transparent border-none ${
-                        vendorFilter === v ? "text-[var(--acl-primary)] font-medium bg-[var(--bg-subtle)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Vendor filter — shadcn Select */}
+            <Select
+              value={vendorFilter}
+              onValueChange={(v) => {
+                setVendorFilter(v as string);
+                setPageIndex(0);
+              }}
+            >
+              <SelectTrigger size="sm" className="w-44">
+                <SelectValue placeholder="All Vendors" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Vendors</SelectItem>
+                {vendors.map((v) => (
+                  <SelectItem key={v} value={v}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Table search bar */}
-          <div className="px-6 lg:px-8 pb-3">
+          {/* [Spec: domains/exceptions/spec.md#Layout — Search Bar] */}
+          <div className="px-4 pb-3 lg:px-6">
             <div className="relative w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
-              <input
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 type="text"
                 value={tableSearch}
-                onChange={(e) => setTableSearch(e.target.value)}
+                onChange={(e) => {
+                  setTableSearch(e.target.value);
+                  setPageIndex(0);
+                }}
                 placeholder="Search exceptions..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs border border-[var(--border)] rounded-md bg-[var(--bg-surface)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--acl-primary)] transition-colors"
+                className="pl-9"
               />
             </div>
           </div>
 
           {/* Table */}
-          <div className="px-6 lg:px-8 pb-8">
-            <div className="card overflow-hidden">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th className="w-8">
-                      <input
-                        ref={selectAllRef}
-                        type="checkbox"
-                        checked={selectedExceptions.length === paginatedExceptions.length && paginatedExceptions.length > 0}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedExceptions(paginatedExceptions.map((ex) => ex.id));
-                          } else {
-                            setSelectedExceptions([]);
-                          }
-                        }}
-                        className="w-3.5 h-3.5 rounded border-[var(--border-strong)] cursor-pointer accent-[var(--acl-primary)]"
-                        aria-label="Select all rows"
-                      />
-                    </th>
-                    <th>Exception</th>
-                    <th>Type</th>
-                    <th
-                      className="cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                      onClick={() => {
-                        if (sortKey === "category") { setSortDir(d => d === "desc" ? "asc" : "desc"); }
-                        else { setSortKey("category"); setSortDir("asc"); }
-                        setPageIndex(0);
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        Category <ArrowUpDown className="w-3 h-3" />
-                      </span>
-                    </th>
-                    <th>Vendor</th>
-                    <th
-                      className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                      onClick={() => {
-                        if (sortKey === "flaggedAmount") { setSortDir(d => d === "desc" ? "asc" : "desc"); }
-                        else { setSortKey("flaggedAmount"); setSortDir("desc"); }
-                        setPageIndex(0);
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        Flagged <ArrowUpDown className="w-3 h-3" />
-                      </span>
-                    </th>
-                    <th
-                      className="cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                      onClick={() => {
-                        if (sortKey === "severity") { setSortDir(d => d === "desc" ? "asc" : "desc"); }
-                        else { setSortKey("severity"); setSortDir("desc"); }
-                        setPageIndex(0);
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        Severity <ArrowUpDown className="w-3 h-3" />
-                      </span>
-                    </th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <>
-                      {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                        <tr key={i}>
-                          <td className="w-8"><div className="h-3.5 w-3.5 bg-[var(--border)] rounded animate-pulse" /></td>
-                          <td>
-                            <div className="h-3 w-12 bg-[var(--border)] rounded animate-pulse mb-1.5" />
-                            <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse" />
-                          </td>
-                          <td><div className="h-5 w-24 bg-[var(--border)] rounded animate-pulse" /></td>
-                          <td><div className="h-5 w-28 bg-[var(--border)] rounded animate-pulse" /></td>
-                          <td><div className="h-3.5 w-28 bg-[var(--border)] rounded animate-pulse" /></td>
-                          <td className="right"><div className="h-3.5 w-16 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
-                          <td><div className="h-3.5 w-16 bg-[var(--border)] rounded animate-pulse" /></td>
-                          <td><div className="h-5 w-20 bg-[var(--border)] rounded animate-pulse" /></td>
-                          <td><div className="h-3.5 w-14 bg-[var(--border)] rounded animate-pulse" /></td>
-                        </tr>
-                      ))}
-                    </>
-                  ) : (
-                    <>
-                      {paginatedExceptions.map((ex) => (
-                        <tr key={ex.id} className="group">
-                          {/* CHECKBOX */}
-                          <td className="w-8">
-                            <input
-                              type="checkbox"
-                              checked={selectedExceptions.includes(ex.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedExceptions((prev) => [...prev, ex.id]);
-                                } else {
-                                  setSelectedExceptions((prev) => prev.filter((id) => id !== ex.id));
-                                }
-                              }}
-                              className="w-3.5 h-3.5 rounded border-[var(--border-strong)] cursor-pointer accent-[var(--acl-primary)]"
-                              aria-label={`Select ${ex.id}`}
-                            />
-                          </td>
-                          {/* EXCEPTION */}
-                          <td>
-                            <span className="font-mono text-[11px] text-[var(--text-muted)] block leading-snug">
-                              {ex.id}
-                            </span>
-                            <span className="text-xs text-[var(--text-secondary)]">
-                              {ex.invoiceNumber}
-                            </span>
-                          </td>
+          {/* [Spec: domains/exceptions/spec.md#Layout — Data Table] */}
+          <div className="px-4 pb-8 lg:px-6">
+            <Card className="py-0">
+              <CardContent className="px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8">
+                        <Checkbox
+                          checked={allSelected}
+                          indeterminate={someSelected}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedExceptions(paginatedExceptions.map((ex) => ex.id));
+                            } else {
+                              setSelectedExceptions([]);
+                            }
+                          }}
+                          aria-label="Select all rows"
+                        />
+                      </TableHead>
+                      <TableHead>Exception</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead aria-sort={ariaSortFor("category")}>
+                        <button
+                          type="button"
+                          onClick={() => handleSort("category")}
+                          className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                        >
+                          Category
+                          <ArrowUpDown
+                            className={`size-3 ${sortKey === "category" ? "text-primary" : "text-muted-foreground"}`}
+                          />
+                        </button>
+                      </TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead className="text-right" aria-sort={ariaSortFor("flaggedAmount")}>
+                        <button
+                          type="button"
+                          onClick={() => handleSort("flaggedAmount")}
+                          className="inline-flex flex-row-reverse items-center gap-1 transition-colors hover:text-foreground"
+                        >
+                          Flagged
+                          <ArrowUpDown
+                            className={`size-3 ${sortKey === "flaggedAmount" ? "text-primary" : "text-muted-foreground"}`}
+                          />
+                        </button>
+                      </TableHead>
+                      <TableHead aria-sort={ariaSortFor("severity")}>
+                        <button
+                          type="button"
+                          onClick={() => handleSort("severity")}
+                          className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                        >
+                          Severity
+                          <ArrowUpDown
+                            className={`size-3 ${sortKey === "severity" ? "text-primary" : "text-muted-foreground"}`}
+                          />
+                        </button>
+                      </TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>
+                        <span className="sr-only">Review</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <>
+                        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                          <TableRow key={i}>
+                            <TableCell className="w-8"><Skeleton className="size-3.5 rounded" /></TableCell>
+                            <TableCell>
+                              <Skeleton className="mb-1.5 h-3 w-12 rounded" />
+                              <Skeleton className="h-2.5 w-20 rounded" />
+                            </TableCell>
+                            <TableCell><Skeleton className="h-5 w-24 rounded" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-28 rounded" /></TableCell>
+                            <TableCell><Skeleton className="h-3.5 w-28 rounded" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="ml-auto h-3.5 w-16 rounded" /></TableCell>
+                            <TableCell><Skeleton className="h-3.5 w-16 rounded" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20 rounded" /></TableCell>
+                            <TableCell><Skeleton className="h-3.5 w-14 rounded" /></TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        {paginatedExceptions.map((ex) => (
+                          <TableRow key={ex.id} className="group">
+                            {/* CHECKBOX */}
+                            <TableCell className="w-8">
+                              <Checkbox
+                                checked={selectedExceptions.includes(ex.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedExceptions((prev) => [...prev, ex.id]);
+                                  } else {
+                                    setSelectedExceptions((prev) => prev.filter((id) => id !== ex.id));
+                                  }
+                                }}
+                                aria-label={`Select ${ex.id}`}
+                              />
+                            </TableCell>
+                            {/* EXCEPTION */}
+                            <TableCell>
+                              <span className="block font-mono text-[11px] leading-snug text-muted-foreground">
+                                {ex.id}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {ex.invoiceNumber}
+                              </span>
+                            </TableCell>
 
-                          {/* TYPE */}
-                          <td>
-                            <span className={typeBadgeClass(ex.type)}>
-                              {typeConfig[ex.type].label}
-                            </span>
-                          </td>
+                            {/* TYPE */}
+                            <TableCell>
+                              <Badge variant={typeBadgeVariant(ex.type)}>
+                                {typeConfig[ex.type].label}
+                              </Badge>
+                            </TableCell>
 
-                          {/* CATEGORY */}
-                          <td>
-                            {ex.category && <CategoryBadge category={ex.category} />}
-                          </td>
+                            {/* CATEGORY */}
+                            <TableCell>
+                              {ex.category && <CategoryBadge category={ex.category} />}
+                            </TableCell>
 
-                          {/* VENDOR */}
-                          <td>
-                            <VendorBadge name={ex.vendor} size="sm" />
-                          </td>
+                            {/* VENDOR */}
+                            <TableCell>
+                              <VendorBadge name={ex.vendor} size="sm" />
+                            </TableCell>
 
-                          {/* FLAGGED */}
-                          <td className="right">
-                            <span
-                              className="tabular-nums text-[13px] font-medium"
-                              style={{ color: flaggedColor(ex.severity) }}
+                            {/* FLAGGED */}
+                            <TableCell
+                              className={`text-right text-[13px] font-medium tabular-nums ${flaggedAmountClass(ex.severity)}`}
                             >
                               {formatCurrency(ex.flaggedAmount)}
-                            </span>
-                          </td>
+                            </TableCell>
 
-                          {/* SEVERITY */}
-                          <td>
-                            <span className="inline-flex items-center gap-1.5">
-                              <span
-                                className={severityDotClass(ex.severity)}
-                                style={{
-                                  background: severityConfig[ex.severity].color,
+                            {/* SEVERITY */}
+                            <TableCell>
+                              <span className="inline-flex items-center gap-1.5">
+                                <span
+                                  className={`size-1.5 shrink-0 rounded-full ${severityDotClass(ex.severity)}`}
+                                />
+                                <span className="text-xs text-foreground">
+                                  {severityConfig[ex.severity].label}
+                                </span>
+                              </span>
+                            </TableCell>
+
+                            {/* STATUS */}
+                            <TableCell>
+                              <StatusBadge status={ex.status} />
+                            </TableCell>
+
+                            {/* ACTION */}
+                            <TableCell>
+                              <Link
+                                href={`/exceptions/${ex.id}`}
+                                className="whitespace-nowrap text-xs text-muted-foreground no-underline transition-colors hover:underline group-hover:text-primary"
+                              >
+                                Review &rarr;
+                              </Link>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+
+                        {paginatedExceptions.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={9}>
+                              <EmptyState
+                                icon={FileSearch}
+                                title="No exceptions match this filter"
+                                description="Try adjusting your filters or search query to find what you're looking for."
+                                action={{
+                                  label: "Clear filter",
+                                  onClick: () => {
+                                    setActiveFilter("all");
+                                    setVendorFilter("all");
+                                    setTableSearch("");
+                                  },
                                 }}
                               />
-                              <span className="text-xs text-[var(--text-primary)]">
-                                {severityConfig[ex.severity].label}
-                              </span>
-                            </span>
-                          </td>
-
-                          {/* STATUS */}
-                          <td>
-                            <span className={statusBadgeClass(ex.status)}>
-                              {statusConfig[ex.status].label}
-                            </span>
-                          </td>
-
-                          {/* ACTION */}
-                          <td>
-                            <Link
-                              href={`/exceptions/${ex.id}`}
-                              className="text-xs text-[var(--text-muted)] group-hover:text-[var(--acl-primary)] no-underline whitespace-nowrap hover:underline transition-colors"
-                            >
-                              Review &rarr;
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-
-                      {paginatedExceptions.length === 0 && (
-                        <tr>
-                          <td colSpan={9}>
-                            <EmptyState
-                              icon={FileSearch}
-                              title="No exceptions match this filter"
-                              description="Try adjusting your filters or search query to find what you're looking for."
-                              action={{ label: "Clear filter", onClick: () => { setActiveFilter("all"); setVendorFilter("all"); setTableSearch(""); } }}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  )}
-                </tbody>
-              </table>
-              <DataTablePagination
-                pageIndex={safePageIndex}
-                pageCount={pageCount}
-                pageSize={pageSize}
-                totalRows={sortedExceptions.length}
-                onPageChange={setPageIndex}
-                onPageSizeChange={(size) => {
-                  setPageSize(size);
-                  setPageIndex(0);
-                }}
-                selectedCount={selectedExceptions.length}
-              />
-            </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
+                    )}
+                  </TableBody>
+                </Table>
+                <DataTablePagination
+                  pageIndex={safePageIndex}
+                  pageCount={pageCount}
+                  pageSize={pageSize}
+                  totalRows={sortedExceptions.length}
+                  onPageChange={setPageIndex}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setPageIndex(0);
+                  }}
+                  selectedCount={selectedExceptions.length}
+                />
+              </CardContent>
+            </Card>
           </div>
-        </>
-      )}
+        </TabsContent>
 
-      {/* ── DUPLICATES VIEW ────────────────────────────────────────────────────── */}
-      {viewMode === "duplicates" && (
-        <div className="px-6 lg:px-8 py-4">
-          <p className="text-xs text-[var(--text-secondary)] mb-4">
-            AI scanned 1,847 invoices &middot; {duplicatePairs.length} pairs flagged &middot; {duplicateAtRisk}
-            {" "}at risk
-          </p>
-
-          <HowItWorks />
-
-          {duplicatePairs.map((pair) => (
-            <DuplicatePairCard
-              key={pair.id}
-              pair={pair}
-              pairActions={pairActions}
-              onReject={() => {
-                setActiveModal({ type: "reject", pairId: pair.id });
-                setModalNote("");
-              }}
-              onOverride={() => {
-                setActiveModal({ type: "override", pairId: pair.id });
-                setModalNote("");
-              }}
-              onEscalate={() => {
-                setActiveModal({ type: "escalate", pairId: pair.id });
-                setModalNote("");
-                setSelectedManager("");
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* ── Reject Modal ──────────────────────────────────────────────────────── */}
-      {activeModal?.type === "reject" && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={closeModal}
-          onKeyDown={(e) => { if (e.key === "Escape") closeModal(); }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reject-modal-title"
-            className="bg-[var(--bg-surface)] border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeModal}
-              aria-label="Close dialog"
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
-            >
-              <X size={16} />
-            </button>
-
-            <h2 id="reject-modal-title" className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
-              Reject Duplicate Invoice
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
-              This will block the duplicate invoice from processing.
+        {/* ── DUPLICATES VIEW ────────────────────────────────────────────────── */}
+        {/* [Spec: domains/exceptions/spec.md#Layout — Duplicates View] */}
+        <TabsContent value="duplicates">
+          <div className="px-4 py-4 lg:px-6">
+            <p className="mb-4 text-sm text-muted-foreground">
+              AI scanned 1,847 invoices &middot; {duplicatePairs.length} pairs flagged &middot;{" "}
+              {duplicateAtRisk} at risk
             </p>
 
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-              Reason for rejection
-            </label>
-            <textarea
-              value={modalNote}
-              onChange={(e) => setModalNote(e.target.value)}
-              placeholder="Describe why this invoice is being rejected..."
-              className="w-full h-24 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-[var(--bg-surface)]"
-            />
+            <HowItWorks />
 
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-[var(--bg-surface)] border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
+            {duplicatePairs.map((pair) => (
+              <DuplicatePairCard
+                key={pair.id}
+                pair={pair}
+                pairActions={pairActions}
+                onReject={() => {
+                  setActiveModal({ type: "reject", pairId: pair.id });
+                  setModalNote("");
+                }}
+                onOverride={() => {
+                  setActiveModal({ type: "override", pairId: pair.id });
+                  setModalNote("");
+                }}
+                onEscalate={() => {
+                  setActiveModal({ type: "escalate", pairId: pair.id });
+                  setModalNote("");
+                  setSelectedManager("");
+                }}
+              />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* ── Action Modals — shadcn Dialog ──────────────────────────────────── */}
+      {/* [Spec: domains/exceptions/spec.md#Layout — Action Modals] */}
+      <Dialog
+        open={activeModal !== null}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
+        {activeModal?.type === "reject" && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject Duplicate Invoice</DialogTitle>
+              <DialogDescription>
+                This will block the duplicate invoice from processing.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="reject-reason"
+                className="text-xs font-medium text-muted-foreground"
               >
+                Reason for rejection
+              </label>
+              <Textarea
+                id="reject-reason"
+                value={modalNote}
+                onChange={(e) => setModalNote(e.target.value)}
+                placeholder="Describe why this invoice is being rejected..."
+                className="h-24 resize-none"
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" size="sm" />}>
                 Cancel
-              </button>
-              <button
+              </DialogClose>
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={handleSubmit}
                 disabled={!modalNote.trim()}
-                className={`px-4 py-2 text-xs font-medium rounded-md text-white bg-red-600 border-none cursor-pointer hover:bg-red-700 transition-colors ${!modalNote.trim() ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 Reject Invoice
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
 
-      {/* ── Approve with Override Modal ────────────────────────────────────────── */}
-      {activeModal?.type === "override" && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={closeModal}
-          onKeyDown={(e) => { if (e.key === "Escape") closeModal(); }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="override-modal-title"
-            className="bg-[var(--bg-surface)] border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeModal}
-              aria-label="Close dialog"
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
-            >
-              <X size={16} />
-            </button>
-
-            <h2 id="override-modal-title" className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
-              Approve with Override
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
-              Override the duplicate flag and approve this invoice for payment.
-            </p>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2.5 mb-4">
-              <p className="text-xs text-amber-800 m-0">
-                This action overrides the AI duplicate detection. A record of
-                this override will be logged for audit purposes.
-              </p>
-            </div>
-
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-              Justification for override
-            </label>
-            <textarea
-              value={modalNote}
-              onChange={(e) => setModalNote(e.target.value)}
-              placeholder="Explain why this is not a true duplicate..."
-              className="w-full h-24 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-[var(--bg-surface)]"
-            />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-[var(--bg-surface)] border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
+        {activeModal?.type === "override" && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Approve with Override</DialogTitle>
+              <DialogDescription>
+                Override the duplicate flag and approve this invoice for payment.
+              </DialogDescription>
+            </DialogHeader>
+            <Alert className="border-warning bg-warning/10">
+              <AlertDescription className="text-warning-text">
+                This action overrides the AI duplicate detection. A record of this
+                override will be logged for audit purposes.
+              </AlertDescription>
+            </Alert>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="override-justification"
+                className="text-xs font-medium text-muted-foreground"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!modalNote.trim()}
-                className={`px-4 py-2 text-xs font-medium rounded-md text-white bg-amber-600 border-none cursor-pointer hover:bg-amber-700 transition-colors ${!modalNote.trim() ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                Approve
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Escalate to Manager Modal ──────────────────────────────────────────── */}
-      {activeModal?.type === "escalate" && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={closeModal}
-          onKeyDown={(e) => { if (e.key === "Escape") closeModal(); }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="escalate-modal-title"
-            className="bg-[var(--bg-surface)] border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeModal}
-              aria-label="Close dialog"
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
-            >
-              <X size={16} />
-            </button>
-
-            <h2 id="escalate-modal-title" className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
-              Escalate to Manager
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
-              Send this duplicate pair to a manager for final review.
-            </p>
-
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-              Select manager
-            </label>
-            <div className="relative mb-4">
-              <select
-                value={selectedManager}
-                onChange={(e) => setSelectedManager(e.target.value)}
-                className="w-full text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[var(--text-muted)] bg-[var(--bg-surface)] cursor-pointer"
-              >
-                <option value="">Choose a manager...</option>
-                {managers.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
+                Justification for override
+              </label>
+              <Textarea
+                id="override-justification"
+                value={modalNote}
+                onChange={(e) => setModalNote(e.target.value)}
+                placeholder="Explain why this is not a true duplicate..."
+                className="h-24 resize-none"
               />
             </div>
-
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-              Note (optional)
-            </label>
-            <textarea
-              value={modalNote}
-              onChange={(e) => setModalNote(e.target.value)}
-              placeholder="Add context for the manager..."
-              className="w-full h-20 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-[var(--bg-surface)]"
-            />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-[var(--bg-surface)] border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-              >
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" size="sm" />}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!selectedManager}
-                className={`px-4 py-2 text-xs font-medium rounded-md text-white bg-blue-600 border-none cursor-pointer hover:bg-blue-700 transition-colors ${!selectedManager ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                Escalate
-              </button>
+              </DialogClose>
+              <Button size="sm" onClick={handleSubmit} disabled={!modalNote.trim()}>
+                Approve
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+
+        {activeModal?.type === "escalate" && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Escalate to Manager</DialogTitle>
+              <DialogDescription>
+                Send this duplicate pair to a manager for final review.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Select manager
+              </label>
+              <Select value={selectedManager} onValueChange={(v) => setSelectedManager(v as string)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose a manager..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {managers.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="escalate-note"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                Note (optional)
+              </label>
+              <Textarea
+                id="escalate-note"
+                value={modalNote}
+                onChange={(e) => setModalNote(e.target.value)}
+                placeholder="Add context for the manager..."
+                className="h-20 resize-none"
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" size="sm" />}>
+                Cancel
+              </DialogClose>
+              <Button size="sm" onClick={handleSubmit} disabled={!selectedManager}>
+                Escalate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+    </main>
   );
 }
 
 // useSearchParams() requires a Suspense boundary in the App Router.
 export default function ExceptionsPage() {
   return (
-    <Suspense fallback={<div className="px-6 lg:px-8 pt-8 text-xs text-[var(--text-muted)]">Loading exceptions…</div>}>
+    <Suspense
+      fallback={
+        <div className="px-4 pt-8 text-sm text-muted-foreground lg:px-6">
+          Loading exceptions…
+        </div>
+      }
+    >
       <ExceptionsPageInner />
     </Suspense>
   );

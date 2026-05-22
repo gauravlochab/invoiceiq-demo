@@ -14,7 +14,7 @@ EARS notation.
 
 **View toggle**
 - [ ] THE SYSTEM SHALL render a shadcn `Tabs` component with exactly two tabs: "Exceptions ({count})" and "Duplicates ({count})"
-- [ ] THE SYSTEM SHALL exclude SOM exception types (`type.startsWith("som_")`) from the Exceptions tab count and table
+- [ ] THE SYSTEM SHALL exclude SOM exception types (`type.startsWith("som_")`) consistently across the Exceptions tab count, the header subtitle count, the filter-chip counts, and the table rows — a single derived `apExceptions` set drives all three (resolves audit "three disagreeing counts")
 
 **Filter and search**
 - [ ] THE SYSTEM SHALL render filter chips as shadcn `ToggleGroup type="single"`, with each `ToggleGroupItem` showing label + live count `Badge variant="secondary"`
@@ -25,9 +25,10 @@ EARS notation.
 **Data table**
 - [ ] THE SYSTEM SHALL render the exception table using shadcn `Table` primitives wrapped in a shadcn `Card` + `CardContent`
 - [ ] THE SYSTEM SHALL render exactly 9 columns: Checkbox, Exception, Type, Category, Vendor, Flagged, Severity, Status, Action
-- [ ] THE SYSTEM SHALL render the Flagged column right-aligned with `tabular-nums` and color-coded text (`text-destructive` for critical/high, `text-warning` for medium, `text-foreground` for low)
+- [ ] THE SYSTEM SHALL render the Flagged column right-aligned with `tabular-nums` and color-coded text using AA-safe tokens (`text-destructive` for critical/high, `text-warning-text` for medium, `text-foreground` for low)
 - [ ] THE SYSTEM SHALL render Status badges using shadcn `Badge` variants (destructive / outline / secondary / `bg-success` custom) — never inline-styled badges
 - [ ] WHEN a user clicks a sortable column header THE SYSTEM SHALL sort by flaggedAmount, severity, or category
+- [ ] THE SYSTEM SHALL render sortable column headers as focusable `<button>`s inside `TableHead` and expose `aria-sort` (`ascending` / `descending` / `none`) on the header cell
 - [ ] WHEN the table has zero rows after filtering THE SYSTEM SHALL display an `EmptyState` with `FileSearch` icon, message, and shadcn `Button variant="outline"` "Clear filter"
 
 **Bulk actions**
@@ -44,6 +45,7 @@ EARS notation.
 - [ ] WHEN the page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for the filter row and 7 table rows for 350ms before real content
 - [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all entrance animations
 - [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
+- [ ] THE SYSTEM SHALL expose a real heading hierarchy: an `<h1>` page title, and an `<h3>` per `DuplicatePairCard` (the pair vendor/ID) so screen-reader heading navigation works
 
 ## Layout
 
@@ -85,7 +87,7 @@ The page renders inside the global `SidebarProvider` + `SidebarInset` shell (per
   3. **Type** — shadcn `Badge`: `variant="destructive"` for suspicious_invoice/contract_overage, `variant="outline"` for duplicate/tier_pricing, `variant="secondary"` for others
   4. **Category** — `CategoryBadge` (InvoiceIQ-specific, retained), color via category brand color tokens
   5. **Vendor** — `VendorBadge` (InvoiceIQ-specific, retained)
-  6. **Flagged** — right-aligned, sortable, `tabular-nums`, `text-destructive` for critical/high severity, `text-warning` for medium, `text-foreground` for low
+  6. **Flagged** — right-aligned, sortable, `tabular-nums`, `text-destructive` for critical/high severity, `text-warning-text` for medium, `text-foreground` for low (AA-safe `*-text` tokens per ui-standard.md)
   7. **Severity** — sortable, dot (`size-1.5 rounded-full`) + label (uses `severityConfig` colors mapped to theme tokens)
   8. **Status** — shadcn `Badge`: `variant="destructive"` for Open, `variant="outline"` for Under Review, `variant="secondary"` for Escalated, custom `bg-success` for Resolved
   9. **Action** — "Review →" link to `/exceptions/{id}`, appears on row hover (`group-hover:opacity-100`)
@@ -128,7 +130,7 @@ The page renders inside the global `SidebarProvider` + `SidebarInset` shell (per
 - **Search**: case-insensitive partial match across id, vendor, invoiceNumber, and type label
 - **Pagination**: resets to page 0 when activeFilter, vendorFilter, or tableSearch changes
 - **Duplicate similarity threshold**: 97% (pairs above this are flagged)
-- **Similarity bar color**: >=99% = red (#DC2626), below = amber (#B45309)
+- **Similarity bar color**: >=99% = `--destructive`, below = `--warning` (token-based, no raw hex)
 - **Type badge mapping**: suspicious_invoice/contract_overage = critical, duplicate/tier_pricing = warning, all others = neutral
 - **Duplicate pair actions**: recorded in component state (`pairActions`), toast notification describes the action taken
 - **Modal validation**: Reject requires non-empty reason; Override requires non-empty justification; Escalate requires selected manager
@@ -183,3 +185,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Filter chips → shadcn `ToggleGroup`; data table → shadcn `Table` + `Card`; Type/Status indicators → `Badge variant`; modals → shadcn `Dialog`; loading → shadcn `Skeleton`; similarity bar → shadcn `Progress`. All v1 hex tokens migrated to shadcn theme classes. Added 18 EARS Acceptance Criteria covering app shell, view toggle, filter/search, table, bulk actions, duplicates view, loading, accessibility. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0 code migration (cluster 1): `app/exceptions/page.tsx` migrated off the v1 token set per the ui-standard.md v1→v2 map. View toggle → shadcn `Tabs`; filter chips → shadcn `ToggleGroup` + count `Badge`; vendor filter & escalate-manager picker → shadcn `Select`; search → shadcn `Input`; data table → shadcn `Table` + `Card`; row checkboxes → shadcn `Checkbox`; Type/Status indicators → shadcn `Badge variant`; the 3 hand-rolled `fixed inset-0` modals → shadcn `Dialog` (Radix-backed focus trap + Esc); Reject/Override/Escalate action buttons → shadcn `Button`; Assign/Export header menus → shadcn `DropdownMenu`; similarity bar → shadcn `Progress`; loading → shadcn `Skeleton`; override-modal audit notice → shadcn `Alert`. All `var(--bg-*)`/`var(--text-*)`/`var(--border*)`/`bg-white`/`bg-red-*`/`bg-amber-*`/`bg-emerald-*` and the raw hex `#DC2626`/`#B45309` retokenized to shadcn theme classes; status text uses AA-safe `text-warning-text`/`text-success-text`. SOM rows now excluded consistently — a single derived `apExceptions` set drives the header subtitle, tab count, filter-chip counts, and table rows (resolves audit "three disagreeing counts"). Sortable headers are focusable `<button>`s in `TableHead` with `aria-sort` (resolves audit A11Y-3). `DuplicatePairCard` vendor/ID promoted to `<h3>`. Page padding `px-6 lg:px-8` → `px-4 lg:px-6`. Verified in light + dark mode. -->
