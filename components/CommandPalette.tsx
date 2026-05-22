@@ -74,28 +74,28 @@ export default function CommandPalette({ open, onClose }: Props) {
       <div className="fixed inset-0 bg-black/40" />
       <div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-[560px] z-[201]" onClick={(e) => e.stopPropagation()}>
         <Command
-          className="bg-white rounded-xl shadow-2xl border border-[var(--border)] overflow-hidden"
+          className="bg-popover text-popover-foreground rounded-xl shadow-2xl border border-border overflow-hidden"
           label="Command palette"
         >
-          <div className="flex items-center gap-3 px-4 border-b border-[var(--border)]">
-            <Search className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
+          <div className="flex items-center gap-3 px-4 border-b border-border">
+            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <Command.Input
               value={search}
               onValueChange={setSearch}
               placeholder="Search invoices, exceptions, vendors..."
-              className="flex-1 h-12 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none border-none bg-transparent"
+              className="flex-1 h-12 text-sm text-foreground placeholder:text-muted-foreground outline-none border-none bg-transparent"
             />
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-[var(--bg-subtle)] border border-[var(--border-strong)] text-[10px] font-mono text-[var(--text-muted)]">
+            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-muted border border-border text-[10px] font-mono text-muted-foreground">
               ESC
             </kbd>
           </div>
 
           <Command.List className="max-h-[360px] overflow-y-auto py-2">
-            <Command.Empty className="py-8 text-center text-xs text-[var(--text-muted)]">
+            <Command.Empty className="py-8 text-center text-xs text-muted-foreground">
               No results found.
             </Command.Empty>
 
-            <Command.Group heading="Navigation" className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-[var(--text-tertiary)]">
+            <Command.Group heading="Navigation" className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -103,29 +103,29 @@ export default function CommandPalette({ open, onClose }: Props) {
                     key={item.href}
                     value={`${item.label} ${item.group}`}
                     onSelect={() => navigate(item.href)}
-                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-[var(--text-secondary)] data-[selected=true]:bg-[var(--bg-subtle)] data-[selected=true]:text-[var(--text-primary)] rounded-md mx-1"
+                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-muted-foreground data-[selected=true]:bg-accent data-[selected=true]:text-foreground rounded-md mx-1"
                   >
-                    <Icon className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
+                    <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <span className="flex-1">{item.label}</span>
-                    <span className="text-[10px] text-[var(--text-muted)]">{item.group}</span>
+                    <span className="text-[10px] text-muted-foreground">{item.group}</span>
                   </Command.Item>
                 );
               })}
             </Command.Group>
 
-            <Command.Group heading="Exceptions" className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-[var(--text-tertiary)]">
+            <Command.Group heading="Exceptions" className="[&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground">
               {exceptionResults.map((ex) => (
                 <Command.Item
                   key={ex.id}
                   value={`${ex.id} ${ex.vendor} ${ex.type}`}
                   onSelect={() => navigate(ex.href)}
-                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-[var(--text-secondary)] data-[selected=true]:bg-[var(--bg-subtle)] data-[selected=true]:text-[var(--text-primary)] rounded-md mx-1"
+                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm text-muted-foreground data-[selected=true]:bg-accent data-[selected=true]:text-foreground rounded-md mx-1"
                 >
-                  <AlertTriangle className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
-                  <span className="font-mono text-xs text-[var(--text-tertiary)] w-[52px] flex-shrink-0">{ex.id}</span>
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="font-mono text-xs text-muted-foreground w-[52px] flex-shrink-0">{ex.id}</span>
                   <span className="flex-1 truncate">{ex.vendor}</span>
-                  <span className="text-[10px] text-[var(--text-muted)] mr-2">{ex.type}</span>
-                  <span className="text-xs font-medium text-[var(--critical)] tabular-nums">{formatCurrency(ex.amount)}</span>
+                  <span className="text-[10px] text-muted-foreground mr-2">{ex.type}</span>
+                  <span className="text-xs font-medium text-destructive tabular-nums">{formatCurrency(ex.amount)}</span>
                 </Command.Item>
               ))}
             </Command.Group>

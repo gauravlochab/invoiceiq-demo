@@ -58,16 +58,16 @@ export default function KeyboardShortcutsDialog({ open, onClose }: Props) {
       onClick={(e) => { if (e.target === dialogRef.current) onClose(); }}
     >
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-hidden">
+        <div className="bg-card text-card-foreground rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-hidden border border-border">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)] m-0">Keyboard Shortcuts</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-semibold text-foreground m-0">Keyboard Shortcuts</h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-md hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer bg-transparent border-none"
+              className="p-1 rounded-md hover:bg-accent transition-colors cursor-pointer bg-transparent border-none"
               aria-label="Close"
             >
-              <X className="w-4 h-4 text-[var(--text-tertiary)]" />
+              <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
 
@@ -75,21 +75,21 @@ export default function KeyboardShortcutsDialog({ open, onClose }: Props) {
           <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[60vh]">
             {shortcuts.map((group) => (
               <div key={group.section}>
-                <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[var(--text-tertiary)] mb-2">
+                <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-muted-foreground mb-2">
                   {group.section}
                 </p>
                 <div className="space-y-1.5">
                   {group.items.map((item) => (
                     <div key={item.label} className="flex items-center justify-between py-1">
-                      <span className="text-xs text-[var(--text-secondary)]">{item.label}</span>
+                      <span className="text-xs text-muted-foreground">{item.label}</span>
                       <div className="flex items-center gap-1">
                         {item.keys.map((key, i) => (
                           <span key={i}>
-                            <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md bg-[var(--bg-subtle)] border border-[var(--border-strong)] text-[11px] font-mono font-medium text-[var(--text-secondary)] shadow-sm">
+                            <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md bg-muted border border-border text-[11px] font-mono font-medium text-muted-foreground shadow-sm">
                               {key}
                             </kbd>
                             {i < item.keys.length - 1 && (
-                              <span className="text-[10px] text-[var(--text-muted)] mx-0.5">then</span>
+                              <span className="text-[10px] text-muted-foreground mx-0.5">then</span>
                             )}
                           </span>
                         ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -90,9 +91,9 @@ export function LegalDisclaimerDialog({ open, onConfirm, onCancel, action, itemC
 
         <div className="my-2">
           {/* Legal disclaimer text */}
-          <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-3 mb-4">
-            <p className="text-[11px] text-amber-900 leading-relaxed m-0">
-              {/* TODO: LEGAL REVIEW REQUIRED - Replace with attorney-approved language */}
+          <div className="bg-warning/10 border border-warning rounded-md px-4 py-3 mb-4">
+            <p className="text-[11px] text-warning-text leading-relaxed m-0">
+              {/* LEGAL REVIEW REQUIRED - Replace with attorney-approved language */}
               By proceeding with this action{itemCode ? ` for item ${itemCode}` : ""}{invoiceNumber ? ` on invoice #${invoiceNumber}` : ""}, you acknowledge that you have reviewed the relevant documentation and accept responsibility for this determination. This action will be permanently recorded in the audit log for compliance and regulatory purposes. All determinations are subject to review per organizational policy.
             </p>
           </div>
@@ -103,9 +104,9 @@ export function LegalDisclaimerDialog({ open, onConfirm, onCancel, action, itemC
               type="checkbox"
               checked={acknowledged}
               onChange={(e) => setAcknowledged(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-[var(--border-strong)] text-[var(--acl-primary)] focus:ring-[var(--acl-primary)] cursor-pointer"
+              className="mt-0.5 w-4 h-4 rounded border-input text-primary focus:ring-ring cursor-pointer"
             />
-            <span className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            <span className="text-xs text-muted-foreground leading-relaxed">
               I have reviewed the applicable policy and accept responsibility for this determination.
             </span>
           </label>
@@ -117,7 +118,7 @@ export function LegalDisclaimerDialog({ open, onConfirm, onCancel, action, itemC
             href="/documents/policies/exception-review-policy.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--acl-primary)] no-underline hover:underline"
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary no-underline hover:underline"
           >
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 2h5.5L12 4.5V14H4V2z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" fill="none"/><path d="M9.5 2v2.5H12" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" fill="none"/></svg>
             View Policy Document
@@ -125,19 +126,12 @@ export function LegalDisclaimerDialog({ open, onConfirm, onCancel, action, itemC
         </div>
 
         <DialogFooter className="mt-2">
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
-          >
+          <Button variant="outline" size="sm" onClick={handleCancel}>
             Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={!acknowledged}
-            className="px-4 py-2 text-xs font-medium rounded-md text-white border-none transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-[var(--acl-primary)] hover:bg-[var(--acl-primary-hover)]"
-          >
+          </Button>
+          <Button size="sm" onClick={handleConfirm} disabled={!acknowledged}>
             Confirm &amp; Proceed
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

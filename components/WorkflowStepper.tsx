@@ -20,10 +20,10 @@ export default function WorkflowStepper({ steps }: Props) {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                   step.completed
-                    ? "bg-[var(--success)] text-white"
+                    ? "bg-success text-success-foreground"
                     : step.active
-                    ? "bg-[var(--acl-primary)] text-white ring-4 ring-[var(--acl-primary)]/20"
-                    : "bg-[var(--border)] text-[var(--text-muted)]"
+                    ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {step.completed ? (
@@ -35,16 +35,16 @@ export default function WorkflowStepper({ steps }: Props) {
               <span
                 className={`text-[10px] font-medium whitespace-nowrap ${
                   step.completed
-                    ? "text-[var(--success)]"
+                    ? "text-success-text"
                     : step.active
-                    ? "text-[var(--acl-primary)]"
-                    : "text-[var(--text-muted)]"
+                    ? "text-primary"
+                    : "text-muted-foreground"
                 }`}
               >
                 {step.label}
               </span>
               {step.timestamp && (
-                <span className="text-[9px] text-[var(--text-muted)] -mt-1">{step.timestamp}</span>
+                <span className="text-[9px] text-muted-foreground -mt-1">{step.timestamp}</span>
               )}
             </div>
 
@@ -52,7 +52,7 @@ export default function WorkflowStepper({ steps }: Props) {
             {!isLast && (
               <div
                 className={`flex-1 h-0.5 mx-2 rounded-full transition-all ${
-                  step.completed ? "bg-[var(--success)]" : "bg-[var(--border)]"
+                  step.completed ? "bg-success" : "bg-border"
                 }`}
               />
             )}

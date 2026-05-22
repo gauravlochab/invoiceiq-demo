@@ -12,7 +12,7 @@ export function Sparkline({
   data,
   width = 64,
   height = 24,
-  color = "var(--acl-primary)",
+  color = "var(--primary)",
   fillOpacity = 0.1,
 }: SparklineProps) {
   if (!data.length) return null;

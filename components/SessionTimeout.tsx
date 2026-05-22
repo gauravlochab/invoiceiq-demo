@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -61,7 +62,7 @@ export function SessionTimeout() {
       <DialogContent className="sm:max-w-[380px]">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[var(--warning)]" />
+            <Clock className="w-4 h-4 text-warning-text" />
             <DialogTitle className="text-sm font-semibold">Session Expiring</DialogTitle>
           </div>
           <DialogDescription className="text-xs mt-1">
@@ -69,34 +70,38 @@ export function SessionTimeout() {
             Any unsaved changes may be lost.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[var(--bg-subtle)] border border-[var(--border)]">
-          <div className="w-full bg-[var(--border)] rounded-full h-1.5">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted border border-border">
+          <div
+            className="w-full bg-border rounded-full h-1.5"
+            role="progressbar"
+            aria-label="Time remaining before session expires"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(WARN_MS / 1000)}
+            aria-valuenow={Math.round(remaining / 1000)}
+          >
             <div
-              className="h-1.5 rounded-full transition-all duration-1000 ease-linear"
-              style={{
-                width: `${(remaining / WARN_MS) * 100}%`,
-                backgroundColor: remaining > 120000 ? "var(--acl-primary)" : "var(--critical)",
-              }}
+              className={`h-1.5 rounded-full transition-all duration-1000 ease-linear ${
+                remaining > 120000 ? "bg-primary" : "bg-destructive"
+              }`}
+              style={{ width: `${(remaining / WARN_MS) * 100}%` }}
             />
           </div>
         </div>
         <DialogFooter className="flex-row justify-end gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               setShowWarning(false);
               router.push("/");
               // In a real app this would call an auth logout endpoint
             }}
-            className="text-xs font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] cursor-pointer"
           >
             Sign Out
-          </button>
-          <button
-            onClick={resetIdle}
-            className="text-xs font-medium px-3 py-1.5 rounded-md border-none bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] cursor-pointer"
-          >
+          </Button>
+          <Button size="sm" onClick={resetIdle}>
             Extend Session
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
