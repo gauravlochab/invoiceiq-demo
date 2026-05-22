@@ -6,12 +6,16 @@
 // 4-card pipeline (border-beam) running the suspicious-order-monitoring
 // workflow against one order. Mirrors the app/extract/page.tsx animation
 // language so the experience feels coherent across verticals.
+//
+// [Spec: domains/som/spec.md#Page 2: Order Verification Runner] — v2.0
+// shadcn migration: Card/Table/Badge/Button/Alert primitives, theme tokens,
+// px-4 lg:px-6. The 4-check pipeline and decision logic are unchanged.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft, Check, X, Clock, MapPin, FileText, ShieldAlert,
+  ArrowLeft, Check, X, Clock, MapPin, ShieldAlert,
   ScrollText, DollarSign, BarChart3, AlertTriangle, Loader2, Play,
   Globe, Database, ChevronRight,
 } from "lucide-react";
@@ -21,9 +25,21 @@ import {
   runSuspiciousOrderMonitoring,
   suspiciousOrderMonitoring,
 } from "@/lib/som/workflows/suspiciousOrderMonitoring";
-import type { TaskRunState, WorkflowRunState, TaskStatus } from "@/lib/som/types";
+import type { TaskRunState, TaskStatus, WorkflowRunState } from "@/lib/som/types";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { useToast } from "@/components/Toast";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 // ─── Visual mappings ─────────────────────────────────────────────────────────
 
@@ -34,12 +50,25 @@ const TASK_ICONS: Record<string, typeof MapPin> = {
   detect_pattern_outlier: BarChart3,
 };
 
-const STATUS_COLORS: Record<TaskStatus, { text: string; bg: string; border: string; label: string }> = {
-  pass: { text: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", label: "Verified" },
-  warn: { text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200", label: "Review" },
-  fail: { text: "text-red-700", bg: "bg-red-50", border: "border-red-200", label: "Failed" },
-  error: { text: "text-[var(--text-secondary)]", bg: "bg-[var(--bg-subtle)]", border: "border-[var(--border)]", label: "Error" },
+// Per-status label + AA-safe text token. Fills/dots stay on the vivid
+// --warning/--success; text uses the -text variants (ui-standard.md v2.0.1).
+const STATUS_META: Record<TaskStatus, { label: string; text: string }> = {
+  pass: { label: "Verified", text: "text-success-text" },
+  warn: { label: "Review", text: "text-warning-text" },
+  fail: { label: "Failed", text: "text-destructive" },
+  error: { label: "Error", text: "text-muted-foreground" },
 };
+
+// Status Badge for a completed task / overall status.
+function StatusBadge({ status }: { status: TaskStatus }) {
+  const label = STATUS_META[status].label;
+  if (status === "pass")
+    return <Badge className="border-success bg-success/10 text-success-text">{label}</Badge>;
+  if (status === "warn")
+    return <Badge className="border-warning bg-warning/10 text-warning-text">{label}</Badge>;
+  if (status === "fail") return <Badge variant="destructive">{label}</Badge>;
+  return <Badge variant="secondary">{label}</Badge>;
+}
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -79,12 +108,12 @@ export default function SomOrderRunnerPage() {
 
   if (!order) {
     return (
-      <div className="bg-[var(--bg-base)] min-h-screen p-8">
-        <p className="text-sm text-[var(--text-secondary)]">Order not found.</p>
-        <Link href="/som" className="text-[var(--acl-primary)] text-xs no-underline hover:underline">
+      <main className="@container/main flex flex-1 flex-col p-6">
+        <p className="text-sm text-muted-foreground">Order not found.</p>
+        <Link href="/som" className="text-xs text-primary no-underline hover:underline">
           ← Back to queue
         </Link>
-      </div>
+      </main>
     );
   }
 
@@ -108,52 +137,53 @@ export default function SomOrderRunnerPage() {
   }
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
-      {/* Breadcrumb */}
-      <div className="pt-6 px-6 lg:px-8">
-        <button
-          onClick={() => router.push("/som")}
-          className="inline-flex items-center gap-1 text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
-        >
-          <ArrowLeft className="w-3 h-3" />
+    <main className="@container/main flex flex-1 flex-col">
+      {/* Breadcrumb — [Spec: domains/som/spec.md#Page 2 Layout] */}
+      <div className="px-4 pt-6 lg:px-6">
+        <Button variant="ghost" size="sm" onClick={() => router.push("/som")}>
+          <ArrowLeft className="size-3" />
           Back to SOM queue
-        </button>
+        </Button>
       </div>
 
       {/* Header */}
-      <div className="px-6 lg:px-8 pt-3 pb-5">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[var(--text-muted)]">{order.id}</span>
-          <ShieldAlert className="w-3 h-3 text-[var(--acl-primary)]" />
-          <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--acl-primary)]">SOM workflow</span>
+      <div className="px-4 pt-3 pb-4 lg:px-6">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[11px] text-muted-foreground">{order.id}</span>
+          <ShieldAlert className="size-3 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+            SOM workflow
+          </span>
           {order.lineItems.some((l) => l.isControlled) && (
-            <span className="badge warning">Controlled substance</span>
+            <Badge className="border-warning bg-warning/10 text-warning-text">
+              Controlled substance
+            </Badge>
           )}
         </div>
-        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1.5 leading-tight">
+        <h1 className="text-2xl font-semibold leading-tight tracking-tight">
           {order.pharmacy.name}
         </h1>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
-          {order.pharmacy.address} · {order.pharmacy.city}, {order.pharmacy.state} ·
-          {" "}
-          {order.lineItems.length} line item{order.lineItems.length === 1 ? "" : "s"} · {formatCurrency(order.totalAmount)}
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {order.pharmacy.address} · {order.pharmacy.city}, {order.pharmacy.state} ·{" "}
+          {order.lineItems.length} line item{order.lineItems.length === 1 ? "" : "s"} ·{" "}
+          {formatCurrency(order.totalAmount)}
         </p>
       </div>
 
-      <div className="px-6 lg:px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
+      <div className="grid grid-cols-1 items-start gap-5 px-4 pb-6 lg:px-6 @4xl/main:grid-cols-[1fr_320px]">
         {/* LEFT: Pipeline */}
         <div className="flex flex-col gap-3">
           {/* Re-run button */}
           <div className="flex items-center justify-between">
-            <p className="section-label m-0">Verification pipeline</p>
-            <button
-              onClick={startRun}
-              disabled={isRunning}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--bg-subtle)] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+            <h2 className="text-sm font-semibold">Verification pipeline</h2>
+            <Button variant="outline" size="sm" onClick={startRun} disabled={isRunning}>
+              {isRunning ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <Play className="size-3" />
+              )}
               {isRunning ? "Running…" : "Re-run pipeline"}
-            </button>
+            </Button>
           </div>
 
           {/* Task cards */}
@@ -172,99 +202,147 @@ export default function SomOrderRunnerPage() {
           })}
 
           {/* Decision row */}
-          <div className="card p-5 mt-2">
-            <div className="flex items-center justify-between mb-4">
-              <p className="section-label m-0">Analyst decision</p>
-              {overall && (
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${STATUS_COLORS[overall].bg} ${STATUS_COLORS[overall].text} border ${STATUS_COLORS[overall].border}`}>
-                  Overall: {STATUS_COLORS[overall].label}
-                </span>
-              )}
-            </div>
+          <Card className="mt-2">
+            <CardContent>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Analyst decision
+                </h3>
+                {overall && (
+                  <span className="flex items-center gap-1.5 text-[11px]">
+                    <span className="text-muted-foreground">Overall:</span>
+                    <StatusBadge status={overall} />
+                  </span>
+                )}
+              </div>
 
-            {decision ? (
-              <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-                decision === "approved" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                decision === "held" ? "bg-amber-50 text-amber-700 border border-amber-200" :
-                "bg-blue-50 text-blue-700 border border-blue-200"
-              }`}>
-                {decision === "approved" && "Approved — released to fulfilment"}
-                {decision === "held" && "On hold — awaiting analyst follow-up"}
-                {decision === "escalated" && "Escalated to compliance manager"}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleDecision("approved")}
-                  disabled={!allDone || (overall === "fail")}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-emerald-600 bg-white text-emerald-700 cursor-pointer hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                  title={overall === "fail" ? "At least one check failed — cannot approve" : ""}
+              {decision ? (
+                <Alert
+                  className={
+                    decision === "approved"
+                      ? "border-success bg-success/10"
+                      : decision === "held"
+                        ? "border-warning bg-warning/10"
+                        : "border-primary bg-primary/5"
+                  }
                 >
-                  Approve
-                </button>
-                <button
-                  onClick={() => handleDecision("held")}
-                  disabled={!allDone}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-amber-600 bg-white text-amber-700 cursor-pointer hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Hold
-                </button>
-                <button
-                  onClick={() => handleDecision("escalated")}
-                  disabled={!allDone}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-[var(--acl-primary)] bg-white text-[var(--acl-primary)] cursor-pointer hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Escalate
-                </button>
-              </div>
-            )}
-          </div>
+                  <AlertDescription
+                    className={
+                      decision === "approved"
+                        ? "text-success-text"
+                        : decision === "held"
+                          ? "text-warning-text"
+                          : "text-primary"
+                    }
+                  >
+                    {decision === "approved" && "Approved — released to fulfilment"}
+                    {decision === "held" && "On hold — awaiting analyst follow-up"}
+                    {decision === "escalated" && "Escalated to compliance manager"}
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="grid grid-cols-1 gap-2 @md/card:grid-cols-3">
+                  <Button
+                    variant="default"
+                    onClick={() => handleDecision("approved")}
+                    disabled={!allDone || overall === "fail"}
+                    title={
+                      overall === "fail"
+                        ? "At least one check failed — cannot approve"
+                        : ""
+                    }
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDecision("held")}
+                    disabled={!allDone}
+                  >
+                    Hold
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDecision("escalated")}
+                    disabled={!allDone}
+                  >
+                    Escalate
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* RIGHT: Order summary */}
-        <div className="flex flex-col gap-4 sticky top-4">
-          <div className="card p-5">
-            <p className="section-label mb-3">Order details</p>
-            {[
-              { label: "Order ID", value: order.id, mono: true },
-              { label: "Received", value: new Date(order.receivedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) },
-              { label: "Permit on file", value: order.pharmacy.permitNumber || "—", mono: true },
-              { label: "NPI on file", value: order.pharmacy.npi || "—", mono: true },
-              { label: "Total", value: formatCurrency(order.totalAmount) },
-            ].map((row, i, arr) => (
-              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}>
-                <span className="text-[11px] text-[var(--text-secondary)]">{row.label}</span>
-                <span className={`text-[11px] text-[var(--text-primary)] font-medium ${row.mono ? "font-mono" : ""}`}>{row.value}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="card p-5">
-            <p className="section-label mb-3">Line items</p>
-            <div className="flex flex-col gap-2.5">
-              {order.lineItems.map((line) => (
-                <div key={line.ndc} className="text-[11px]">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-medium text-[var(--text-primary)]">{line.description}</span>
-                    {line.isControlled && (
-                      <span className="text-[9px] uppercase tracking-wide font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                        Controlled
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between text-[var(--text-secondary)]">
-                    <span className="font-mono">{line.ndc}</span>
-                    <span className="tabular-nums">
-                      {line.quantity.toLocaleString()} × {formatCurrency(line.unitPrice)}
-                    </span>
-                  </div>
+        <div className="flex flex-col gap-4 lg:sticky lg:top-4">
+          <Card>
+            <CardContent>
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Order details
+              </h2>
+              {[
+                { label: "Order ID", value: order.id, mono: true },
+                {
+                  label: "Received",
+                  value: new Date(order.receivedAt).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  }),
+                },
+                { label: "Permit on file", value: order.pharmacy.permitNumber || "—", mono: true },
+                { label: "NPI on file", value: order.pharmacy.npi || "—", mono: true },
+                { label: "Total", value: formatCurrency(order.totalAmount) },
+              ].map((row, i, arr) => (
+                <div
+                  key={row.label}
+                  className={`flex items-baseline justify-between py-2 ${
+                    i < arr.length - 1 ? "border-b border-border" : ""
+                  }`}
+                >
+                  <span className="text-[11px] text-muted-foreground">{row.label}</span>
+                  <span
+                    className={`text-[11px] font-medium text-foreground ${row.mono ? "font-mono" : ""}`}
+                  >
+                    {row.value}
+                  </span>
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Line items
+              </h2>
+              <div className="flex flex-col gap-2.5">
+                {order.lineItems.map((line) => (
+                  <div key={line.ndc} className="text-[11px]">
+                    <div className="mb-0.5 flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground">{line.description}</span>
+                      {line.isControlled && (
+                        <Badge className="border-warning bg-warning/10 text-warning-text">
+                          Controlled
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span className="font-mono">{line.ndc}</span>
+                      <span className="tabular-nums">
+                        {line.quantity.toLocaleString()} × {formatCurrency(line.unitPrice)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -288,29 +366,39 @@ function TaskCard({
   const result = taskState?.result;
   const Icon = TASK_ICONS[taskState?.taskId ?? ""] ?? Database;
 
+  // Numbered-circle styling per task lifecycle state.
+  const circleClass =
+    isDone && result
+      ? result.status === "pass"
+        ? "bg-success/10 text-success-text"
+        : result.status === "warn"
+          ? "bg-warning/10 text-warning-text"
+          : result.status === "fail"
+            ? "bg-destructive/10 text-destructive"
+            : "bg-muted text-muted-foreground"
+      : isRunning
+        ? "bg-primary/10 text-primary"
+        : "bg-muted text-muted-foreground";
+
   return (
-    <div className={`relative card overflow-hidden transition-opacity ${
-      taskState?.status === "pending" ? "opacity-60" : "opacity-100"
-    }`}>
-      {isRunning && <BorderBeam duration={3} colorFrom="var(--acl-primary)" colorTo="#22d3ee" />}
-      <div className="p-5 flex items-start gap-4">
+    <Card
+      className={`relative ${taskState?.status === "pending" ? "opacity-60" : "opacity-100"}`}
+    >
+      {isRunning && <BorderBeam duration={3} colorFrom="var(--primary)" colorTo="var(--chart-2)" />}
+      <CardContent className="flex items-start gap-4">
         {/* Numbered circle + icon */}
-        <div className="flex-shrink-0">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${
-            isDone && result
-              ? `${STATUS_COLORS[result.status].bg} ${STATUS_COLORS[result.status].text}`
-              : isRunning
-              ? "bg-[var(--acl-primary)]/10 text-[var(--acl-primary)]"
-              : "bg-[var(--bg-subtle)] text-[var(--text-muted)]"
-          }`}>
+        <div className="shrink-0">
+          <div
+            className={`flex size-8 items-center justify-center rounded-full text-[11px] font-semibold ${circleClass}`}
+          >
             {isDone && result?.status === "pass" ? (
-              <Check className="w-4 h-4" />
+              <Check className="size-4" />
             ) : isDone && result?.status === "fail" ? (
-              <X className="w-4 h-4" />
+              <X className="size-4" />
             ) : isDone && result?.status === "warn" ? (
-              <AlertTriangle className="w-4 h-4" />
+              <AlertTriangle className="size-4" />
             ) : isRunning ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
               <span>{index + 1}</span>
             )}
@@ -318,38 +406,38 @@ function TaskCard({
         </div>
 
         {/* Body */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-3 mb-1">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Icon className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">{title}</h3>
+              <Icon className="size-3.5 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">{title}</h3>
             </div>
-            {isDone && result && (
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${STATUS_COLORS[result.status].bg} ${STATUS_COLORS[result.status].text} border ${STATUS_COLORS[result.status].border}`}>
-                {STATUS_COLORS[result.status].label}
-              </span>
-            )}
+            {isDone && result && <StatusBadge status={result.status} />}
             {isRunning && (
-              <span className="text-[10px] font-medium text-[var(--acl-primary)] flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+              <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
+                <Clock className="size-3" />
                 Running
               </span>
             )}
           </div>
           {description && (
-            <p className="text-[11px] text-[var(--text-secondary)] m-0 leading-snug mb-2">{description}</p>
+            <p className="mb-2 text-[11px] leading-snug text-muted-foreground">{description}</p>
           )}
           {isDone && result && (
             <>
-              <p className={`text-xs m-0 leading-relaxed ${STATUS_COLORS[result.status].text}`}>
+              <p className={`text-xs leading-relaxed ${STATUS_META[result.status].text}`}>
                 {result.message}
               </p>
-              <TaskEvidence taskId={taskState?.taskId ?? ""} evidence={result.evidence} order={order} />
+              <TaskEvidence
+                taskId={taskState?.taskId ?? ""}
+                evidence={result.evidence}
+                order={order}
+              />
             </>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -364,6 +452,7 @@ function TaskEvidence({
   evidence: Record<string, unknown>;
   order: ReturnType<typeof findOrderById>;
 }) {
+  void order;
   if (taskId === "verify_address") {
     const db = evidence.db as { source?: string; record?: { address?: string; city?: string; state?: string; zip?: string } };
     const geo = evidence.geocode as { query?: string; declaredVsGeocodedKm?: number; lat?: number; lng?: number };
@@ -421,36 +510,46 @@ function TaskEvidence({
     const matches = evidence.matches as Array<{ ndc: string; productName: string; orderedUnitPrice: number; contractPrice: number | null; deviationPct: number | null; outcome: string; tolerancePct: number | null }>;
     if (!matches?.length) return null;
     return (
-      <div className="mt-3 border border-[var(--border)] rounded-md overflow-hidden">
-        <table className="w-full text-[11px]">
-          <thead className="bg-[var(--bg-base)]">
-            <tr>
-              <th className="text-left px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Product</th>
-              <th className="text-right px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Ordered</th>
-              <th className="text-right px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Contract</th>
-              <th className="text-right px-2.5 py-1.5 font-medium text-[var(--text-secondary)]">Δ</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="mt-3 overflow-hidden rounded-md border border-border">
+        <Table className="text-[11px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="h-8 px-2.5 text-[11px]">Product</TableHead>
+              <TableHead className="h-8 px-2.5 text-right text-[11px]">Ordered</TableHead>
+              <TableHead className="h-8 px-2.5 text-right text-[11px]">Contract</TableHead>
+              <TableHead className="h-8 px-2.5 text-right text-[11px]">Δ</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {matches.map((m) => (
-              <tr key={m.ndc} className="border-t border-[var(--bg-subtle)]">
-                <td className="px-2.5 py-1.5 text-[var(--text-primary)]">
+              <TableRow key={m.ndc}>
+                <TableCell className="px-2.5 py-1.5 text-foreground">
                   <div className="font-medium">{m.productName}</div>
-                  <div className="text-[10px] text-[var(--text-muted)] font-mono">{m.ndc}</div>
-                </td>
-                <td className="text-right px-2.5 py-1.5 tabular-nums text-[var(--text-primary)]">${m.orderedUnitPrice.toFixed(2)}</td>
-                <td className="text-right px-2.5 py-1.5 tabular-nums text-[var(--text-secondary)]">
+                  <div className="font-mono text-[10px] text-muted-foreground">{m.ndc}</div>
+                </TableCell>
+                <TableCell className="px-2.5 py-1.5 text-right tabular-nums text-foreground">
+                  ${m.orderedUnitPrice.toFixed(2)}
+                </TableCell>
+                <TableCell className="px-2.5 py-1.5 text-right tabular-nums text-muted-foreground">
                   {m.contractPrice != null ? `$${m.contractPrice.toFixed(2)}` : "—"}
-                </td>
-                <td className={`text-right px-2.5 py-1.5 tabular-nums font-medium ${
-                  m.outcome === "deviation" ? "text-red-600" : m.outcome === "no_contract" ? "text-amber-700" : "text-emerald-700"
-                }`}>
-                  {m.deviationPct != null ? `${m.deviationPct > 0 ? "+" : ""}${m.deviationPct}%` : "n/a"}
-                </td>
-              </tr>
+                </TableCell>
+                <TableCell
+                  className={`px-2.5 py-1.5 text-right font-medium tabular-nums ${
+                    m.outcome === "deviation"
+                      ? "text-destructive"
+                      : m.outcome === "no_contract"
+                        ? "text-warning-text"
+                        : "text-success-text"
+                  }`}
+                >
+                  {m.deviationPct != null
+                    ? `${m.deviationPct > 0 ? "+" : ""}${m.deviationPct}%`
+                    : "n/a"}
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     );
   }
@@ -485,25 +584,29 @@ function PatternSubCheckRow({
 }: {
   subCheck: { id: string; label: string; status: "pass" | "warn" | "fail" | "error"; message: string };
 }) {
+  // Status dot — non-text element, uses vivid fill tokens.
   const dotColor =
-    subCheck.status === "pass" ? "bg-emerald-500"
-    : subCheck.status === "warn" ? "bg-amber-500"
-    : subCheck.status === "fail" ? "bg-red-500"
-    : "bg-[var(--text-muted)]";
-  const labelColor = STATUS_COLORS[subCheck.status]?.text ?? "text-[var(--text-secondary)]";
+    subCheck.status === "pass"
+      ? "bg-success"
+      : subCheck.status === "warn"
+        ? "bg-warning"
+        : subCheck.status === "fail"
+          ? "bg-destructive"
+          : "bg-muted-foreground";
+  const labelColor = STATUS_META[subCheck.status]?.text ?? "text-muted-foreground";
   return (
-    <div className="flex items-start gap-2.5 bg-[var(--bg-base)] rounded px-2.5 py-2">
-      <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
-      <div className="flex-1 min-w-0">
+    <div className="flex items-start gap-2.5 rounded bg-muted px-2.5 py-2">
+      <span className={`mt-1 size-1.5 shrink-0 rounded-full ${dotColor}`} />
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--text-secondary)]">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {subCheck.label}
           </span>
-          <span className={`text-[9px] uppercase tracking-wide font-semibold ${labelColor}`}>
-            {STATUS_COLORS[subCheck.status]?.label ?? subCheck.status}
+          <span className={`text-[9px] font-semibold uppercase tracking-wide ${labelColor}`}>
+            {STATUS_META[subCheck.status]?.label ?? subCheck.status}
           </span>
         </div>
-        <p className="text-[11px] text-[var(--text-primary)] m-0 leading-snug mt-0.5">{subCheck.message}</p>
+        <p className="mt-0.5 text-[11px] leading-snug text-foreground">{subCheck.message}</p>
       </div>
     </div>
   );
@@ -522,13 +625,15 @@ function EvidenceRow({
 }) {
   const inner = (
     <>
-      <div className="flex items-center gap-1.5 mb-1">
-        <Icon className="w-3 h-3 text-[var(--text-muted)]" />
-        <span className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] font-semibold">{label}</span>
+      <div className="mb-1 flex items-center gap-1.5">
+        <Icon className="size-3 text-muted-foreground" />
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
       </div>
-      <p className="text-[11px] text-[var(--text-primary)] m-0 leading-snug flex items-center gap-1">
+      <p className="flex items-center gap-1 text-[11px] leading-snug text-foreground">
         {value}
-        {link && <ChevronRight className="w-3 h-3 text-[var(--acl-primary)]" />}
+        {link && <ChevronRight className="size-3 text-primary" />}
       </p>
     </>
   );
@@ -538,11 +643,11 @@ function EvidenceRow({
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        className="block bg-[var(--bg-base)] rounded px-2.5 py-2 no-underline hover:bg-[var(--bg-subtle)] transition-colors"
+        className="block rounded bg-muted px-2.5 py-2 no-underline transition-colors hover:bg-accent"
       >
         {inner}
       </a>
     );
   }
-  return <div className="bg-[var(--bg-base)] rounded px-2.5 py-2">{inner}</div>;
+  return <div className="rounded bg-muted px-2.5 py-2">{inner}</div>;
 }

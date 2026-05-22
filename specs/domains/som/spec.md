@@ -2,18 +2,25 @@
 
 ## Overview
 
-The SOM module implements DEA-compliant suspicious order monitoring for drug distributors. It provides a complete workflow for reviewing incoming controlled substance orders: a queue dashboard with pharmacy risk scoring, an automated 4-check verification pipeline per order, SOM-specific exceptions, and override/audit capabilities for blocked orders. This is a separate vertical from the AP (accounts payable) exception flow, with vocabulary tuned for the drug distribution context ("Pharmacy" instead of "Vendor", "Order" instead of "Invoice").
+The SOM module implements DEA-compliant suspicious order monitoring for drug distributors. It provides a complete workflow for reviewing incoming controlled substance orders: a queue dashboard with pharmacy risk scoring, an automated 4-check verification pipeline per order, SOM-specific exceptions, a pharmacy risk-scoring directory, a manufacturer contract-pricing reference, and override/audit capabilities for blocked orders. This is a separate vertical from the AP (accounts payable) exception flow, with vocabulary tuned for the drug distribution context ("Pharmacy" instead of "Vendor", "Order" instead of "Invoice").
 
 ## Acceptance Criteria
 
-EARS notation. Applies across all 3 SOM pages.
+EARS notation. Applies across all 6 SOM pages.
+
+**Design system (v2.0 shadcn)**
+- [ ] THE SYSTEM SHALL use shadcn theme tokens for all SOM surfaces, text, and borders — `bg-background`/`bg-card`/`bg-muted`, `text-foreground`/`text-muted-foreground`, `border-border`, `destructive`, `primary` — with zero v1 `var(--*)` tokens and zero raw hex
+- [ ] THE SYSTEM SHALL color status text with the AA-safe `text-destructive` / `text-warning-text` / `text-success-text` tokens — `--warning` / `--success` are reserved for fills, dots, and borders only (per `ui-standard.md` v2.0.1)
+- [ ] THE SYSTEM SHALL render every surface, table, badge, action button, modal, and filter chip with shadcn `Card` / `Table` / `Badge` / `Button` / `Dialog` / `ToggleGroup` primitives
+- [ ] THE SYSTEM SHALL expose `aria-sort` on every sortable table header and maintain a real `<h1>`/`<h2>`/`<h3>` document outline
+- [ ] THE SYSTEM SHALL use page padding `px-4 lg:px-6`
 
 **App shell**
 - [ ] THE SYSTEM SHALL render all SOM pages inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
 - [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
 
 **Queue dashboard (`/som`)**
-- [ ] THE SYSTEM SHALL render 4 stat cards using shadcn `Card` with `CardHeader`/`CardDescription`/`CardTitle`/`CardFooter`: Orders in queue, Auto-blocked (`text-destructive`), Flagged this batch (`text-warning`), Blocked exposure (`text-destructive`)
+- [ ] THE SYSTEM SHALL render 4 stat cards using shadcn `Card` with `CardHeader`/`CardDescription`/`CardTitle`/`CardFooter`: Orders in queue, Auto-blocked (`text-destructive`), Flagged this batch (`text-warning-text`), Blocked exposure (`text-destructive`)
 - [ ] THE SYSTEM SHALL render the orders table using shadcn `Table` primitives wrapped in a shadcn `Card` + `CardContent`, with 9 columns: Order, Pharmacy, Location, Score, Lines, Controlled, Value, Received, Action
 - [ ] WHEN a pharmacy score is below `BLOCK_THRESHOLD` (60) THE SYSTEM SHALL tint the row `bg-destructive/5` and render "Override required" `Button variant="destructive"` in the Action column
 - [ ] WHEN a pharmacy score is >= 60 THE SYSTEM SHALL render "Run checks" as a shadcn `Button variant="ghost"` link to `/som/order/{id}`
@@ -22,7 +29,7 @@ EARS notation. Applies across all 3 SOM pages.
 
 **Order verification runner (`/som/order/[id]`)**
 - [ ] WHEN the page mounts THE SYSTEM SHALL auto-run the 4-check verification pipeline (Address, License, Price, Pattern) exactly once via `hasAutoStarted` ref
-- [ ] THE SYSTEM SHALL render each TaskCard as a shadcn `Card` with numbered circle, status icon, and `Badge` showing "Verified" (`bg-success/10 text-success border-success`), "Review" (`bg-warning/10 text-warning border-warning`), "Failed" (`variant="destructive"`), or "Error" (`variant="secondary"`)
+- [ ] THE SYSTEM SHALL render each TaskCard as a shadcn `Card` with numbered circle, status icon, and `Badge` showing "Verified" (`bg-success/10 text-success-text border-success`), "Review" (`bg-warning/10 text-warning-text border-warning`), "Failed" (`variant="destructive"`), or "Error" (`variant="secondary"`)
 - [ ] WHILE a task is in `running` state THE SYSTEM SHALL overlay `BorderBeam` animation and a "Running" label
 - [ ] THE SYSTEM SHALL render decision buttons using shadcn `Button` variants in the Decision Row: Approve (`variant="default"`), Hold (`variant="outline"`), Escalate (`variant="outline"`)
 - [ ] IF the overall status is `fail` THEN THE SYSTEM SHALL disable the Approve button
@@ -30,11 +37,26 @@ EARS notation. Applies across all 3 SOM pages.
 
 **SOM exceptions list (`/som/exceptions`)**
 - [ ] THE SYSTEM SHALL display only exceptions where `type.startsWith("som_")`
-- [ ] THE SYSTEM SHALL render the 4-panel summary strip in a shadcn `Card` with `divide-x divide-border`: Total exceptions, Open / Under Review (`text-warning`), Critical (`text-destructive`), Total flagged $ (`text-destructive`)
+- [ ] THE SYSTEM SHALL render the 4-panel summary strip in a shadcn `Card` with `divide-x divide-border`: Total exceptions, Open / Under Review (`text-warning-text`), Critical (`text-destructive`), Total flagged $ (`text-destructive`)
 - [ ] THE SYSTEM SHALL render filter chips using shadcn `ToggleGroup type="single"` with `ToggleGroupItem` for each filter (All, Open, Critical, High, Address Mismatch, License Invalid, Price Deviation, Volume Outlier)
 - [ ] WHEN a filter chip's count is 0 THE SYSTEM SHALL disable that `ToggleGroupItem`
 - [ ] THE SYSTEM SHALL render the exceptions table using shadcn `Table` primitives wrapped in a shadcn `Card`, with 9 columns: Exception, Type, Pharmacy (NOT "Vendor"), Order # (NOT "Invoice #"), Flagged, Severity, Status, Detected, Action
-- [ ] THE SYSTEM SHALL render Type badges using shadcn `Badge`: `variant="destructive"` for license_invalid/quantity_outlier, `bg-warning/10 text-warning border-warning` for address_mismatch/price_deviation
+- [ ] THE SYSTEM SHALL render Type badges using shadcn `Badge`: `variant="destructive"` for license_invalid/quantity_outlier, `bg-warning/10 text-warning-text border-warning` for address_mismatch/price_deviation
+
+**Pharmacy risk scoring (`/som/pharmacy-scoring`)**
+- [ ] THE SYSTEM SHALL render the 4-panel summary strip in a shadcn `Card` with `divide-x divide-border`: Pharmacies scored, High / Critical risk (`text-destructive`), Total flagged $ (`text-warning-text`), Avg risk score (score-color-mapped)
+- [ ] THE SYSTEM SHALL render the pharmacy directory as a shadcn `Table` wrapped in a shadcn `Card`, with sortable Score / Spend / Flagged $ / Flagged % headers exposing `aria-sort`, and expandable rows
+- [ ] WHEN a pharmacy row is expanded THE SYSTEM SHALL show a score-component breakdown (License/Address/Price/Pattern/Identity) using a token-driven meter with `role="progressbar"` + ARIA values, and a shadcn `Table` of that pharmacy's SOM exception history
+- [ ] THE SYSTEM SHALL render flag / penalize / remove actions as shadcn `Button` instances (`variant="outline"` / `variant="destructive"`)
+
+**Manufacturer contract pricing (`/som/manufacturers`)**
+- [ ] THE SYSTEM SHALL render one shadcn `Card` per manufacturer, each containing a shadcn `Table` with 6 columns: NDC, Product, Form, Contract price, Tolerance, Risk
+- [ ] THE SYSTEM SHALL render the Risk column with shadcn `Badge`: `bg-warning/10 text-warning-text border-warning` "Controlled", `variant="secondary"` "High-risk", `text-muted-foreground` "Standard"
+
+**Override audit log (`/som/audit-log`)**
+- [ ] THE SYSTEM SHALL render the 4-panel summary strip in a shadcn `Card` with `divide-x divide-border`: Total overrides, Released at Critical (`text-destructive`), Unique pharmacies, Unique approvers
+- [ ] THE SYSTEM SHALL render each override entry as a shadcn `Card` with rating `Badge`, full justification block, approver identity, and timestamp
+- [ ] THE SYSTEM SHALL treat the audit log as append-only and re-read `getAuditLog()` on every mount so override-modal entries appear
 
 **Loading and safety**
 - [ ] WHEN any SOM page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders for 400ms before real content
@@ -44,10 +66,13 @@ EARS notation. Applies across all 3 SOM pages.
 
 ## Pages
 
-The SOM module spans three pages:
+The SOM module spans six pages:
 1. `/som` -- Incoming order queue (main dashboard)
 2. `/som/order/[id]` -- Single order verification pipeline runner
 3. `/som/exceptions` -- SOM-scoped exception list
+4. `/som/pharmacy-scoring` -- Pharmacy risk-scoring directory (expandable rows)
+5. `/som/manufacturers` -- Manufacturer contract-pricing reference
+6. `/som/audit-log` -- Override audit trail (compliance record)
 
 ---
 
@@ -90,7 +115,7 @@ Renders inside `SidebarProvider` + `SidebarInset`.
 ### Business Rules
 
 - **Block threshold**: `BLOCK_THRESHOLD = 60` — pharmacies with risk score < 60 are auto-blocked
-- **Score color mapping (v2.0)**: `text-destructive` < 30, `text-warning` < 60, `text-primary` < 80, `text-success` >= 80
+- **Score color mapping (v2.0.1)**: `text-destructive` < 30, `text-warning-text` < 60, `text-primary` < 80, `text-success-text` >= 80 — AA-safe text tokens, since score values render as text
 - **Rating labels**: "Critical", "High Risk", "Medium Risk", "Low Risk" (from `pharmacyScores` data)
 - **Override flow**: clicking "Override required" opens `OverrideModal` (shadcn `Dialog`) requiring justification `Textarea` + approver name `Input` + approver role `Select`; creates audit log entry via `appendAuditEntry()`; toast notification with override details
 - **Override state**: tracked in component state (`overriddenOrders`), resets on page refresh
@@ -136,7 +161,7 @@ Renders inside `SidebarProvider` + `SidebarInset`.
 Each `TaskCard` shows (v2.0 theme tokens):
 - Numbered circle with status icon (Check/X/AlertTriangle/Loader2/number)
 - Task title and description
-- Shadcn `Badge`: "Verified" (`bg-success/10 text-success border-success`), "Review" (`bg-warning/10 text-warning border-warning`), "Failed" (`variant="destructive"`), "Error" (`variant="secondary"`)
+- Shadcn `Badge`: "Verified" (`bg-success/10 text-success-text border-success`), "Review" (`bg-warning/10 text-warning-text border-warning`), "Failed" (`variant="destructive"`), "Error" (`variant="secondary"`)
 - Running state: `BorderBeam` animation around the card + "Running" label
 - Evidence panel specific to each task type:
   - Address: database source + geocoded distance (with Google Maps link)
@@ -225,6 +250,89 @@ Renders inside `SidebarProvider` + `SidebarInset`.
 
 ---
 
+## Page 4: Pharmacy Risk Scoring (`/som/pharmacy-scoring/page.tsx`)
+
+### Layout (v2.0)
+
+Renders inside `SidebarProvider` + `SidebarInset`. SOM analog of `/vendor-scoring`.
+
+**Header** (px-4 lg:px-6, pt-6 pb-4)
+- `ShieldAlert` icon + label `text-xs uppercase text-primary` "Drug Distributor • SOM"
+- Title `text-2xl font-semibold` "Pharmacy Risk Scoring"
+- Subtitle `text-sm text-muted-foreground` + shadcn `Button variant="outline" size="sm"` "Export Report"
+
+**Summary Strip** (px-4 lg:px-6, py-4)
+- Shadcn `Card` with a 4-panel `flex` row, `divide-x divide-border`: Pharmacies scored, High / Critical risk (`text-destructive`), Total flagged $ (`text-warning-text`), Avg risk score (score-color-mapped). Skeleton placeholders for 400ms on mount.
+
+**Pharmacy Table** (px-4 lg:px-6, pb-6)
+- Shadcn `Card` + `CardContent` containing shadcn `Table` with columns: expander, Pharmacy, Location, Score (sortable), Rating, Spend (sortable), Flagged $ (sortable), Flagged % (sortable), Action
+- Sortable headers expose `aria-sort`; rows below score 60 tinted `bg-destructive/5`
+- Expandable row: score-component breakdown — five token-driven meters (`role="progressbar"`, `aria-valuenow/min/max`) for License/Address/Price/Pattern/Identity — plus a shadcn `Table` of exception history. Each meter's fill colour is score-mapped (`bg-destructive`/`bg-warning`/`bg-primary`/`bg-success`).
+- Action column: flag (`Button variant="outline"`), penalize + remove (`Button variant="destructive"`); after action, a `text-warning-text`/`text-destructive` confirmation label
+
+### Business Rules
+
+- **Score color mapping**: same as Page 1 — `text-destructive` < 30, `text-warning-text` < 60, `text-primary` < 80, `text-success-text` >= 80
+- **Sort default**: score ascending (lowest = highest risk on top); `$`-valued columns sort descending first
+- **Actions**: flag / penalize / remove are session-state only, reset on refresh
+
+### Data Model
+
+- **Source files**: `lib/som/data/pharmacyScoring.ts` (`pharmacyScores`, `PharmacyScore`), `lib/data.ts` (`formatCurrency`)
+- `PharmacyScore`: id, name, city, state, score, rating, totalSpend, flaggedAmount, flaggedPct, components (license/address/price/volume/identity), exceptions[]
+
+---
+
+## Page 5: Manufacturer Contract Pricing (`/som/manufacturers/page.tsx`)
+
+### Layout (v2.0)
+
+Renders inside `SidebarProvider` + `SidebarInset`. Reference table for the Price Deviation check.
+
+**Header** (px-4 lg:px-6, pt-6 pb-4)
+- `Pill` icon + label `text-xs uppercase text-primary` "Drug Distributor • Contract pricing"
+- Title `text-2xl font-semibold` "Manufacturers"
+- Subtitle `text-sm text-muted-foreground`
+
+**Manufacturer Cards** (px-4 lg:px-6, py-4, `flex flex-col gap-4`)
+- One shadcn `Card` per manufacturer, with `CardHeader` (`CardTitle` = manufacturer name + NDC count via `CardAction`) and `CardContent` containing a shadcn `Table` with 6 columns: NDC, Product, Form, Contract price (right-aligned `tabular-nums`), Tolerance (right-aligned), Risk
+- Risk column: shadcn `Badge` `bg-warning/10 text-warning-text border-warning` "Controlled", `variant="secondary"` "High-risk", `text-muted-foreground` "Standard"
+
+### Data Model
+
+- **Source files**: `lib/som/data/manufacturerPricing.ts` (`manufacturerPricing`)
+
+---
+
+## Page 6: Override Audit Log (`/som/audit-log/page.tsx`)
+
+### Layout (v2.0)
+
+Renders inside `SidebarProvider` + `SidebarInset`. The DEA compliance trail for block overrides.
+
+**Header** (px-4 lg:px-6, pt-6 pb-4)
+- `FileCheck2` icon + label `text-xs uppercase text-primary` "Drug Distributor • Compliance Trail"
+- Title `text-2xl font-semibold` "Override Audit Log"
+- Subtitle `text-sm text-muted-foreground`
+
+**Summary Strip** (px-4 lg:px-6, py-4)
+- Shadcn `Card` with a 4-panel `flex` row, `divide-x divide-border`: Total overrides, Released at Critical (`text-destructive`), Unique pharmacies, Unique approvers
+
+**Entry List** (px-4 lg:px-6, pb-6, `flex flex-col gap-3`)
+- One shadcn `Card` per entry: header row with entry ID (`font-mono`), rating `Badge`, pharmacy name `<h3>` + order ID, and score-at-override; a justification block (`bg-muted` with `border-l-2 border-primary`); footer row with approver identity + timestamp
+- Empty state: shadcn `Card` with centered "No override entries yet." message
+
+### Business Rules
+
+- **Append-only**: the audit log is never edited or deleted (DEA requirement). The page re-reads `getAuditLog()` on every mount so entries added via the override modal appear when the analyst navigates back.
+- **Rating colors**: Critical `text-destructive`, High Risk `text-warning-text`, Medium Risk `text-primary`
+
+### Data Model
+
+- **Source files**: `lib/som/data/auditLog.ts` (`getAuditLog`, `AuditLogEntry`)
+
+---
+
 ## Workflow (Cross-Page)
 
 1. SOM analyst opens `/som` -- 400ms simulated loading with skeleton placeholders for stats strip (4 metric cards) and orders table (header + 5 skeleton rows)
@@ -291,3 +399,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-14: Initial spec created from current codebase — covers all 3 SOM pages -->
 <!-- 2026-05-14: Added 400ms loading state with skeleton placeholders (stats strip + orders table); aliased sampleOrders to orders locally; removed "demo" from comments in audit-log and order detail pages -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0 across all 3 SOM pages (queue dashboard, order verification runner, exceptions list). App shell wraps in SidebarProvider+SidebarInset. All metric panels, tables, TaskCards, decision rows → shadcn `Card`. All tables → shadcn `Table` primitives. Status badges → shadcn `Badge` variants (destructive / styled warning / styled success / secondary). Action buttons → shadcn `Button` variants. OverrideModal → shadcn `Dialog`. Filter chips on `/som/exceptions` → shadcn `ToggleGroup`. Decision confirmation → shadcn `Alert` styled per outcome. Loading → `Skeleton`. Score color mapping retokenized: text-destructive (<30) / text-warning (<60) / text-primary (<80) / text-success (>=80). Blocked row tint → bg-destructive/5. All "Pharmacy" / "Order" vocabulary preserved per DEA context. Added 22 EARS Acceptance Criteria covering all 3 pages. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0.1: Spec-code reconciliation before the SOM design-system migration. (1) Spec covered only 3 of the 6 actual SOM routes — added Page 4 (pharmacy-scoring), Page 5 (manufacturers), Page 6 (audit-log) sections plus their Acceptance Criteria; "all 3 SOM pages" → "all 6 SOM pages". (2) Status-text tokens corrected per ui-standard.md v2.0.1: text-warning/text-success fail WCAG 1.4.3 as text — all status-TEXT references (stat cards, score color mapping, type badges, TaskCard badges, summary strips) now use the AA-safe text-warning-text/text-success-text; --warning/--success kept for fills/dots/borders. (3) Added a "Design system (v2.0 shadcn)" Acceptance Criteria group covering theme tokens, primitives, aria-sort, heading hierarchy, and px-4 lg:px-6 padding. Migration only — no SOM domain behavior (DEA controlled-substance compliance, suspicious-order logic, Pharmacy/Order vocabulary) changed. -->

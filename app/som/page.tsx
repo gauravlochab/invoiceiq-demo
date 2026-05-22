@@ -13,11 +13,16 @@
 //     the order and shows "Override required" — clicking opens the override
 //     modal which captures justification + approver, writes an audit log
 //     entry, then transitions the row to "Released after override".
+//
+// [Spec: domains/som/spec.md#Page 1: SOM Queue Dashboard] — v2.0 shadcn
+// migration: Card/Table/Badge/Button/Skeleton primitives, theme tokens,
+// px-4 lg:px-6. SOM domain behavior (block threshold, override flow, DEA
+// audit) is unchanged.
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ShieldAlert, Pill, MapPin, Clock, ArrowRight, ShieldCheck, AlertTriangle,
+  ShieldAlert, Pill, MapPin, Clock, ArrowRight, ShieldCheck,
   DollarSign, Activity, Lock, FileCheck2,
 } from "lucide-react";
 import { sampleOrders } from "@/lib/som/data/orders";
@@ -28,6 +33,26 @@ import {
 } from "@/lib/som/data/auditLog";
 import { OverrideModal } from "@/components/OverrideModal";
 import { useToast } from "@/components/Toast";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 // Local alias — removes "sample" prefix per business directive
 const orders = sampleOrders;
@@ -56,7 +81,6 @@ export default function SomQueuePage() {
     return () => clearTimeout(t);
   }, []);
 
-  const totalValue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
   const controlledCount = orders.filter((o) => o.lineItems.some((l) => l.isControlled)).length;
 
   // SOM-derived metrics — all numbers below derive directly from the running
@@ -126,203 +150,187 @@ export default function SomQueuePage() {
     );
   };
 
+  // [Spec: domains/som/spec.md#Page 1 Layout — Stats Strip]
+  const stats: {
+    label: string;
+    value: string;
+    valueClass: string;
+    subtitle: string;
+    Icon: typeof Activity;
+  }[] = [
+    {
+      label: "Orders in queue",
+      value: String(ordersInBatch),
+      valueClass: "text-foreground",
+      subtitle: `${controlledCount} with controlled substances`,
+      Icon: Activity,
+    },
+    {
+      label: "Auto-blocked",
+      value: String(blockedCount),
+      valueClass: "text-destructive",
+      subtitle: "awaiting human override",
+      Icon: Lock,
+    },
+    {
+      label: "Flagged this batch",
+      value: `${suspicionRate}%`,
+      valueClass: "text-warning-text",
+      subtitle: `${flaggedOrdersCount} of ${ordersInBatch} orders flagged`,
+      Icon: ShieldCheck,
+    },
+    {
+      label: "Blocked exposure",
+      value: formatCurrency(somBlockedAmount),
+      valueClass: "text-destructive",
+      subtitle: `across ${somExceptions.length} SOM exceptions`,
+      Icon: DollarSign,
+    },
+  ];
+
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
-      {/* Header */}
-      <div className="px-6 lg:px-8 pt-6 pb-5 border-b border-[var(--border)] bg-white">
-        <div className="flex items-center gap-2 mb-1.5">
-          <ShieldAlert className="w-4 h-4 text-[var(--acl-primary)]" />
-          <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
+    <main className="@container/main flex flex-1 flex-col">
+      {/* Header — [Spec: domains/som/spec.md#Page 1 Layout] */}
+      <div className="border-b border-border px-4 pt-6 pb-4 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <ShieldAlert className="size-4 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
             Drug Distributor · SOM Analyst
           </span>
         </div>
-        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
           Suspicious Order Monitoring
         </h1>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
+        <p className="mt-1 text-sm text-muted-foreground">
           Incoming orders pending verification — Address, License, Pricing, Pattern checks. High/Critical-risk pharmacies require override.
         </p>
       </div>
 
-      {loading ? (
-        <>
-          {/* Stats strip skeleton */}
-          <div className="px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="card p-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse" />
-                  <div className="w-3.5 h-3.5 bg-[var(--border)] rounded animate-pulse" />
-                </div>
-                <div className="h-7 w-16 bg-[var(--border)] rounded animate-pulse mb-2" />
-                <div className="h-2.5 w-32 bg-[var(--border)] rounded animate-pulse" />
-              </div>
+      {/* Stats strip — container-query grid of 4 shadcn metric Cards */}
+      <div className="grid grid-cols-1 gap-4 px-4 py-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 lg:px-6">
+        {loading
+          ? [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full" />)
+          : stats.map((s) => (
+              <Card key={s.label} className="@container/card">
+                <CardHeader>
+                  <CardDescription>{s.label}</CardDescription>
+                  <CardTitle
+                    className={`text-2xl font-semibold tabular-nums @[250px]/card:text-3xl ${s.valueClass}`}
+                  >
+                    <h2 className="font-[inherit]">{s.value}</h2>
+                  </CardTitle>
+                  <CardAction>
+                    <s.Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+                  </CardAction>
+                </CardHeader>
+                <CardFooter className="text-sm text-muted-foreground">
+                  {s.subtitle}
+                </CardFooter>
+              </Card>
             ))}
-          </div>
+      </div>
 
-          {/* Orders table skeleton */}
-          <div className="px-6 lg:px-8 pb-8">
-            <div className="card overflow-hidden">
-              <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
-                <div className="h-3.5 w-28 bg-[var(--border)] rounded animate-pulse" />
-                <div className="h-3 w-48 bg-[var(--border)] rounded animate-pulse" />
-              </div>
-              {/* Table header skeleton */}
-              <div className="px-5 py-2.5 border-b border-[var(--border)] bg-[var(--bg-base)]">
-                <div className="grid grid-cols-9 gap-4">
-                  {["w-12", "w-20", "w-16", "w-10", "w-10", "w-16", "w-14", "w-16", "w-16"].map((w, i) => (
-                    <div key={i} className={`h-2.5 ${w} bg-[var(--border)] rounded animate-pulse`} />
-                  ))}
-                </div>
-              </div>
-              {/* Table row skeletons */}
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="px-5 py-3 border-b border-[var(--border)]">
-                  <div className="grid grid-cols-9 gap-4 items-center">
-                    <div>
-                      <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse mb-1" />
-                      <div className="h-2 w-12 bg-[var(--border)] rounded animate-pulse" />
-                    </div>
-                    <div className="h-3 w-24 bg-[var(--border)] rounded animate-pulse" />
-                    <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
-                    <div>
-                      <div className="h-3 w-10 bg-[var(--border)] rounded animate-pulse mb-1" />
-                      <div className="h-2 w-14 bg-[var(--border)] rounded animate-pulse" />
-                    </div>
-                    <div className="h-3 w-6 bg-[var(--border)] rounded animate-pulse" />
-                    <div className="h-5 w-10 bg-[var(--border)] rounded-full animate-pulse" />
-                    <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse" />
-                    <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
-                    <div className="h-6 w-20 bg-[var(--border)] rounded animate-pulse" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Stats strip — every number below derives from the actual queue + SOM exceptions */}
-          <div className="px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="card p-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Orders in queue</p>
-                <Activity className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-              </div>
-              <p className="text-2xl font-semibold text-[var(--text-primary)] m-0 tabular-nums">{ordersInBatch}</p>
-              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{controlledCount} with controlled substances</p>
-            </div>
-
-            <div className="card p-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Auto-blocked</p>
-                <Lock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-              </div>
-              <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{blockedCount}</p>
-              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">awaiting human override</p>
-            </div>
-
-            <div className="card p-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Flagged this batch</p>
-                <ShieldCheck className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-              </div>
-              <p className="text-2xl font-semibold text-amber-700 m-0 tabular-nums">{suspicionRate}%</p>
-              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">{flaggedOrdersCount} of {ordersInBatch} orders flagged</p>
-            </div>
-
-            <div className="card p-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] m-0">Blocked exposure</p>
-                <DollarSign className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-              </div>
-              <p className="text-2xl font-semibold text-red-600 m-0 tabular-nums">{formatCurrency(somBlockedAmount)}</p>
-              <p className="text-[10px] text-[var(--text-secondary)] m-0 mt-1">across {somExceptions.length} SOM exceptions</p>
-            </div>
-          </div>
-
-          {/* Orders table */}
-          <div className="px-6 lg:px-8 pb-8">
-            <div className="card overflow-hidden">
-              <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
-                <p className="text-sm font-semibold text-[var(--text-primary)] m-0">Incoming orders</p>
-                <span className="text-[11px] text-[var(--text-muted)]">High/Critical pharmacies require human override</span>
-              </div>
-              <table className="data-table w-full">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Pharmacy</th>
-                    <th>Location</th>
-                    <th>Score</th>
-                    <th>Lines</th>
-                    <th>Controlled</th>
-                    <th className="right">Value</th>
-                    <th>Received</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
+      {/* Orders table */}
+      <div className="px-4 pb-6 lg:px-6">
+        {loading ? (
+          <Skeleton className="h-96 w-full" />
+        ) : (
+          <Card className="py-0">
+            <CardHeader className="border-b py-3.5">
+              <CardTitle>
+                <h2 className="font-[inherit] text-sm font-semibold">Incoming orders</h2>
+              </CardTitle>
+              <CardAction className="text-sm text-muted-foreground">
+                High/Critical pharmacies require human override
+              </CardAction>
+            </CardHeader>
+            <CardContent className="px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order</TableHead>
+                    <TableHead>Pharmacy</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Lines</TableHead>
+                    <TableHead>Controlled</TableHead>
+                    <TableHead className="text-right">Value</TableHead>
+                    <TableHead>Received</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {ordersWithScore.map(({ order, score, rating, blocked }) => {
                     const hasControlled = order.lineItems.some((l) => l.isControlled);
                     const overrideEntry = overriddenOrders[order.id];
                     return (
-                      <tr key={order.id} className={blocked && !overrideEntry ? "bg-red-50/40" : ""}>
-                        <td>
+                      <TableRow
+                        key={order.id}
+                        className={blocked && !overrideEntry ? "bg-destructive/5" : ""}
+                      >
+                        <TableCell>
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-xs font-mono text-[var(--text-primary)]">{order.id}</span>
+                            <span className="font-mono text-xs text-foreground">
+                              {order.id}
+                            </span>
                             {order.isFresh && !blocked && (
-                              <span className="text-[9px] uppercase tracking-wide text-emerald-600 font-medium">
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-success-text">
                                 Fresh · just arrived
                               </span>
                             )}
                             {blocked && !overrideEntry && (
-                              <span className="text-[9px] uppercase tracking-wide text-red-600 font-medium flex items-center gap-1">
-                                <Lock className="w-2.5 h-2.5" />
+                              <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                                <Lock className="size-2.5" />
                                 Auto-blocked
                               </span>
                             )}
                           </div>
-                        </td>
-                        <td>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1.5">
-                            <Pill className="w-3 h-3 text-[var(--text-muted)]" />
-                            <span className="text-xs font-medium text-[var(--text-primary)]">{order.pharmacy.name}</span>
+                            <Pill className="size-3 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground">
+                              {order.pharmacy.name}
+                            </span>
                           </div>
-                        </td>
-                        <td>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
-                            <span className="text-xs text-[var(--text-secondary)]">
+                            <MapPin className="size-3 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
                               {order.pharmacy.city}, {order.pharmacy.state}
                             </span>
                           </div>
-                        </td>
-                        <td>
+                        </TableCell>
+                        <TableCell>
                           <ScoreCell score={score} rating={rating} />
-                        </td>
-                        <td className="text-xs text-[var(--text-secondary)] tabular-nums">{order.lineItems.length}</td>
-                        <td>
+                        </TableCell>
+                        <TableCell className="text-sm tabular-nums text-muted-foreground">
+                          {order.lineItems.length}
+                        </TableCell>
+                        <TableCell>
                           {hasControlled ? (
-                            <span className="badge warning">Yes</span>
+                            <Badge className="border-warning bg-warning/10 text-warning-text">
+                              Yes
+                            </Badge>
                           ) : (
-                            <span className="text-xs text-[var(--text-muted)]">No</span>
+                            <span className="text-xs text-muted-foreground">No</span>
                           )}
-                        </td>
-                        <td className="right text-xs tabular-nums font-medium text-[var(--text-primary)]">
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-medium tabular-nums text-foreground">
                           {formatCurrency(order.totalAmount)}
-                        </td>
-                        <td>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-                            <span className="text-xs text-[var(--text-secondary)]">{formatTime(order.receivedAt)}</span>
+                            <Clock className="size-3 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {formatTime(order.receivedAt)}
+                            </span>
                           </div>
-                        </td>
-                        <td>
+                        </TableCell>
+                        <TableCell>
                           <ActionCell
                             order={order}
-                            score={score}
-                            rating={rating}
                             blocked={blocked}
                             overrideEntry={overrideEntry}
                             onOverrideClick={() => setModalOrder({
@@ -333,18 +341,18 @@ export default function SomQueuePage() {
                               rating: rating as "Critical" | "High Risk" | "Medium Risk",
                             })}
                           />
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-      {/* Override modal */}
+      {/* Override modal — shadcn Dialog via shared OverrideModal component */}
       {modalOrder && (
         <OverrideModal
           open={!!modalOrder}
@@ -356,22 +364,25 @@ export default function SomQueuePage() {
           onSubmit={handleOverrideSubmit}
         />
       )}
-    </div>
+    </main>
   );
 }
 
 // ─── Score cell ───────────────────────────────────────────────────────────────
 
+// [Spec: domains/som/spec.md#Business Rules — Score color mapping v2.0.1]
 function ScoreCell({ score, rating }: { score: number; rating: string }) {
   const color =
-    score < 30 ? "text-red-600"
-    : score < 60 ? "text-amber-700"
-    : score < 80 ? "text-blue-600"
-    : "text-emerald-700";
+    score < 30 ? "text-destructive"
+    : score < 60 ? "text-warning-text"
+    : score < 80 ? "text-primary"
+    : "text-success-text";
   return (
     <div className="flex flex-col gap-0.5">
       <span className={`text-xs font-semibold tabular-nums ${color}`}>{score}/100</span>
-      <span className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">{rating}</span>
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {rating}
+      </span>
     </div>
   );
 }
@@ -385,8 +396,6 @@ function ActionCell({
   onOverrideClick,
 }: {
   order: { id: string };
-  score: number;
-  rating: string;
   blocked: boolean;
   overrideEntry?: AuditLogEntry;
   onOverrideClick: () => void;
@@ -394,13 +403,13 @@ function ActionCell({
   if (overrideEntry) {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] uppercase tracking-wide text-emerald-700 font-semibold flex items-center gap-1">
-          <FileCheck2 className="w-3 h-3" />
+        <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-success-text">
+          <FileCheck2 className="size-3" />
           Released after override
         </span>
         <Link
           href="/som/audit-log"
-          className="text-[10px] text-[var(--acl-primary)] no-underline hover:underline"
+          className="text-[10px] text-primary no-underline hover:underline"
         >
           View {overrideEntry.id} →
         </Link>
@@ -410,23 +419,27 @@ function ActionCell({
 
   if (blocked) {
     return (
-      <button
+      <Button
+        variant="destructive"
+        size="sm"
         onClick={onOverrideClick}
-        className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded border border-red-300 bg-white text-red-700 hover:bg-red-50 cursor-pointer"
       >
-        <Lock className="w-3 h-3" />
+        <Lock className="size-3" />
         Override required
-      </button>
+      </Button>
     );
   }
 
+  // "Run checks" navigates — a Link styled as a ghost Button. Base UI's
+  // Button primitive warns when its render slot is a non-button element,
+  // so the buttonVariants() class is applied to the Link directly.
   return (
     <Link
       href={`/som/order/${order.id}`}
-      className="inline-flex items-center gap-1 text-xs text-[var(--acl-primary)] no-underline hover:underline"
+      className={`${buttonVariants({ variant: "ghost", size: "sm" })} no-underline`}
     >
       Run checks
-      <ArrowRight className="w-3 h-3" />
+      <ArrowRight className="size-3" />
     </Link>
   );
 }
