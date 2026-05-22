@@ -33,12 +33,13 @@ EARS notation.
 - [ ] THE SYSTEM SHALL render the activity feed as a full-width shadcn `Card` with `Clock` icon header, title "Agent Activity Feed", live `Badge` (during run), and event count `Badge`
 - [ ] THE SYSTEM SHALL render the feed list in a scrollable `max-h-[400px]` container with `divide-y` row separators
 - [ ] WHEN a pipeline run starts THE SYSTEM SHALL prepend new run events to the feed with a slide-in animation
-- [ ] THE SYSTEM SHALL render event status icons using theme tokens: `text-success` for pass, `text-destructive` for fail, `text-warning` for warn, `text-muted-foreground` for info
+- [ ] THE SYSTEM SHALL render event status icons using theme tokens: `text-success` for pass, `text-destructive` for fail, `text-warning` for warn, `text-muted-foreground` for info (icons are non-text decorative cues paired with a text label — the vivid `--success` / `--warning` are valid here)
 
 **Loading and safety**
 - [ ] WHEN the page mounts THE SYSTEM SHALL display shadcn `Skeleton` placeholders matching the 5 agent cards and activity feed for 400ms before real content
 - [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable the BorderBeam, spinner, and feed slide-in animations
 - [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on the "Run Pipeline" button
+- [ ] THE SYSTEM SHALL expose a real heading hierarchy: an `<h1>` page title and an `<h2>` for the Activity Feed region (no `<div>`-only headings)
 
 ## Layout
 
@@ -53,12 +54,14 @@ Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
 ## Business Rules
 
 ### Agent Definitions (static)
-Each agent has a fixed configuration:
+Each agent has a fixed configuration. The Validation Agent's exception count is **derived**
+from `allExceptions` in `lib/data.ts` (`!type.startsWith("som_")`), never a hardcoded literal —
+so the pipeline always agrees with the dashboard and exceptions list (resolves audit DI-3).
 
 | Step | Agent Name       | Role                     | Static Stat      | Static Sub-Stat       |
 |------|------------------|--------------------------|-------------------|-----------------------|
 | 1    | Invoice Agent    | Extraction & Triage      | 1,847 processed   | 0 errors              |
-| 2    | Validation Agent | Three-Way Match          | 188 exceptions    | 6 escalated           |
+| 2    | Validation Agent | Three-Way Match          | {AP exception count} exceptions | 6 escalated |
 | 3    | Compliance Agent | Contract & Rebate Audit  | 12 alerts         | 3 contracts at risk   |
 | 4    | Recovery Agent   | Vendor Outreach          | 14 in queue       | $470K target          |
 | 5    | Insight Agent    | Risk Intelligence        | 18 vendors scored | 4 high-risk           |
@@ -69,6 +72,14 @@ Each agent card can be in one of five states: `idle`, `running`, `done`, `done-w
 - **Icon**: `running` shows a spinning `Loader2`. `done-fail` shows `AlertTriangle` in `text-destructive`. `done-warn` shows `AlertTriangle` in `text-warning`. `done` shows `CheckCircle2` in `text-success`. `idle` shows the agent's default Lucide icon.
 - **Badge** (shadcn `Badge`): `done-fail` `variant="destructive"` "Exception found". `done-warn` styled `bg-warning/10 text-warning border-warning` "Flag raised". `done` styled `bg-success/10 text-success border-success` "Passed". `running` `variant="outline"` "Processing..." with a pulsing `bg-primary` dot. `idle` `variant="outline"` "Active" with a `bg-success` dot.
 - **BorderBeam**: Only the currently `running` card gets an animated MagicUI BorderBeam overlay tinted with the agent's color via `bg-[var(--agent-*)]`.
+
+### Agent Card Color Application (v2.0)
+Agent-accent color (`var(--agent-*)`) is applied only to the agent icon tile, the role label,
+the BorderBeam tint, and the `running`-state badge — small, non-text or large decorative
+surfaces. All status-driven backgrounds, borders, badges, and result text use shadcn theme
+tokens (`bg-success/5`, `border-destructive`, `text-warning-text`, etc.). Status text uses the
+AA-safe `*-text` tokens (`text-success-text` / `text-warning-text`); `--success` / `--warning`
+are reserved for fills, dots, and borders (`ui-standard.md` Warning + Success Overrides).
 
 ### Pipeline Run Sequence
 The hardcoded run results for each step are:
@@ -145,3 +156,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Added 400ms loading state with skeleton placeholders (5 agent cards + activity feed) -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Agent cards and activity feed → shadcn `Card`. Run Pipeline button + activity feed badges → shadcn `Button` / `Badge` variants. Progress bar → shadcn `Progress`. Loading → shadcn `Skeleton`. All v1 pipeline tokens (`--pipeline-pass-bg`, `--pipeline-fail-border`, etc.) migrated to v2 theme tokens (`bg-success/5`, `border-destructive`, etc.). Activity feed status icons retokenized to `text-success` / `text-destructive` / `text-warning` / `text-muted-foreground`. Added 17 EARS Acceptance Criteria covering app shell, run lifecycle, agent card states, activity feed, loading, accessibility. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0 code migration (cluster 1): `app/pipeline/page.tsx` migrated off the v1 token set per the ui-standard.md v1→v2 map. All `var(--bg-*)` / `var(--text-*)` / `var(--border)` / `bg-white` / `--pipeline-*` / `--critical` / `--info` / `--neutral-*` references replaced with shadcn theme classes (`bg-background`, `bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-success/5`, `border-destructive`, `text-warning-text`/`text-success-text`). Agent cards, skeleton, and Activity Feed surface → shadcn `Card` + `Skeleton`; agent state + feed badges → shadcn `Badge` (variant/styled); Run Pipeline → shadcn `Button`; progress bar → shadcn `Progress`. Added `Agent Card Color Application` business rule (agent-accent confined to icon tile / role label / BorderBeam / running badge; status surfaces use theme tokens). Validation-agent stat documented as derived (resolves audit DI-3 "188 exceptions"). Added heading-hierarchy AC — Activity Feed now an `<h2>`. Page padding `px-6 lg:px-8` → `px-4 lg:px-6`. Verified in light + dark mode. -->

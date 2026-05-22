@@ -1,3 +1,13 @@
+// [Spec: domains/invoice-detail/spec.md] — Exception / invoice-detail view.
+// v2.0 shadcn migration (cluster 1, 2026-05-22): off the v1 token set per the
+// ui-standard.md v1→v2 map. All 9 per-exception-type templates migrated —
+// Ex003Page, Ex006Page, MatchExceptionDetail, DuplicateDetail,
+// ContractOverageDetail, MissingRebateDetail, TierPricingDetail,
+// GenericExceptionPage, SomExceptionDetail. .card→Card, .data-table→Table,
+// .badge.*→Badge, .alert-bar→Alert, raw <button>→Button, hand-rolled
+// `fixed inset-0` modals→shadcn Dialog. AA-safe status text via
+// text-destructive / text-warning-text / text-success-text. Real h1/h2/h3
+// document outline. Dark mode works on every template.
 "use client";
 
 import { useState } from "react";
@@ -18,7 +28,7 @@ import {
   updateExceptionStatus,
 } from "@/lib/data";
 import type { Exception, InvoiceLineItem } from "@/lib/data";
-import { Check, X, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, X, ChevronDown, ChevronRight, FileText, ExternalLink } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { LegalDisclaimerDialog } from "@/components/LegalDisclaimerDialog";
 import { CategoryBadge } from "@/components/CategoryBadge";
@@ -29,6 +39,36 @@ import WorkflowStepper from "@/components/WorkflowStepper";
 import AuditTrail from "@/components/AuditTrail";
 import { getAuditTrail, getWorkflowSteps } from "@/lib/audit-trail";
 import { GPOComparisonSection } from "@/components/GPOComparisonSection";
+
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 // ─── Agent timelines per exception ───────────────────────────────────────────
 
@@ -89,74 +129,134 @@ const DEFAULT_AGENT_TIMELINE = [
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
-function FileIcon() {
+// Section heading — renders a real <h2>/<h3> so the document outline is correct.
+// [Spec: domains/invoice-detail/spec.md#Acceptance Criteria — heading hierarchy]
+function SectionLabel({
+  children,
+  as: As = "h2",
+  className = "",
+}: {
+  children: React.ReactNode;
+  as?: "h2" | "h3";
+  className?: string;
+}) {
   return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 16 16"
-      fill="none"
-      className="flex-shrink-0"
+    <As
+      className={`m-0 text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground ${className}`}
     >
-      <path
-        d="M4 2h5.5L12 4.5V14H4V2z"
-        stroke="var(--text-muted)"
-        strokeWidth="1.25"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path
-        d="M9.5 2v2.5H12"
-        stroke="var(--text-muted)"
-        strokeWidth="1.25"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
+      {children}
+    </As>
   );
 }
 
-const variantClasses: Record<string, string> = {
-  "primary-red":
-    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-red-600 text-white border-none hover:bg-red-700",
-  "outline-red":
-    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-white text-red-600 border border-red-600 hover:bg-red-50",
-  "outline-gray":
-    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-white text-[var(--text-secondary)] border border-[var(--border-strong)] hover:bg-[var(--bg-subtle)]",
-  ghost:
-    "block w-full text-xs font-medium px-3 py-2 rounded-md cursor-pointer text-center mb-2 transition-colors bg-transparent text-[var(--text-muted)] border-none hover:text-[var(--text-secondary)]",
-};
+// Back-to-list button — shadcn ghost Button. [Spec: domains/invoice-detail/spec.md#Breadcrumb]
+function BackButton() {
+  const router = useRouter();
+  return (
+    <Button variant="ghost" size="sm" className="-ml-2.5 px-2.5" onClick={() => router.back()}>
+      <ArrowLeft className="size-3.5" />
+      Back
+    </Button>
+  );
+}
 
-function ActionButton({
+// Destructive alert bar. [Spec: domains/invoice-detail/spec.md#Alert Bar]
+function AlertBar({ children }: { children: React.ReactNode }) {
+  return (
+    <Alert
+      variant="destructive"
+      className="border-l-4 border-l-destructive bg-destructive/10"
+    >
+      <AlertDescription className="text-destructive">{children}</AlertDescription>
+    </Alert>
+  );
+}
+
+// Status-token Badge for the exception status pill. [Spec: domains/invoice-detail/spec.md#Header]
+function StatusBadge({ status }: { status: Exception["status"] }) {
+  if (status === "resolved") {
+    return <Badge className="border-success bg-success/10 text-success-text">Resolved</Badge>;
+  }
+  if (status === "open") {
+    return <Badge variant="destructive">Open</Badge>;
+  }
+  if (status === "escalated") {
+    return <Badge variant="outline">Escalated</Badge>;
+  }
+  return <Badge className="border-warning bg-warning/10 text-warning-text">Under Review</Badge>;
+}
+
+// Type Badge — amber/warning styling for the exception-type pill.
+function TypeBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <Badge className="border-warning bg-warning/10 text-warning-text">{children}</Badge>
+  );
+}
+
+// Severity Badge — maps severity to a token-styled Badge.
+function SeverityBadge({ severity, children }: { severity: string; children: React.ReactNode }) {
+  if (severity === "critical") return <Badge variant="destructive">{children}</Badge>;
+  if (severity === "high")
+    return <Badge className="border-warning bg-warning/10 text-warning-text">{children}</Badge>;
+  if (severity === "low")
+    return <Badge className="border-success bg-success/10 text-success-text">{children}</Badge>;
+  return <Badge variant="secondary">{children}</Badge>;
+}
+
+// Document row — file icon, label, open link, optional change dropdown.
+function DocumentRow({
+  label,
+  href,
+  changed,
+  withBorder = true,
   children,
-  variant,
-  className: extraClassName,
-  ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant: "primary-red" | "outline-red" | "outline-gray" | "ghost";
+}: {
+  label: string;
+  href: string;
+  changed?: boolean;
+  withBorder?: boolean;
+  children?: React.ReactNode;
 }) {
   return (
-    <button
-      className={`${variantClasses[variant]}${extraClassName ? ` ${extraClassName}` : ""}`}
-      {...rest}
-    >
-      {children}
-    </button>
+    <div className={`relative py-2 ${withBorder ? "border-b border-border" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <FileText className="size-3 shrink-0 text-muted-foreground" />
+          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-muted-foreground">
+            {label}
+          </span>
+          {changed && (
+            <span className="ml-1 text-[9px] font-medium text-primary">changed</span>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-primary no-underline hover:underline"
+          >
+            Open
+            <ExternalLink className="size-2.5" />
+          </a>
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }
 
 // ─── EX-003: MedTech Solutions — Suspicious Invoice ──────────────────────────
 
 function Ex003Page() {
-  const router = useRouter();
   const { showToast } = useToast();
   const [actionTaken003, setActionTaken003] = useState<string | null>(null);
   const [disclaimerAction003, setDisclaimerAction003] = useState<{action: string; callback: () => void} | null>(null);
 
   const poCandidates = [
-    { po: "NMC-PO-2026-0891", vendor: "Medline Industries", product: "IV Catheter Kits 18G", amount: "$44,800", pct: "34%", pctColor: "var(--warning)" },
-    { po: "NMC-PO-2026-0744", vendor: "Cardinal Health", product: "Peripheral IV Kit", amount: "$38,500", pct: "28%", pctColor: "var(--text-muted)" },
-    { po: "NMC-PO-2026-1102", vendor: "Henry Schein", product: "IV Access Kit", amount: "$41,200", pct: "21%", pctColor: "var(--text-muted)" },
+    { po: "NMC-PO-2026-0891", vendor: "Medline Industries", product: "IV Catheter Kits 18G", amount: "$44,800", pct: "34%", flagged: true },
+    { po: "NMC-PO-2026-0744", vendor: "Cardinal Health", product: "Peripheral IV Kit", amount: "$38,500", pct: "28%", flagged: false },
+    { po: "NMC-PO-2026-1102", vendor: "Henry Schein", product: "IV Access Kit", amount: "$41,200", pct: "21%", flagged: false },
   ];
 
   const steps = [
@@ -191,150 +291,133 @@ function Ex003Page() {
   ];
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
+    <main className="min-h-screen bg-background">
       {/* Breadcrumb */}
-      <div className="pt-6 px-8">
-        <button
-          onClick={() => router.back()}
-          className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
-        >
-          &larr; Back
-        </button>
+      <div className="px-4 pt-6 lg:px-6">
+        <BackButton />
       </div>
 
       {/* Header */}
-      <div className="px-8 pt-3 pb-6">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[var(--text-muted)]">EX-003</span>
-          <span className="badge critical">Suspicious Invoice</span>
-          <span className="badge blue">Escalated</span>
+      <div className="px-4 pt-3 pb-6 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className="font-mono text-[11px] text-muted-foreground">EX-003</span>
+          <Badge variant="destructive">Suspicious Invoice</Badge>
+          <Badge variant="outline">Escalated</Badge>
           <CategoryBadge category="Medical Equipment" />
         </div>
-        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1.5 leading-tight">
+        <h1 className="m-0 mb-1.5 text-[22px] font-semibold leading-tight tracking-tight text-foreground">
           MedTech Solutions LLC
         </h1>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
+        <p className="m-0 text-xs text-muted-foreground">
           Invoice #MTS-INV-00291 · February 14, 2026 · $45,200.00
         </p>
       </div>
 
       {/* Alert bar */}
-      <div className="mx-8 mb-6">
-        <div className="border-l-4 border-red-600 bg-red-50 px-5 py-3.5 rounded-lg">
-          <span className="text-xs text-red-900">
-            Vendor not in approved master · No PO found · Mixed product and services billing · Routed to Compliance
-          </span>
-        </div>
+      <div className="mx-4 mb-6 lg:mx-6">
+        <AlertBar>
+          Vendor not in approved master · No PO found · Mixed product and services billing · Routed to Compliance
+        </AlertBar>
       </div>
 
-      <div className="mx-8">
+      <div className="mx-4 lg:mx-6">
         <EscalationBanner flaggedAmount={45200} />
       </div>
 
       {/* Two-column layout */}
-      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="grid grid-cols-1 items-start gap-6 px-4 pb-8 lg:grid-cols-[1fr_280px] lg:px-6">
         {/* LEFT */}
         <div>
-          <p className="section-label mb-2">
-            PO Match Search
-          </p>
+          <SectionLabel className="mb-2">PO Match Search</SectionLabel>
 
-          <div className="card overflow-hidden">
+          <Card className="gap-0 py-0">
             {/* Card header */}
-            <div className="px-5 pt-4 pb-3 border-b border-[var(--border)] flex items-center justify-between gap-3">
-              <span className="text-xs text-[var(--text-secondary)]">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 pt-4 pb-3">
+              <span className="text-xs text-muted-foreground">
                 Searching vendor master and open POs for invoice #MTS-INV-00291
               </span>
-              <span className="badge critical flex-shrink-0">
+              <Badge variant="destructive" className="shrink-0">
                 No Match Found
-              </span>
+              </Badge>
             </div>
 
             {/* Search steps */}
             <div className="px-5 py-4">
               {steps.map((step, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 py-2"
-                >
+                <div key={i} className="flex items-start gap-3 py-2">
                   {/* Step indicator */}
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-px ${
-                      step.ok ? "bg-[var(--bg-subtle)]" : "bg-red-50"
+                    className={`mt-px flex size-5 shrink-0 items-center justify-center rounded-full ${
+                      step.ok ? "bg-muted" : "bg-destructive/10"
                     }`}
                   >
                     <span
                       className={`leading-none ${
-                        step.ok ? "text-green-700" : "text-red-600"
+                        step.ok ? "text-success-text" : "text-destructive"
                       }`}
                     >
-                      {step.ok ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                      {step.ok ? <Check className="size-3" /> : <X className="size-3" />}
                     </span>
                   </div>
 
                   {/* Step text */}
                   <div>
-                    <p className="text-xs text-[var(--text-primary)] m-0 font-medium">
-                      {step.title}
-                    </p>
-                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5 m-0">
-                      {step.sub}
-                    </p>
+                    <p className="m-0 text-xs font-medium text-foreground">{step.title}</p>
+                    <p className="m-0 mt-0.5 text-[11px] text-muted-foreground">{step.sub}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* PO Candidates */}
-            <div className="border-t border-[var(--border)] px-5 py-4">
-              <p className="section-label mb-2.5">
+            <div className="border-t border-border px-5 py-4">
+              <SectionLabel as="h3" className="mb-2.5">
                 Closest PO Candidates (Insufficient Confidence)
-              </p>
+              </SectionLabel>
 
-              <div className="overflow-x-auto">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>PO Number</th>
-                      <th>Vendor on PO</th>
-                      <th>Product</th>
-                      <th className="right">Amount</th>
-                      <th className="right">Match %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {poCandidates.map((row) => (
-                      <tr key={row.po}>
-                        <td>
-                          <span className="font-mono text-[11px] text-[var(--text-muted)]">
-                            {row.po}
-                          </span>
-                        </td>
-                        <td className="text-xs text-[var(--text-primary)]">{row.vendor}</td>
-                        <td className="text-xs text-[var(--text-secondary)]">{row.product}</td>
-                        <td className="right text-xs tabular-nums text-[var(--text-primary)]">
-                          {row.amount}
-                        </td>
-                        <td className="right">
-                          <span
-                            className="text-xs font-medium tabular-nums"
-                            style={{ color: row.pctColor }}
-                          >
-                            {row.pct}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>PO Number</TableHead>
+                    <TableHead>Vendor on PO</TableHead>
+                    <TableHead>Product</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Match %</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {poCandidates.map((row) => (
+                    <TableRow key={row.po}>
+                      <TableCell>
+                        <span className="font-mono text-[11px] text-muted-foreground">
+                          {row.po}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-foreground">{row.vendor}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{row.product}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums text-foreground">
+                        {row.amount}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={`text-xs font-medium tabular-nums ${
+                            row.flagged ? "text-warning-text" : "text-muted-foreground"
+                          }`}
+                        >
+                          {row.pct}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
               {/* Vendor not in master note */}
-              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mt-4">
-                <p className="section-label text-red-600 mb-1.5">
+              <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+                <SectionLabel as="h3" className="mb-1.5 text-destructive">
                   Vendor Not in Approved Master
-                </p>
-                <p className="text-xs text-red-900 m-0 leading-relaxed">
+                </SectionLabel>
+                <p className="m-0 text-xs leading-relaxed text-destructive">
                   MedTech Solutions LLC (EIN: 84-2917441) does not appear in Northfield Medical&apos;s
                   approved vendor registry. The invoice references IV Catheter Kits but this
                   vendor&apos;s registered business category is &apos;Management Consulting&apos;. Bank account
@@ -342,123 +425,196 @@ function Ex003Page() {
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* RIGHT panel */}
-        <div className="card p-5">
+        <Card className="gap-0 p-5">
           {/* Exception details */}
-          <p className="section-label mb-0">
+          <SectionLabel as="h3" className="mb-0">
             Exception Details
-          </p>
+          </SectionLabel>
 
           {detailRows.map((row, i) => (
             <div
               key={row.label}
-              className={`flex justify-between items-baseline py-2.5 ${
-                i < detailRows.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""
+              className={`flex items-baseline justify-between py-2.5 ${
+                i < detailRows.length - 1 ? "border-b border-border" : ""
               }`}
             >
-              <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-              <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
+              <span className="text-xs text-muted-foreground">{row.label}</span>
+              <span className="text-xs font-medium text-foreground">{row.value}</span>
             </div>
           ))}
 
           {/* Risk level row */}
-          <div className="flex justify-between items-center py-2.5 border-t border-[var(--bg-subtle)]">
-            <span className="text-xs text-[var(--text-secondary)]">Risk level</span>
-            <span className="badge critical">High</span>
+          <div className="flex items-center justify-between border-t border-border py-2.5">
+            <span className="text-xs text-muted-foreground">Risk level</span>
+            <Badge variant="destructive">High</Badge>
           </div>
 
           {/* Documents */}
-          <p className="section-label mt-4 mb-2">
+          <SectionLabel as="h3" className="mt-4 mb-2">
             Documents
-          </p>
+          </SectionLabel>
 
-          <div className="flex items-center justify-between gap-2 py-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <FileIcon />
-              <span className="text-[11px] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
-                invoice-MTS-INV-00291.pdf
-              </span>
-            </div>
-            <a
-              href="/documents/pdfs/invoice-MTS-INV-00291.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-[var(--acl-primary)] no-underline whitespace-nowrap flex-shrink-0 hover:underline"
-            >
-              Open &rarr;
-            </a>
-          </div>
+          <DocumentRow
+            label="invoice-MTS-INV-00291.pdf"
+            href="/documents/pdfs/invoice-MTS-INV-00291.pdf"
+            withBorder={false}
+          />
 
           {/* Actions */}
-          <p className="section-label mt-5 mb-2.5">
+          <SectionLabel as="h3" className="mt-5 mb-2.5">
             Actions
-          </p>
+          </SectionLabel>
 
-          {actionTaken003 ? (<>
-            <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-              actionTaken003 === "blocked" ? "bg-red-50 text-red-700 border border-red-200" :
-              actionTaken003 === "reported" ? "bg-purple-50 text-purple-700 border border-purple-200" :
-              actionTaken003 === "verification" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-              "bg-gray-50 text-gray-500 border border-gray-200"
-            }`}>
-              {actionTaken003 === "blocked" ? "Payment Blocked" :
-               actionTaken003 === "reported" ? "Reported to Compliance" :
-               actionTaken003 === "verification" ? "Verification Requested" :
-               "Dismissed — False Positive"}
-            </div>
-            {(actionTaken003 === "blocked" || actionTaken003 === "reported") && <PostDisagreeSteps />}
+          {actionTaken003 ? (
+            <>
+              <div
+                className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
+                  actionTaken003 === "blocked"
+                    ? "border-destructive/30 bg-destructive/10 text-destructive"
+                    : actionTaken003 === "reported"
+                      ? "border-warning/40 bg-warning/10 text-warning-text"
+                      : actionTaken003 === "verification"
+                        ? "border-border bg-muted text-foreground"
+                        : "border-border bg-muted text-muted-foreground"
+                }`}
+              >
+                {actionTaken003 === "blocked"
+                  ? "Payment Blocked"
+                  : actionTaken003 === "reported"
+                    ? "Reported to Compliance"
+                    : actionTaken003 === "verification"
+                      ? "Verification Requested"
+                      : "Dismissed — False Positive"}
+              </div>
+              {(actionTaken003 === "blocked" || actionTaken003 === "reported") && <PostDisagreeSteps />}
             </>
           ) : (
-            <>
-              <ActionButton variant="primary-red" onClick={() => setDisclaimerAction003({ action: "block", callback: () => { setActionTaken003("blocked"); showToast("Payment authorization for invoice MTS-INV-00291 has been suspended", "warning"); } })}>Block Payment</ActionButton>
-              <ActionButton variant="outline-red" onClick={() => setDisclaimerAction003({ action: "report", callback: () => { setActionTaken003("reported"); showToast("Compliance case #CR-2026-0291 filed — referred for investigation", "info"); } })}>Report to Compliance</ActionButton>
-              <ActionButton variant="outline-gray" onClick={() => setDisclaimerAction003({ action: "verify", callback: () => { setActionTaken003("verification"); showToast("Vendor verification request dispatched to MedTech Solutions LLC", "success"); } })}>Request Vendor Verification</ActionButton>
-              <ActionButton variant="ghost" className="!mb-0" onClick={() => setDisclaimerAction003({ action: "dismiss", callback: () => { setActionTaken003("dismissed"); showToast("Exception EX-003 has been dismissed per analyst determination", "info"); } })}>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() =>
+                  setDisclaimerAction003({
+                    action: "block",
+                    callback: () => {
+                      setActionTaken003("blocked");
+                      showToast(
+                        "Payment authorization for invoice MTS-INV-00291 has been suspended",
+                        "warning",
+                      );
+                    },
+                  })
+                }
+              >
+                Block Payment
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() =>
+                  setDisclaimerAction003({
+                    action: "report",
+                    callback: () => {
+                      setActionTaken003("reported");
+                      showToast(
+                        "Compliance case #CR-2026-0291 filed — referred for investigation",
+                        "info",
+                      );
+                    },
+                  })
+                }
+              >
+                Report to Compliance
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() =>
+                  setDisclaimerAction003({
+                    action: "verify",
+                    callback: () => {
+                      setActionTaken003("verification");
+                      showToast(
+                        "Vendor verification request dispatched to MedTech Solutions LLC",
+                        "success",
+                      );
+                    },
+                  })
+                }
+              >
+                Request Vendor Verification
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() =>
+                  setDisclaimerAction003({
+                    action: "dismiss",
+                    callback: () => {
+                      setActionTaken003("dismissed");
+                      showToast(
+                        "Exception EX-003 has been dismissed per analyst determination",
+                        "info",
+                      );
+                    },
+                  })
+                }
+              >
                 Dismiss (False Positive)
-              </ActionButton>
-            </>
+              </Button>
+            </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Legal Disclaimer Dialog for Ex003 actions */}
       <LegalDisclaimerDialog
         open={!!disclaimerAction003}
-        onConfirm={() => { disclaimerAction003?.callback(); setDisclaimerAction003(null); }}
+        onConfirm={() => {
+          disclaimerAction003?.callback();
+          setDisclaimerAction003(null);
+        }}
         onCancel={() => setDisclaimerAction003(null)}
         action={disclaimerAction003?.action || "block"}
         invoiceNumber="MTS-INV-00291"
       />
-    </div>
+    </main>
   );
 }
 
 // ─── EX-006: Steris Corporation — Match Exception ────────────────────────────
 
+// Row background — destructive tint for price-flagged, warning tint otherwise.
+// [Spec: domains/invoice-detail/spec.md#Business Rules — Row background]
 function rowBgClass(flags?: string[]): string {
   if (!flags || flags.length === 0) return "";
-  if (flags.includes("price")) return "bg-red-50";
-  if (flags.includes("qty") || flags.includes("unit") || flags.includes("description")) return "bg-amber-50";
+  if (flags.includes("price")) return "bg-destructive/5";
+  if (flags.includes("qty") || flags.includes("unit") || flags.includes("description"))
+    return "bg-warning/5";
   return "";
 }
 
-const FLAG_BADGES: Record<string, { cls: string; label: string }> = {
-  price: { cls: "badge critical", label: "Price" },
-  qty: { cls: "badge warning", label: "Qty" },
-  description: { cls: "badge blue", label: "Description" },
-  unit: { cls: "badge neutral", label: "Unit" },
+const FLAG_BADGES: Record<string, { variant: "destructive" | "outline" | "secondary"; label: string }> = {
+  price: { variant: "destructive", label: "Price" },
+  qty: { variant: "secondary", label: "Qty" },
+  description: { variant: "outline", label: "Description" },
+  unit: { variant: "secondary", label: "Unit" },
 };
 
 // ─── Discrepancy type display config ────────────────────────────────────────
 
-const DISCREPANCY_TYPES: Record<string, { label: string; badgeCls: string; color: string }> = {
-  price: { label: "Price Mismatch", badgeCls: "badge critical", color: "var(--critical)" },
-  qty: { label: "Quantity Mismatch", badgeCls: "badge warning", color: "var(--warning)" },
-  description: { label: "Description Variation", badgeCls: "badge blue", color: "var(--info)" },
-  unit: { label: "Unit of Measure Mismatch", badgeCls: "badge neutral", color: "var(--text-secondary)" },
+const DISCREPANCY_TYPES: Record<
+  string,
+  { label: string; variant: "destructive" | "outline" | "secondary" }
+> = {
+  price: { label: "Price Mismatch", variant: "destructive" },
+  qty: { label: "Quantity Mismatch", variant: "secondary" },
+  description: { label: "Description Variation", variant: "outline" },
+  unit: { label: "Unit of Measure Mismatch", variant: "secondary" },
 };
 
 interface DiscrepancyViewProps {
@@ -499,11 +655,11 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
   return (
     <div className="space-y-3">
       {/* Summary banner */}
-      <div className="bg-[var(--bg-subtle)] border border-[var(--border)] rounded-md px-4 py-3 flex items-center justify-between">
-        <span className="text-xs text-[var(--text-secondary)]">
-          This invoice has <span className="font-semibold text-[var(--text-primary)]">{lineItems.length}</span> line items.
+      <div className="flex items-center justify-between rounded-md border border-border bg-muted px-4 py-3">
+        <span className="text-xs text-muted-foreground">
+          This invoice has <span className="font-semibold text-foreground">{lineItems.length}</span> line items.
           {flaggedItems.length > 0 ? (
-            <> Showing <span className="font-semibold text-[var(--critical)]">{flaggedItems.length}</span> with {totalDiscrepancies} {totalDiscrepancies === 1 ? "discrepancy" : "discrepancies"}.</>
+            <> Showing <span className="font-semibold text-destructive">{flaggedItems.length}</span> with {totalDiscrepancies} {totalDiscrepancies === 1 ? "discrepancy" : "discrepancies"}.</>
           ) : (
             <> All items matched — no discrepancies.</>
           )}
@@ -511,7 +667,11 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
         <div className="flex gap-2">
           {activeGroups.map((g) => {
             const dt = DISCREPANCY_TYPES[g];
-            return dt ? <span key={g} className={dt.badgeCls}>{grouped[g].length} {dt.label}</span> : null;
+            return dt ? (
+              <Badge key={g} variant={dt.variant}>
+                {grouped[g].length} {dt.label}
+              </Badge>
+            ) : null;
           })}
         </div>
       </div>
@@ -524,23 +684,32 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
         const isExpanded = expandedGroups[groupKey] !== false;
 
         return (
-          <div key={groupKey} className="card overflow-hidden">
+          <Card key={groupKey} className="gap-0 py-0">
             {/* Group header */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => toggleGroup(groupKey)}
-              className="w-full flex items-center justify-between px-5 py-3 bg-[var(--bg-subtle)] border-b border-[var(--border)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors duration-150"
+              aria-expanded={isExpanded}
+              className="h-auto w-full justify-between rounded-none rounded-t-xl border-b border-border bg-muted px-5 py-3"
             >
-              <div className="flex items-center gap-2">
-                {isExpanded ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
-                <span className="text-xs font-semibold text-[var(--text-primary)]">{dt.label}</span>
-                <span className="text-[10px] text-[var(--text-muted)]">— {items.length} {items.length === 1 ? "item" : "items"}</span>
-              </div>
-              <span className={dt.badgeCls}>{items.length}</span>
-            </button>
+              <span className="flex items-center gap-2">
+                {isExpanded ? (
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                )}
+                {/* h3 — gives the discrepancy group a document-outline heading */}
+                <h3 className="m-0 text-xs font-semibold text-foreground">{dt.label}</h3>
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  — {items.length} {items.length === 1 ? "item" : "items"}
+                </span>
+              </span>
+              <Badge variant={dt.variant}>{items.length}</Badge>
+            </Button>
 
             {/* Expanded items */}
             {isExpanded && (
-              <div className="divide-y divide-[var(--border)]">
+              <div className="divide-y divide-border">
                 {items.map((item) => {
                   const state = lineItemStates?.[item.itemCode] ?? "pending";
                   return (
@@ -548,27 +717,27 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                       <div className="flex items-start justify-between gap-4">
                         {/* Col 1: Item identification */}
                         <div className="min-w-0 flex-1">
-                          <span className="font-mono text-[11px] text-[var(--text-muted)] block">{item.itemCode}</span>
-                          <span className="text-xs font-medium text-[var(--text-primary)] block mt-0.5">
+                          <span className="block font-mono text-[11px] text-muted-foreground">{item.itemCode}</span>
+                          <span className="mt-0.5 block text-xs font-medium text-foreground">
                             {item.invoiceDescription || item.description}
                           </span>
                         </div>
 
                         {/* Col 2+3: Discrepancy detail */}
-                        <div className="flex-1 min-w-[280px]">
+                        <div className="min-w-[280px] flex-1">
                           {groupKey === "price" && (
                             <div className="space-y-1">
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">PO Price</span>
-                                <span className="text-xs tabular-nums text-[var(--text-primary)]">${item.poUnitPrice.toFixed(2)}/unit</span>
+                                <span className="w-[80px] text-[10px] text-muted-foreground">PO Price</span>
+                                <span className="text-xs tabular-nums text-foreground">${item.poUnitPrice.toFixed(2)}/unit</span>
                               </div>
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">Invoice Price</span>
-                                <span className="text-xs tabular-nums font-medium text-red-600">${item.invoiceUnitPrice.toFixed(2)}/unit</span>
+                                <span className="w-[80px] text-[10px] text-muted-foreground">Invoice Price</span>
+                                <span className="text-xs font-medium tabular-nums text-destructive">${item.invoiceUnitPrice.toFixed(2)}/unit</span>
                               </div>
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">Variance</span>
-                                <span className="text-xs tabular-nums font-medium text-red-600">
+                                <span className="w-[80px] text-[10px] text-muted-foreground">Variance</span>
+                                <span className="text-xs font-medium tabular-nums text-destructive">
                                   {item.invoiceUnitPrice - item.poUnitPrice > 0 ? "+" : ""}${(item.invoiceUnitPrice - item.poUnitPrice).toFixed(2)}/unit
                                   ({((item.invoiceUnitPrice - item.poUnitPrice) / item.poUnitPrice * 100).toFixed(1)}%)
                                 </span>
@@ -579,20 +748,20 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                           {groupKey === "qty" && (
                             <div className="space-y-1">
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">PO Qty</span>
-                                <span className="text-xs tabular-nums text-[var(--text-primary)]">{item.poQty.toLocaleString()} units</span>
+                                <span className="w-[100px] text-[10px] text-muted-foreground">PO Qty</span>
+                                <span className="text-xs tabular-nums text-foreground">{item.poQty.toLocaleString()} units</span>
                               </div>
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">Packing Slip Qty</span>
-                                <span className="text-xs tabular-nums font-medium text-amber-700">{item.packingSlipQty.toLocaleString()} units</span>
+                                <span className="w-[100px] text-[10px] text-muted-foreground">Packing Slip Qty</span>
+                                <span className="text-xs font-medium tabular-nums text-warning-text">{item.packingSlipQty.toLocaleString()} units</span>
                               </div>
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">Invoice Qty</span>
-                                <span className="text-xs tabular-nums text-[var(--text-primary)]">{item.invoiceQty.toLocaleString()} units</span>
+                                <span className="w-[100px] text-[10px] text-muted-foreground">Invoice Qty</span>
+                                <span className="text-xs tabular-nums text-foreground">{item.invoiceQty.toLocaleString()} units</span>
                               </div>
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[100px]">Variance</span>
-                                <span className="text-xs tabular-nums font-medium text-amber-700">
+                                <span className="w-[100px] text-[10px] text-muted-foreground">Variance</span>
+                                <span className="text-xs font-medium tabular-nums text-warning-text">
                                   {item.packingSlipQty - item.invoiceQty > 0 ? "+" : ""}{item.packingSlipQty - item.invoiceQty} units (PS vs Invoice)
                                 </span>
                               </div>
@@ -602,12 +771,12 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                           {groupKey === "description" && (
                             <div className="space-y-1">
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[60px]">PO</span>
-                                <span className="text-xs text-[var(--text-primary)]">&ldquo;{item.poDescription}&rdquo;</span>
+                                <span className="w-[60px] text-[10px] text-muted-foreground">PO</span>
+                                <span className="text-xs text-foreground">&ldquo;{item.poDescription}&rdquo;</span>
                               </div>
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[60px]">Invoice</span>
-                                <span className="text-xs font-medium text-purple-600">&ldquo;{item.invoiceDescription}&rdquo;</span>
+                                <span className="w-[60px] text-[10px] text-muted-foreground">Invoice</span>
+                                <span className="text-xs font-medium text-warning-text">&ldquo;{item.invoiceDescription}&rdquo;</span>
                               </div>
                             </div>
                           )}
@@ -615,23 +784,27 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                           {groupKey === "unit" && (
                             <div className="space-y-1">
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">PO Unit</span>
-                                <span className="text-xs text-[var(--text-primary)]">{item.poUnit}</span>
+                                <span className="w-[80px] text-[10px] text-muted-foreground">PO Unit</span>
+                                <span className="text-xs text-foreground">{item.poUnit}</span>
                               </div>
                               <div className="flex items-baseline gap-3">
-                                <span className="text-[10px] text-[var(--text-muted)] w-[80px]">Invoice Unit</span>
-                                <span className="text-xs font-medium text-blue-600">{item.invoiceUnit}</span>
+                                <span className="w-[80px] text-[10px] text-muted-foreground">Invoice Unit</span>
+                                <span className="text-xs font-medium text-warning-text">{item.invoiceUnit}</span>
                               </div>
                             </div>
                           )}
 
                           {/* Show other flags for this item */}
                           {item.flags.filter((f) => f !== groupKey).length > 0 && (
-                            <div className="mt-2 flex gap-1.5">
-                              <span className="text-[10px] text-[var(--text-muted)]">Also flagged:</span>
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <span className="text-[10px] text-muted-foreground">Also flagged:</span>
                               {item.flags.filter((f) => f !== groupKey).map((f) => {
                                 const fb = FLAG_BADGES[f];
-                                return fb ? <span key={f} className={`${fb.cls} text-[9px]`}>{fb.label}</span> : null;
+                                return fb ? (
+                                  <Badge key={f} variant={fb.variant} className="h-4 px-1.5 text-[9px]">
+                                    {fb.label}
+                                  </Badge>
+                                ) : null;
                               })}
                             </div>
                           )}
@@ -639,47 +812,54 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
 
                         {/* Action buttons (EX-006 only) */}
                         {showActions && (
-                          <div className="flex-shrink-0 w-[140px] flex items-start justify-end">
+                          <div className="flex w-[150px] shrink-0 items-start justify-end">
                             {state === "pending" ? (
                               <div className="flex items-center gap-1">
-                                <button
+                                <Button
+                                  variant="outline"
+                                  size="xs"
                                   onClick={() => onAccept?.(item.itemCode)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors duration-150 cursor-pointer"
+                                  className="border-success bg-success/10 text-success-text hover:bg-success/20"
                                 >
-                                  <Check className="w-3 h-3" /> Agree
-                                </button>
-                                <button
+                                  <Check className="size-3" /> Agree
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="xs"
                                   onClick={() => onReject?.(item.itemCode)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors duration-150 cursor-pointer"
                                 >
-                                  <X className="w-3 h-3" /> Disagree
-                                </button>
+                                  <X className="size-3" /> Disagree
+                                </Button>
                               </div>
                             ) : state === "accepted" ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <Check className="w-3 h-3" /> Agreed
-                                </span>
-                                <button
+                                <Badge className="border-success bg-success/10 text-success-text">
+                                  <Check className="size-3" /> Agreed
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
                                   onClick={() => onUndo?.(item.itemCode)}
-                                  className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer transition-colors"
+                                  className="text-[10px] text-muted-foreground"
                                   title="Change decision"
                                 >
                                   undo
-                                </button>
+                                </Button>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-red-50 text-red-700 border border-red-200">
-                                  <X className="w-3 h-3" /> Disagreed
-                                </span>
-                                <button
+                                <Badge variant="destructive">
+                                  <X className="size-3" /> Disagreed
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
                                   onClick={() => onUndo?.(item.itemCode)}
-                                  className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] bg-transparent border-none cursor-pointer transition-colors"
+                                  className="text-[10px] text-muted-foreground"
                                   title="Change decision"
                                 >
                                   undo
-                                </button>
+                                </Button>
                               </div>
                             )}
                           </div>
@@ -690,38 +870,44 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                 })}
               </div>
             )}
-          </div>
+          </Card>
         );
       })}
 
       {/* Matched items — collapsed by default */}
       {matchedItems.length > 0 && (
-        <div className="card overflow-hidden">
-          <button
+        <Card className="gap-0 py-0">
+          <Button
+            variant="ghost"
             onClick={() => setMatchedExpanded((prev) => !prev)}
-            className="w-full flex items-center justify-between px-5 py-3 bg-[var(--bg-base)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors duration-150"
+            aria-expanded={matchedExpanded}
+            className="h-auto w-full justify-between rounded-xl px-5 py-3"
           >
-            <div className="flex items-center gap-2">
-              {matchedExpanded ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
-              <span className="text-xs text-[var(--text-secondary)]">
+            <span className="flex items-center gap-2">
+              {matchedExpanded ? (
+                <ChevronDown className="size-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="size-4 text-muted-foreground" />
+              )}
+              <span className="text-xs font-normal text-muted-foreground">
                 {matchedItems.length} {matchedItems.length === 1 ? "item" : "items"} matched — no discrepancies
               </span>
-            </div>
-            <span className="badge success">{matchedItems.length} OK</span>
-          </button>
+            </span>
+            <Badge className="border-success bg-success/10 text-success-text">{matchedItems.length} OK</Badge>
+          </Button>
           {matchedExpanded && (
-            <div className="border-t border-[var(--border)] divide-y divide-[var(--border)]">
+            <div className="divide-y divide-border border-t border-border">
               {matchedItems.map((item) => (
-                <div key={item.itemCode} className="px-5 py-2.5 flex items-center gap-4">
-                  <span className="font-mono text-[11px] text-[var(--text-muted)] w-[100px]">{item.itemCode}</span>
-                  <span className="text-xs text-[var(--text-primary)] flex-1">{item.invoiceDescription || item.description}</span>
-                  <span className="text-xs tabular-nums text-[var(--text-muted)]">{item.invoiceQty} × ${item.invoiceUnitPrice.toFixed(2)}</span>
-                  <span className="badge success text-[9px]">Match</span>
+                <div key={item.itemCode} className="flex items-center gap-4 px-5 py-2.5">
+                  <span className="w-[100px] font-mono text-[11px] text-muted-foreground">{item.itemCode}</span>
+                  <span className="flex-1 text-xs text-foreground">{item.invoiceDescription || item.description}</span>
+                  <span className="text-xs tabular-nums text-muted-foreground">{item.invoiceQty} × ${item.invoiceUnitPrice.toFixed(2)}</span>
+                  <Badge className="h-4 border-success bg-success/10 px-1.5 text-[9px] text-success-text">Match</Badge>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -736,21 +922,17 @@ const REJECT_REASONS = [
   "Additional fulfillment in transit — variance to reconcile upon delivery",
   "Other",
 ];
+void REJECT_REASONS;
 
 function Ex006Page() {
-  const router = useRouter();
   const { showToast } = useToast();
 
   // Line-item accept/reject state
   const [lineItemStates, setLineItemStates] = useState<Record<string, "pending" | "accepted" | "rejected">>(
     Object.fromEntries(sterisLineItems.map((item) => [item.itemCode, "pending"]))
   );
-  const [rejectingItem, setRejectingItem] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [rejectComment, setRejectComment] = useState("");
 
   // Document change state
-  const [changingDoc, setChangingDoc] = useState<string | null>(null);
   const [docOverrides, setDocOverrides] = useState<Record<string, { label: string; href: string }>>({});
 
   // Selected PO/PS for dynamic three-way match recalculation
@@ -804,11 +986,13 @@ function Ex006Page() {
   // Invoice status tracking
   const [invoiceStatus, setInvoiceStatus] = useState<"pending_review" | "waiting_manager" | "waiting_correction" | "approved_override">("pending_review");
 
+  // Status stepper — semantic theme tokens (past=success, active=primary, future=muted).
+  // [Spec: domains/invoice-detail/spec.md#Invoice Status Stepper]
   const statusSteps = [
-    { key: "pending_review", label: "Pending Review", color: "var(--warning)" },
-    { key: "waiting_correction", label: "Waiting on Correction", color: "var(--agent-invoice)" },
-    { key: "waiting_manager", label: "Escalated to Manager", color: "var(--agent-validation)" },
-    { key: "approved_override", label: "Approved", color: "var(--agent-recovery)" },
+    { key: "pending_review", label: "Pending Review" },
+    { key: "waiting_correction", label: "Waiting on Correction" },
+    { key: "waiting_manager", label: "Escalated to Manager" },
+    { key: "approved_override", label: "Approved" },
   ] as const;
 
   const allResolved = dynamicLineItems.every((item) => lineItemStates[item.itemCode] !== "pending");
@@ -845,15 +1029,8 @@ function Ex006Page() {
     setReasonPopup(null);
   };
 
-  // Keep legacy handlers for compatibility
   const handleAccept = (itemCode: string) => handleLineItemAction(itemCode, "accept");
   const handleRejectOpen = (itemCode: string) => handleLineItemAction(itemCode, "reject");
-
-  const handleRejectConfirm = () => {
-    if (!rejectingItem || !rejectReason) return;
-    setLineItemStates((prev) => ({ ...prev, [rejectingItem]: "rejected" }));
-    setRejectingItem(null);
-  };
 
   const poTotal = dynamicLineItems.reduce(
     (sum, item) => sum + item.poQty * item.poUnitPrice,
@@ -873,53 +1050,44 @@ function Ex006Page() {
   ];
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
+    <main className="min-h-screen bg-background">
       {/* Breadcrumb */}
-      <div className="pt-6 px-8">
-        <button
-          onClick={() => router.back()}
-          className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
-        >
-          &larr; Back
-        </button>
+      <div className="px-4 pt-6 lg:px-6">
+        <BackButton />
       </div>
 
       {/* Header */}
-      <div className="px-8 pt-3 pb-6">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[var(--text-muted)]">EX-006</span>
-          <span className="badge warning">Match Exception</span>
-          <span className="badge warning">Under Review</span>
+      <div className="px-4 pt-3 pb-6 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className="font-mono text-[11px] text-muted-foreground">EX-006</span>
+          <TypeBadge>Match Exception</TypeBadge>
+          <Badge className="border-warning bg-warning/10 text-warning-text">Under Review</Badge>
           <CategoryBadge category="Sterilization" />
         </div>
-        <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight m-0 mb-1.5 leading-tight">
+        <h1 className="m-0 mb-1.5 text-[22px] font-semibold leading-tight tracking-tight text-foreground">
           Steris Corporation
         </h1>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
+        <p className="m-0 text-xs text-muted-foreground">
           Invoice #STC-2026-19847 · February 28, 2026 · PO #NMC-PO-2026-2847
         </p>
       </div>
 
       {/* Alert bar */}
-      <div className="mx-8 mb-6">
-        <div className="border-l-4 border-red-600 bg-red-50 px-5 py-3.5 rounded-md">
-          <span className="text-xs text-red-900">
-            {dynamicLineItems.reduce((sum, item) => sum + (item.flags?.length || 0), 0)} discrepancies detected — $4,600 overbilled across 23 recurrences this quarter · AI confidence 98.7%
-          </span>
-        </div>
+      <div className="mx-4 mb-6 lg:mx-6">
+        <AlertBar>
+          {dynamicLineItems.reduce((sum, item) => sum + (item.flags?.length || 0), 0)} discrepancies detected — $4,600 overbilled across 23 recurrences this quarter · AI confidence 98.7%
+        </AlertBar>
       </div>
 
-      <div className="mx-8">
+      <div className="mx-4 lg:mx-6">
         <EscalationBanner flaggedAmount={4600} />
       </div>
 
       {/* Two-column layout */}
-      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="grid grid-cols-1 items-start gap-6 px-4 pb-8 lg:grid-cols-[1fr_280px] lg:px-6">
         {/* LEFT: Three-way match */}
         <div>
-          <p className="section-label mb-2">
-            Three-Way Match Analysis
-          </p>
+          <SectionLabel className="mb-2">Three-Way Match Analysis</SectionLabel>
 
           <DiscrepancyView
             lineItems={dynamicLineItems}
@@ -930,76 +1098,24 @@ function Ex006Page() {
             onUndo={(code) => setLineItemStates((prev) => ({ ...prev, [code]: "pending" }))}
           />
 
-          <div className="card overflow-hidden mt-3">
-            {/* Reason popup — shown when going against AI finding */}
-            {reasonPopup && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center">
-                <div className="absolute inset-0 bg-black/40" onClick={() => setReasonPopup(null)} />
-                <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md">
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-                    <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">
-                      Override Automated Determination: {reasonPopup.itemCode}
-                    </h3>
-                    <button onClick={() => setReasonPopup(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="px-5 py-4">
-                    <div className="px-3 py-2.5 rounded-md text-xs mb-4 bg-amber-50 border border-amber-200 text-amber-800">
-                      You are overriding the system&apos;s automated determination for this line item. This action will be recorded in the compliance audit log and may be subject to review.
-                    </div>
-
-                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-                      Provide justification for determination override
-                    </label>
-                    <textarea
-                      value={reasonNote}
-                      onChange={(e) => setReasonNote(e.target.value)}
-                      placeholder={reasonPopup.action === "accept"
-                        ? "e.g., Vendor confirmed new pricing, PO amendment pending..."
-                        : "e.g., Extraction error, wrong item matched, data entry issue..."}
-                      rows={3}
-                      className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
-                    />
-                  </div>
-
-                  <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
-                    <button
-                      onClick={() => setReasonPopup(null)}
-                      className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleReasonConfirm}
-                      disabled={!reasonNote.trim()}
-                      className="px-4 py-2 text-xs font-medium rounded-md text-white border-none transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-amber-600 hover:bg-amber-700"
-                    >
-                      Confirm Override
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
+          <Card className="mt-3 gap-0 py-0">
             {/* Totals summary */}
-            <div className="border-t border-[var(--border)] px-6 py-4 flex gap-10">
+            <div className="flex gap-10 px-6 py-4">
               <div>
-                <p className="section-label mb-1">PO Total</p>
-                <p className="text-lg font-semibold text-[var(--text-primary)] m-0 tabular-nums">
+                <SectionLabel as="h3" className="mb-1">PO Total</SectionLabel>
+                <p className="m-0 text-lg font-semibold tabular-nums text-foreground">
                   {formatCurrency(poTotal)}
                 </p>
               </div>
               <div>
-                <p className="section-label mb-1">Invoice Total</p>
-                <p className="text-lg font-semibold text-red-600 m-0 tabular-nums">
+                <SectionLabel as="h3" className="mb-1">Invoice Total</SectionLabel>
+                <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
                   {formatCurrency(invTotal)}
                 </p>
               </div>
               <div>
-                <p className="section-label mb-1">Variance</p>
-                <p className="text-lg font-semibold text-red-600 m-0 tabular-nums">
+                <SectionLabel as="h3" className="mb-1">Variance</SectionLabel>
+                <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
                   +{formatCurrency(variance)}{" "}
                   <span className="text-[13px] font-normal">
                     (+{variancePct}%)
@@ -1010,60 +1126,59 @@ function Ex006Page() {
 
             {/* AI recommendation */}
             <div className="px-6 pb-5">
-              <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-                <p className="section-label mb-1.5">AI Recommendation</p>
-                <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
+              <div className="rounded-md border border-border bg-muted px-4 py-3">
+                <SectionLabel as="h3" className="mb-1.5">AI Recommendation</SectionLabel>
+                <p className="m-0 text-xs leading-relaxed text-muted-foreground">
                   Hold invoice. Request revised invoice from Steris at contracted rate of
                   $2.10/unit (PO #NMC-PO-2026-2847). Price variance of $0.40/unit has
                   recurred 23x this quarter = $4,600 total overcharge.
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
           <GPOComparisonSection exceptionId="EX-006" />
           {/* Invoice Status Stepper */}
-          <div className="card px-6 py-4 mt-4">
-            <p className="section-label mb-3">Invoice Status</p>
+          <Card className="mt-4 gap-0 px-6 py-4">
+            <SectionLabel as="h2" className="mb-3">Invoice Status</SectionLabel>
             <div className="flex items-center">
               {statusSteps.map((step, i) => {
                 const isActive = invoiceStatus === step.key;
                 const isPast = statusSteps.findIndex(s => s.key === invoiceStatus) > i;
                 return (
-                  <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                  <div key={step.key} className="flex flex-1 items-center last:flex-none">
                     <div className="flex flex-col items-center">
                       <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                          isActive
-                            ? "text-white"
-                            : isPast
-                              ? "text-white"
-                              : "bg-[var(--bg-subtle)] text-[var(--text-muted)]"
+                        className={`flex size-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                          isPast
+                            ? "bg-success text-success-foreground"
+                            : isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
                         }`}
-                        style={isActive || isPast ? { backgroundColor: step.color } : undefined}
                       >
-                        {isPast ? <Check className="w-3 h-3" /> : i + 1}
+                        {isPast ? <Check className="size-3" /> : i + 1}
                       </div>
-                      <span className={`text-[10px] mt-1.5 text-center whitespace-nowrap ${
-                        isActive ? "font-semibold text-[var(--text-primary)]" : "text-[var(--text-muted)]"
+                      <span className={`mt-1.5 whitespace-nowrap text-center text-[10px] ${
+                        isActive ? "font-semibold text-foreground" : "text-muted-foreground"
                       }`}>
                         {step.label}
                       </span>
                     </div>
                     {i < statusSteps.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-2 mb-4 ${
-                        isPast ? "bg-[var(--acl-primary)]" : "bg-[var(--border)]"
+                      <div className={`mx-2 mb-4 h-0.5 flex-1 ${
+                        isPast ? "bg-success" : "bg-border"
                       }`} />
                     )}
                   </div>
                 );
               })}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* RIGHT: Info panel */}
-        <div className="card p-5">
-          <p className="section-label mb-0">Exception Details</p>
+        <Card className="gap-0 p-5">
+          <SectionLabel as="h2" className="mb-0">Exception Details</SectionLabel>
 
           {[
             { label: "Assigned to", value: "James Park" },
@@ -1073,93 +1188,83 @@ function Ex006Page() {
           ].map((row, i, arr) => (
             <div
               key={row.label}
-              className={`flex justify-between items-baseline py-2.5 ${
-                i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""
+              className={`flex items-baseline justify-between py-2.5 ${
+                i < arr.length - 1 ? "border-b border-border" : ""
               }`}
             >
-              <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-              <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
+              <span className="text-xs text-muted-foreground">{row.label}</span>
+              <span className="text-xs font-medium text-foreground">{row.value}</span>
             </div>
           ))}
 
           {/* Documents */}
-          <p className="section-label mt-5 mb-2">Documents</p>
+          <SectionLabel as="h3" className="mt-5 mb-2">Documents</SectionLabel>
 
-          {documents.map((doc) => (
-            <div key={doc.href} className="relative py-2 border-b border-[var(--bg-subtle)]">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <FileIcon />
-                  <span className="text-[11px] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
-                    {docOverrides[doc.href]?.label || doc.label}
-                  </span>
-                  {docOverrides[doc.href] && docOverrides[doc.href].label !== doc.label && (
-                    <span className="text-[9px] text-[var(--acl-primary)] font-medium ml-1">changed</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <a
-                    href={docOverrides[doc.href]?.href || doc.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] text-[var(--acl-primary)] no-underline whitespace-nowrap hover:underline"
+          {documents.map((doc) => {
+            const current = docOverrides[doc.href]?.label || doc.label;
+            const changed = !!docOverrides[doc.href] && docOverrides[doc.href].label !== doc.label;
+            const alts = altDocuments[doc.href];
+            return (
+              <DocumentRow
+                key={doc.href}
+                label={current}
+                href={docOverrides[doc.href]?.href || doc.href}
+                changed={changed}
+              >
+                {alts && (
+                  <Select
+                    value={current}
+                    onValueChange={(label) => {
+                      const alt = alts.find((a) => a.label === label);
+                      if (!alt) return;
+                      setDocOverrides((prev) => ({ ...prev, [doc.href]: { label: alt.label, href: alt.href } }));
+                      if (alt.label.startsWith("po-")) setSelectedPO(alt.label);
+                      if (alt.label.startsWith("packingslip-")) setSelectedPS(alt.label);
+                      showToast(`Source document updated to ${alt.label} — line items recalculated`, "info");
+                    }}
                   >
-                    Open
-                  </a>
-                  {altDocuments[doc.href] && (
-                    <button
-                      onClick={() => setChangingDoc(changingDoc === doc.href ? null : doc.href)}
-                      className="text-[11px] text-[var(--text-muted)] bg-transparent border-none cursor-pointer hover:text-[var(--text-primary)] transition-colors"
+                    <SelectTrigger
+                      size="sm"
+                      className="h-6 border-none bg-transparent px-1 text-[11px] text-muted-foreground shadow-none hover:text-foreground"
+                      aria-label={`Change ${doc.label}`}
                     >
-                      Change
-                    </button>
-                  )}
-                </div>
-              </div>
-              {changingDoc === doc.href && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-[var(--border)] rounded-md shadow-md py-1 z-20 w-[240px]">
-                  {(altDocuments[doc.href] || []).map((alt) => (
-                    <button
-                      key={alt.label}
-                      onClick={() => {
-                        setDocOverrides((prev) => ({ ...prev, [doc.href]: { label: alt.label, href: alt.href } }));
-                        setChangingDoc(null);
-                        if (alt.label.startsWith("po-")) setSelectedPO(alt.label);
-                        if (alt.label.startsWith("packingslip-")) setSelectedPS(alt.label);
-                        showToast(`Source document updated to ${alt.label} — line items recalculated`, "info");
-                      }}
-                      className={`flex items-center w-full text-left px-3 py-1.5 text-[11px] cursor-pointer border-none transition-colors ${
-                        (docOverrides[doc.href]?.label || doc.label) === alt.label
-                          ? "bg-[var(--acl-primary)]/5 text-[var(--acl-primary)] font-medium"
-                          : "bg-white text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
-                      }`}
-                    >
-                      {(docOverrides[doc.href]?.label || doc.label) === alt.label && <Check className="w-3 h-3 inline mr-1" />}{alt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                      <SelectValue placeholder="Change" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {alts.map((alt) => (
+                        <SelectItem key={alt.label} value={alt.label} className="text-[11px]">
+                          {alt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </DocumentRow>
+            );
+          })}
 
           {/* Actions */}
-          <p className="section-label mt-5 mb-2.5">Actions</p>
+          <SectionLabel as="h3" className="mt-5 mb-2.5">Actions</SectionLabel>
 
           {actionTaken ? (
             <div className="flex flex-col gap-2">
-              <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-                actionTaken === "correction" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-                actionTaken === "override" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                "bg-purple-50 text-purple-700 border border-purple-200"
+              <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
+                actionTaken === "correction"
+                  ? "border-border bg-muted text-foreground"
+                  : actionTaken === "override"
+                    ? "border-success/40 bg-success/10 text-success-text"
+                    : "border-warning/40 bg-warning/10 text-warning-text"
               }`}>
-                {actionTaken === "correction" ? "Recovery Initiated — Email Sent" :
-                 actionTaken === "override" ? "Approved with Override" :
-                 "Escalated to Manager"}
+                {actionTaken === "correction"
+                  ? "Recovery Initiated — Email Sent"
+                  : actionTaken === "override"
+                    ? "Approved with Override"
+                    : "Escalated to Manager"}
               </div>
               {actionTaken === "correction" && (
                 <Link
                   href="/recovery"
-                  className="block text-center text-[11px] text-[var(--acl-primary)] no-underline hover:underline"
+                  className="block text-center text-[11px] text-primary no-underline hover:underline"
                 >
                   View in Recovery Queue →
                 </Link>
@@ -1167,59 +1272,56 @@ function Ex006Page() {
               {(actionTaken === "escalated" || actionTaken === "override") && <PostDisagreeSteps />}
             </div>
           ) : (
-            <>
+            <div className="flex flex-col gap-2">
               {!allResolved && (
-                <p className="text-[10px] text-[var(--text-muted)] mb-2 italic">
+                <p className="m-0 mb-1 text-[10px] italic text-muted-foreground">
                   Review all line items above to unlock actions
                 </p>
               )}
 
-              <button
+              <Button
+                variant="outline"
                 disabled={!allResolved}
                 onClick={() => { setActiveModal("correction"); setModalNote(""); }}
-                className={`block w-full text-xs font-medium px-3 py-2 rounded-md text-center mb-2 transition-colors border ${
-                  allResolved
-                    ? "bg-white text-amber-700 border-amber-700 cursor-pointer hover:bg-amber-50"
-                    : "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
-                }`}
+                className="w-full border-warning text-warning-text hover:bg-warning/10"
               >
                 Initiate Recovery
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline"
                 disabled={!allResolved || hasAnyRejection}
                 onClick={() => { setActiveModal("override"); setModalNote(""); }}
-                className={`block w-full text-xs font-medium px-3 py-2 rounded-md text-center mb-2 transition-colors border ${
-                  allResolved && !hasAnyRejection
-                    ? "bg-white text-[var(--text-secondary)] border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-subtle)]"
-                    : "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
-                }`}
                 title={hasAnyRejection ? "Cannot approve — one or more line items have disagreements" : ""}
+                className="h-auto w-full flex-col py-2"
               >
                 Approve with Override
                 {allResolved && hasAnyRejection && (
-                  <span className="block text-[10px] text-red-400 font-normal mt-0.5">Blocked — disagreement exists</span>
+                  <span className="text-[10px] font-normal text-destructive">Blocked — disagreement exists</span>
                 )}
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline"
                 onClick={() => { setActiveModal("escalate"); setModalNote(""); setSelectedManager(""); }}
-                className="block w-full bg-white text-[var(--text-secondary)] text-xs font-medium px-3 py-2 rounded-md border border-[var(--border-strong)] cursor-pointer text-center transition-colors hover:bg-[var(--bg-subtle)]"
+                className="w-full"
               >
                 Escalate to Manager
-              </button>
-            </>
+              </Button>
+            </div>
           )}
 
           {/* Agent History */}
-          <div className="mt-4 pt-3 border-t border-[var(--bg-subtle)]">
-            <button
+          <div className="mt-4 border-t border-border pt-3">
+            <Button
+              variant="ghost"
               onClick={() => setHistoryOpen006(!historyOpen006)}
-              className="flex items-center gap-1.5 w-full text-left bg-transparent border-none cursor-pointer p-0"
+              aria-expanded={historyOpen006}
+              className="-ml-2 h-auto w-full justify-start gap-1.5 px-2 py-1"
             >
-              <ChevronDown className={`w-3 h-3 text-[var(--text-muted)] flex-shrink-0 transition-transform duration-200 ${historyOpen006 ? "" : "-rotate-90"}`} />
-              <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[var(--text-secondary)]">Agent History</span>
-            </button>
+              <ChevronDown className={`size-3 shrink-0 text-muted-foreground transition-transform duration-200 ${historyOpen006 ? "" : "-rotate-90"}`} />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Agent History</span>
+            </Button>
             {historyOpen006 && (
               <div className="mt-2 space-y-2">
                 {(() => {
@@ -1229,16 +1331,16 @@ function Ex006Page() {
                     : base;
                   return timeline.map((e, i) => (
                     <div key={i} className="flex gap-2 text-[11px]">
-                      <div className="w-0.5 rounded-full flex-shrink-0 self-stretch" style={{ backgroundColor: e.color }} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[9px] uppercase tracking-wide font-semibold px-1 py-0.5 rounded"
+                      <div className="w-0.5 shrink-0 self-stretch rounded-full" style={{ backgroundColor: e.color }} />
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-0.5 flex items-center gap-1.5">
+                          <span className="rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
                             style={{ backgroundColor: e.color + "22", color: e.color }}>
                             {e.agent}
                           </span>
-                          <span className="text-[9px] text-[var(--text-muted)]">{e.time}</span>
+                          <span className="text-[9px] text-muted-foreground">{e.time}</span>
                         </div>
-                        <p className="text-[var(--text-secondary)] m-0 leading-relaxed">{e.msg}</p>
+                        <p className="m-0 leading-relaxed text-muted-foreground">{e.msg}</p>
                       </div>
                     </div>
                   ));
@@ -1246,162 +1348,226 @@ function Ex006Page() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* ── ACTION MODALS ──────────────────────────────────────────────────── */}
+      {/* ── ACTION MODALS — shadcn Dialog ──────────────────────────────────── */}
+
+      {/* Reason / Override popup — shown when going against AI finding */}
+      <Dialog
+        open={!!reasonPopup}
+        onOpenChange={(open) => { if (!open) setReasonPopup(null); }}
+      >
+        {reasonPopup && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Override Automated Determination: {reasonPopup.itemCode}</DialogTitle>
+              <DialogDescription>
+                You are overriding the system&apos;s automated determination for this line item.
+                This action will be recorded in the compliance audit log and may be subject to review.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="ex006-override-reason"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                Provide justification for determination override
+              </label>
+              <Textarea
+                id="ex006-override-reason"
+                value={reasonNote}
+                onChange={(e) => setReasonNote(e.target.value)}
+                placeholder={reasonPopup.action === "accept"
+                  ? "e.g., Vendor confirmed new pricing, PO amendment pending..."
+                  : "e.g., Extraction error, wrong item matched, data entry issue..."}
+                className="h-24 resize-none"
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" size="sm" />}>
+                Cancel
+              </DialogClose>
+              <Button
+                size="sm"
+                onClick={handleReasonConfirm}
+                disabled={!reasonNote.trim()}
+              >
+                Confirm Override
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
 
       {/* Initiate Recovery Modal */}
-      {activeModal === "correction" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setActiveModal(null)} />
-          <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-lg max-h-[85vh] overflow-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">Initiate Recovery from Vendor</h3>
-              <button onClick={() => setActiveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
-                <X className="w-4 h-4" />
-              </button>
+      <Dialog
+        open={activeModal === "correction"}
+        onOpenChange={(open) => { if (!open) setActiveModal(null); }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Initiate Recovery from Vendor</DialogTitle>
+            <DialogDescription>
+              A formal recovery request will be dispatched to the vendor for the flagged amount.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="ex006-vendor-email" className="text-xs font-medium text-muted-foreground">Vendor Email</label>
+              <input
+                id="ex006-vendor-email"
+                type="text"
+                readOnly
+                value="ap@steris.com"
+                className="rounded-lg border border-input bg-muted px-2.5 py-2 text-xs text-muted-foreground"
+              />
             </div>
-            <div className="px-5 py-4">
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Vendor Email</label>
-              <input type="text" readOnly value="ap@steris.com" className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-[var(--bg-base)] text-[var(--text-secondary)] mb-3" />
-
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Subject</label>
-              <input type="text" readOnly value="Recovery Request: Invoice #STC-2026-19847 — Price Discrepancy" className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-[var(--bg-base)] text-[var(--text-secondary)] mb-3" />
-
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Message</label>
-              <textarea
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="ex006-subject" className="text-xs font-medium text-muted-foreground">Subject</label>
+              <input
+                id="ex006-subject"
+                type="text"
+                readOnly
+                value="Recovery Request: Invoice #STC-2026-19847 — Price Discrepancy"
+                className="rounded-lg border border-input bg-muted px-2.5 py-2 text-xs text-muted-foreground"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="ex006-message" className="text-xs font-medium text-muted-foreground">Message</label>
+              <Textarea
+                id="ex006-message"
                 value={modalNote || "Dear Steris Accounts Receivable,\n\nWe have identified a pricing discrepancy on Invoice #STC-2026-19847.\n\nThe contracted rate for Sterile Surgical Drape Sets (STE-4821-A) is $2.10/unit per PO #NMC-PO-2026-2847, but the invoice reflects $2.50/unit.\n\nPlease issue a revised invoice at the contracted rate, or provide documentation supporting the rate change.\n\nRegards,\nNorthfield Medical Center — Accounts Payable"}
                 onChange={(e) => setModalNote(e.target.value)}
-                rows={10}
-                className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)] leading-relaxed"
+                className="h-52 resize-none leading-relaxed"
               />
             </div>
-            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
-              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer">
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const rec = addToRecoveryQueue({
-                    exceptionId: "EX-006",
-                    vendor: "Steris Corporation",
-                    invoiceNumber: "STC-2026-19847",
-                    targetAmount: 4600,
-                    status: "pending",
-                    initiatedAt: new Date().toISOString(),
-                    emailSentTo: "ap@steris.com",
-                    analystNote: "Recovery initiated from EX-006. Price mismatch on STE-4821-A: PO $2.10/unit vs Invoice $2.50/unit. $4,600 at risk.",
-                  });
-                  updateExceptionStatus("EX-006", "under_review");
-                  setActiveModal(null);
-                  setActionTaken("correction");
-                  setInvoiceStatus("waiting_correction");
-                  showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
-                }}
-                className="px-4 py-2 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white border-none hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer"
-              >
-                Send Recovery Request
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" size="sm" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              size="sm"
+              onClick={() => {
+                const rec = addToRecoveryQueue({
+                  exceptionId: "EX-006",
+                  vendor: "Steris Corporation",
+                  invoiceNumber: "STC-2026-19847",
+                  targetAmount: 4600,
+                  status: "pending",
+                  initiatedAt: new Date().toISOString(),
+                  emailSentTo: "ap@steris.com",
+                  analystNote: "Recovery initiated from EX-006. Price mismatch on STE-4821-A: PO $2.10/unit vs Invoice $2.50/unit. $4,600 at risk.",
+                });
+                updateExceptionStatus("EX-006", "under_review");
+                setActiveModal(null);
+                setActionTaken("correction");
+                setInvoiceStatus("waiting_correction");
+                showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
+              }}
+            >
+              Send Recovery Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Approve with Override Modal */}
-      {activeModal === "override" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setActiveModal(null)} />
-          <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">Approve Invoice with Override</h3>
-              <button onClick={() => setActiveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="px-5 py-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2.5 mb-4">
-                <p className="text-xs text-amber-800 m-0 font-medium">This will approve the invoice despite identified discrepancies.</p>
-                <p className="text-[11px] text-amber-700 m-0 mt-1">Invoice #STC-2026-19847 · Steris Corporation · $27,750.00</p>
-              </div>
-
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Override reason (required)</label>
-              <textarea
-                value={modalNote}
-                onChange={(e) => setModalNote(e.target.value)}
-                placeholder="Explain why this override is justified..."
-                rows={4}
-                className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
-              />
-            </div>
-            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
-              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer">
-                Cancel
-              </button>
-              <button
-                onClick={() => { setActiveModal(null); updateExceptionStatus("EX-006", "resolved"); setActionTaken("override"); setInvoiceStatus("approved_override"); showToast("Invoice STC-2026-19847 approved with managerial override — logged for audit", "warning"); }}
-                disabled={!modalNote.trim()}
-                className="px-4 py-2 text-xs font-medium rounded-md bg-amber-600 text-white border-none hover:bg-amber-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Approve with Override
-              </button>
-            </div>
+      <Dialog
+        open={activeModal === "override"}
+        onOpenChange={(open) => { if (!open) setActiveModal(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Invoice with Override</DialogTitle>
+            <DialogDescription>
+              Override the identified discrepancies and approve this invoice for payment.
+            </DialogDescription>
+          </DialogHeader>
+          <Alert className="border-warning bg-warning/10">
+            <AlertDescription className="text-warning-text">
+              This will approve the invoice despite identified discrepancies. Invoice #STC-2026-19847 ·
+              Steris Corporation · $27,750.00. A record of this override will be logged for audit purposes.
+            </AlertDescription>
+          </Alert>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="ex006-override-justification" className="text-xs font-medium text-muted-foreground">
+              Override reason (required)
+            </label>
+            <Textarea
+              id="ex006-override-justification"
+              value={modalNote}
+              onChange={(e) => setModalNote(e.target.value)}
+              placeholder="Explain why this override is justified..."
+              className="h-24 resize-none"
+            />
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" size="sm" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              size="sm"
+              onClick={() => { setActiveModal(null); updateExceptionStatus("EX-006", "resolved"); setActionTaken("override"); setInvoiceStatus("approved_override"); showToast("Invoice STC-2026-19847 approved with managerial override — logged for audit", "warning"); }}
+              disabled={!modalNote.trim()}
+            >
+              Approve with Override
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Escalate to Manager Modal */}
-      {activeModal === "escalate" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setActiveModal(null)} />
-          <div className="relative bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">Escalate to Manager</h3>
-              <button onClick={() => setActiveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none p-1">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="px-5 py-4">
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Select Manager</label>
-              <div className="relative mb-3">
-                <select
-                  value={selectedManager}
-                  onChange={(e) => setSelectedManager(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
-                >
-                  <option value="">Choose a manager...</option>
-                  <option value="david">David Kim — VP Finance</option>
-                  <option value="lisa">Lisa Rodriguez — Director, AP</option>
-                  <option value="michael">Michael Chang — CFO</option>
-                  <option value="jennifer">Jennifer Walsh — Compliance Officer</option>
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
-              </div>
-
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Note</label>
-              <textarea
-                value={modalNote}
-                onChange={(e) => setModalNote(e.target.value)}
-                placeholder="Describe the situation and any urgency..."
-                rows={4}
-                className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-md bg-white text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--acl-primary)]/20 focus:border-[var(--acl-primary)]"
-              />
-            </div>
-            <div className="flex gap-2 justify-end px-5 py-3 border-t border-[var(--border)]">
-              <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer">
-                Cancel
-              </button>
-              <button
-                onClick={() => { setActiveModal(null); setActionTaken("escalate"); setInvoiceStatus("waiting_manager"); showToast("Exception escalated for managerial review — assigned to " + (selectedManager === "david" ? "David Kim" : selectedManager === "lisa" ? "Lisa Rodriguez" : selectedManager === "michael" ? "Michael Chang" : "Jennifer Walsh"), "info"); }}
-                disabled={!selectedManager || !modalNote.trim()}
-                className="px-4 py-2 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white border-none hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Escalate
-              </button>
-            </div>
+      <Dialog
+        open={activeModal === "escalate"}
+        onOpenChange={(open) => { if (!open) setActiveModal(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Escalate to Manager</DialogTitle>
+            <DialogDescription>
+              Send this exception to a manager for final review.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Select Manager</label>
+            <Select value={selectedManager} onValueChange={(v) => setSelectedManager(v as string)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose a manager..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="david">David Kim — VP Finance</SelectItem>
+                <SelectItem value="lisa">Lisa Rodriguez — Director, AP</SelectItem>
+                <SelectItem value="michael">Michael Chang — CFO</SelectItem>
+                <SelectItem value="jennifer">Jennifer Walsh — Compliance Officer</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-      )}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="ex006-escalate-note" className="text-xs font-medium text-muted-foreground">Note</label>
+            <Textarea
+              id="ex006-escalate-note"
+              value={modalNote}
+              onChange={(e) => setModalNote(e.target.value)}
+              placeholder="Describe the situation and any urgency..."
+              className="h-24 resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" size="sm" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              size="sm"
+              onClick={() => { setActiveModal(null); setActionTaken("escalate"); setInvoiceStatus("waiting_manager"); showToast("Exception escalated for managerial review — assigned to " + (selectedManager === "david" ? "David Kim" : selectedManager === "lisa" ? "Lisa Rodriguez" : selectedManager === "michael" ? "Michael Chang" : "Jennifer Walsh"), "info"); }}
+              disabled={!selectedManager || !modalNote.trim()}
+            >
+              Escalate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Legal Disclaimer Dialog for line-item agree/disagree */}
       <LegalDisclaimerDialog
@@ -1412,7 +1578,7 @@ function Ex006Page() {
         itemCode={disclaimerPending?.itemCode}
         invoiceNumber="STC-2026-19847"
       />
-    </div>
+    </main>
   );
 }
 
@@ -1441,119 +1607,143 @@ function ActionPanel({
 
   return (
     <>
-    <div className="card p-5">
-      <p className="section-label mb-0">Exception Details</p>
-      {detailRows.map((row, i, arr) => (
-        <div
-          key={row.label}
-          className={`flex justify-between items-baseline py-2.5 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}
-        >
-          <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-          <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
-        </div>
-      ))}
-
-      <p className="section-label mt-5 mb-2.5">Actions</p>
-
-      {actionTaken ? (
-        <div className="flex flex-col gap-2">
-          <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-            actionTaken === "blocked" ? "bg-red-50 text-red-700 border border-red-200" :
-            actionTaken === "recovery" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-            actionTaken === "escalated" ? "bg-purple-50 text-purple-700 border border-purple-200" :
-            "bg-gray-50 text-gray-500 border border-gray-200"
-          }`}>
-            {actionTaken === "blocked" ? "Payment Blocked" :
-             actionTaken === "recovery" ? "Recovery Initiated" :
-             actionTaken === "escalated" ? "Escalated to Manager" :
-             "Dismissed"}
+      <Card className="gap-0 p-5">
+        <SectionLabel as="h2" className="mb-0">Exception Details</SectionLabel>
+        {detailRows.map((row, i, arr) => (
+          <div
+            key={row.label}
+            className={`flex items-baseline justify-between py-2.5 ${i < arr.length - 1 ? "border-b border-border" : ""}`}
+          >
+            <span className="text-xs text-muted-foreground">{row.label}</span>
+            <span className="text-xs font-medium text-foreground">{row.value}</span>
           </div>
-          {actionTaken === "recovery" && (
-            <Link
-              href="/recovery"
-              className="block text-center text-[11px] text-[var(--acl-primary)] no-underline hover:underline"
-            >
-              View in Recovery Queue →
-            </Link>
-          )}
-          {(actionTaken === "blocked" || actionTaken === "escalated") && <PostDisagreeSteps />}
-        </div>
-      ) : (
-        <>
-          <ActionButton variant="primary-red" onClick={() => setDisclaimerAction({ action: "block", callback: () => { setActionTaken("blocked"); updateExceptionStatus(ex.id, "under_review"); showToast(`Payment authorization for invoice ${ex.invoiceNumber} has been suspended`, "warning"); } })}>
-            Block Payment
-          </ActionButton>
-          <ActionButton variant="outline-red" onClick={() => setDisclaimerAction({ action: "recover", callback: () => {
-            const rec = addToRecoveryQueue({
-              exceptionId: ex.id,
-              vendor: ex.vendor,
-              invoiceNumber: ex.invoiceNumber,
-              targetAmount: ex.flaggedAmount,
-              status: "pending",
-              initiatedAt: new Date().toISOString(),
-              emailSentTo: `ap@${ex.vendor.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12)}.com`,
-              analystNote: `Recovery initiated from exception ${ex.id}. Amount at risk: ${formatCurrency(ex.flaggedAmount)}.`,
-            });
-            updateExceptionStatus(ex.id, "under_review");
-            setActionTaken("recovery");
-            showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
-          } })}>
-            Initiate Recovery
-          </ActionButton>
-          <ActionButton variant="outline-gray" onClick={() => setDisclaimerAction({ action: "escalate", callback: () => { setActionTaken("escalated"); updateExceptionStatus(ex.id, "escalated"); showToast(`Exception ${ex.id} escalated for managerial review`, "info"); } })}>
-            Escalate to Manager
-          </ActionButton>
-          <ActionButton variant="ghost" className="!mb-0" onClick={() => setDisclaimerAction({ action: "dismiss", callback: () => { setActionTaken("dismissed"); updateExceptionStatus(ex.id, "resolved"); showToast(`Exception ${ex.id} has been dismissed per analyst determination`, "info"); } })}>
-            Dismiss
-          </ActionButton>
-        </>
-      )}
+        ))}
 
-      {/* Agent History */}
-      <div className="mt-4 pt-3 border-t border-[var(--bg-subtle)]">
-        <button
-          onClick={() => setHistoryOpen(!historyOpen)}
-          className="flex items-center gap-1.5 w-full text-left bg-transparent border-none cursor-pointer p-0 mb-0"
-        >
-          <ChevronDown className={`w-3 h-3 text-[var(--text-muted)] flex-shrink-0 transition-transform duration-200 ${historyOpen ? "" : "-rotate-90"}`} />
-          <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[var(--text-secondary)]">Agent History</span>
-        </button>
-        {historyOpen && (
-          <div className="mt-2 space-y-2">
-            {(() => {
-              const base = AGENT_TIMELINES[ex.id] ?? DEFAULT_AGENT_TIMELINE;
-              const timeline = (actionTaken === "correction" || actionTaken === "recovery")
-                ? [...base, { agent: "Recovery Agent", color: "var(--agent-recovery)", time: "Now", msg: "Recovery initiated. Email sent to vendor. Awaiting response." }]
-                : base;
-              return timeline.map((e, i) => (
-                <div key={i} className="flex gap-2 text-[11px]">
-                  <div className="w-0.5 rounded-full flex-shrink-0 self-stretch" style={{ backgroundColor: e.color }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span
-                        className="text-[9px] uppercase tracking-wide font-semibold px-1 py-0.5 rounded"
-                        style={{ backgroundColor: e.color + "22", color: e.color }}
-                      >
-                        {e.agent}
-                      </span>
-                      <span className="text-[9px] text-[var(--text-muted)]">{e.time}</span>
-                    </div>
-                    <p className="text-[var(--text-secondary)] m-0 leading-relaxed">{e.msg}</p>
-                  </div>
-                </div>
-              ));
-            })()}
+        <SectionLabel as="h3" className="mt-5 mb-2.5">Actions</SectionLabel>
+
+        {actionTaken ? (
+          <div className="flex flex-col gap-2">
+            <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
+              actionTaken === "blocked"
+                ? "border-destructive/30 bg-destructive/10 text-destructive"
+                : actionTaken === "recovery"
+                  ? "border-border bg-muted text-foreground"
+                  : actionTaken === "escalated"
+                    ? "border-warning/40 bg-warning/10 text-warning-text"
+                    : "border-border bg-muted text-muted-foreground"
+            }`}>
+              {actionTaken === "blocked"
+                ? "Payment Blocked"
+                : actionTaken === "recovery"
+                  ? "Recovery Initiated"
+                  : actionTaken === "escalated"
+                    ? "Escalated to Manager"
+                    : "Dismissed"}
+            </div>
+            {actionTaken === "recovery" && (
+              <Link
+                href="/recovery"
+                className="block text-center text-[11px] text-primary no-underline hover:underline"
+              >
+                View in Recovery Queue →
+              </Link>
+            )}
+            {(actionTaken === "blocked" || actionTaken === "escalated") && <PostDisagreeSteps />}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => setDisclaimerAction({ action: "block", callback: () => { setActionTaken("blocked"); updateExceptionStatus(ex.id, "under_review"); showToast(`Payment authorization for invoice ${ex.invoiceNumber} has been suspended`, "warning"); } })}
+            >
+              Block Payment
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-warning text-warning-text hover:bg-warning/10"
+              onClick={() => setDisclaimerAction({ action: "recover", callback: () => {
+                const rec = addToRecoveryQueue({
+                  exceptionId: ex.id,
+                  vendor: ex.vendor,
+                  invoiceNumber: ex.invoiceNumber,
+                  targetAmount: ex.flaggedAmount,
+                  status: "pending",
+                  initiatedAt: new Date().toISOString(),
+                  emailSentTo: `ap@${ex.vendor.toLowerCase().replace(/[^a-z]/g, "").slice(0, 12)}.com`,
+                  analystNote: `Recovery initiated from exception ${ex.id}. Amount at risk: ${formatCurrency(ex.flaggedAmount)}.`,
+                });
+                updateExceptionStatus(ex.id, "under_review");
+                setActionTaken("recovery");
+                showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
+              } })}
+            >
+              Initiate Recovery
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setDisclaimerAction({ action: "escalate", callback: () => { setActionTaken("escalated"); updateExceptionStatus(ex.id, "escalated"); showToast(`Exception ${ex.id} escalated for managerial review`, "info"); } })}
+            >
+              Escalate to Manager
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setDisclaimerAction({ action: "dismiss", callback: () => { setActionTaken("dismissed"); updateExceptionStatus(ex.id, "resolved"); showToast(`Exception ${ex.id} has been dismissed per analyst determination`, "info"); } })}
+            >
+              Dismiss
+            </Button>
           </div>
         )}
-      </div>
-    </div>
-    <LegalDisclaimerDialog
-      open={!!disclaimerAction}
-      onConfirm={() => { disclaimerAction?.callback(); setDisclaimerAction(null); }}
-      onCancel={() => setDisclaimerAction(null)}
-      action={disclaimerAction?.action || "block"}
-      invoiceNumber={ex.invoiceNumber}
-    />
+
+        {/* Agent History */}
+        <div className="mt-4 border-t border-border pt-3">
+          <Button
+            variant="ghost"
+            onClick={() => setHistoryOpen(!historyOpen)}
+            aria-expanded={historyOpen}
+            className="-ml-2 h-auto w-full justify-start gap-1.5 px-2 py-1"
+          >
+            <ChevronDown className={`size-3 shrink-0 text-muted-foreground transition-transform duration-200 ${historyOpen ? "" : "-rotate-90"}`} />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Agent History</span>
+          </Button>
+          {historyOpen && (
+            <div className="mt-2 space-y-2">
+              {(() => {
+                const base = AGENT_TIMELINES[ex.id] ?? DEFAULT_AGENT_TIMELINE;
+                const timeline = (actionTaken === "correction" || actionTaken === "recovery")
+                  ? [...base, { agent: "Recovery Agent", color: "var(--agent-recovery)", time: "Now", msg: "Recovery initiated. Email sent to vendor. Awaiting response." }]
+                  : base;
+                return timeline.map((e, i) => (
+                  <div key={i} className="flex gap-2 text-[11px]">
+                    <div className="w-0.5 shrink-0 self-stretch rounded-full" style={{ backgroundColor: e.color }} />
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-0.5 flex items-center gap-1.5">
+                        <span
+                          className="rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                          style={{ backgroundColor: e.color + "22", color: e.color }}
+                        >
+                          {e.agent}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground">{e.time}</span>
+                      </div>
+                      <p className="m-0 leading-relaxed text-muted-foreground">{e.msg}</p>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
+        </div>
+      </Card>
+      <LegalDisclaimerDialog
+        open={!!disclaimerAction}
+        onConfirm={() => { disclaimerAction?.callback(); setDisclaimerAction(null); }}
+        onCancel={() => setDisclaimerAction(null)}
+        action={disclaimerAction?.action || "block"}
+        invoiceNumber={ex.invoiceNumber}
+      />
     </>
   );
 }
@@ -1569,60 +1759,53 @@ function PageShell({
   children: React.ReactNode;
   rightPanel: React.ReactNode;
 }) {
-  const router = useRouter();
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
-      <div className="pt-6 px-8">
-        <button onClick={() => router.back()} className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0">
-          &larr; Back
-        </button>
+    <main className="min-h-screen bg-background">
+      <div className="px-4 pt-6 lg:px-6">
+        <BackButton />
       </div>
 
-      <div className="px-8 pt-3 pb-6">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[var(--text-muted)]">{ex.id}</span>
-          <span className={severityColors[ex.severity] || "badge neutral"}>{typeLabels[ex.type] || ex.type}</span>
-          <span className={`badge ${ex.status === "open" ? "critical" : ex.status === "resolved" ? "success" : ex.status === "escalated" ? "blue" : "warning"}`}>
-            {ex.status === "open" ? "Open" : ex.status === "resolved" ? "Resolved" : ex.status === "escalated" ? "Escalated" : "Under Review"}
-          </span>
+      <div className="px-4 pt-3 pb-6 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
+          <SeverityBadge severity={ex.severity}>{typeLabels[ex.type] || ex.type}</SeverityBadge>
+          <StatusBadge status={ex.status} />
           {ex.category && <CategoryBadge category={ex.category} />}
         </div>
         <div className="mb-1.5">
           <VendorBadge name={ex.vendor} size="lg" />
         </div>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
+        <p className="m-0 text-xs text-muted-foreground">
           Invoice #{ex.invoiceNumber} · {new Date(ex.invoiceDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Flagged: {formatCurrency(ex.flaggedAmount)}
         </p>
       </div>
 
-      <div className="mx-8 mb-6">
-        <div className="border-l-4 border-red-600 bg-red-50 px-5 py-3.5 rounded-md">
-          <span className="text-xs text-red-900">{ex.description}</span>
-        </div>
+      <div className="mx-4 mb-6 lg:mx-6">
+        <AlertBar>{ex.description}</AlertBar>
       </div>
 
-      <div className="mx-8">
+      <div className="mx-4 lg:mx-6">
         <EscalationBanner flaggedAmount={ex.flaggedAmount} />
       </div>
 
       {/* Workflow Stepper */}
-      <div className="mx-8 mb-6">
-        <div className="card px-8 py-5">
+      <div className="mx-4 mb-6 lg:mx-6">
+        <Card className="px-8 py-5">
           <WorkflowStepper steps={getWorkflowSteps(ex.id)} />
-        </div>
+        </Card>
       </div>
 
-      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="grid grid-cols-1 items-start gap-6 px-4 pb-8 lg:grid-cols-[1fr_280px] lg:px-6">
         <div>{children}</div>
         <div className="flex flex-col gap-5">
           {rightPanel}
           {/* Audit Trail */}
-          <div className="card p-5">
+          <Card className="p-5">
             <AuditTrail entries={getAuditTrail(ex.id)} />
-          </div>
+          </Card>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -1640,26 +1823,26 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
-      <p className="section-label mb-2">Three-Way Match Analysis</p>
+      <SectionLabel className="mb-2">Three-Way Match Analysis</SectionLabel>
       <DiscrepancyView
         lineItems={lineItems.map((item) => ({ ...item, flags: item.flags || [] }))}
         showActions={false}
       />
 
-      <div className="card overflow-hidden mt-3">
+      <Card className="mt-3 gap-0 py-0">
         {/* Totals */}
-        <div className="border-t border-[var(--border)] px-6 py-4 flex gap-10">
+        <div className="flex gap-10 px-6 py-4">
           <div>
-            <p className="section-label mb-1">PO Total</p>
-            <p className="text-lg font-semibold text-[var(--text-primary)] m-0 tabular-nums">{formatCurrency(poTotal)}</p>
+            <SectionLabel as="h3" className="mb-1">PO Total</SectionLabel>
+            <p className="m-0 text-lg font-semibold tabular-nums text-foreground">{formatCurrency(poTotal)}</p>
           </div>
           <div>
-            <p className="section-label mb-1">Invoice Total</p>
-            <p className="text-lg font-semibold text-red-600 m-0 tabular-nums">{formatCurrency(invTotal)}</p>
+            <SectionLabel as="h3" className="mb-1">Invoice Total</SectionLabel>
+            <p className="m-0 text-lg font-semibold tabular-nums text-destructive">{formatCurrency(invTotal)}</p>
           </div>
           <div>
-            <p className="section-label mb-1">Variance</p>
-            <p className="text-lg font-semibold text-red-600 m-0 tabular-nums">
+            <SectionLabel as="h3" className="mb-1">Variance</SectionLabel>
+            <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
               {variance >= 0 ? "+" : ""}{formatCurrency(variance)} <span className="text-[13px] font-normal">({variance >= 0 ? "+" : ""}{variancePct}%)</span>
             </p>
           </div>
@@ -1667,16 +1850,16 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
 
         {/* AI Recommendation */}
         <div className="px-6 pb-5">
-          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-            <p className="section-label mb-1.5">AI Recommendation</p>
-            <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
+          <div className="rounded-md border border-border bg-muted px-4 py-3">
+            <SectionLabel as="h3" className="mb-1.5">AI Recommendation</SectionLabel>
+            <p className="m-0 text-xs leading-relaxed text-muted-foreground">
               {ex.id === "EX-007"
                 ? "Hold invoice. Invoice bills 365 units but PO and packing slip both confirm 300 units. Request revised invoice for 300 units from Medline Industries. Overage of 65 units = $14,200 overbilled."
                 : "Resolved. Unit of measure mismatch between PO (cases) and invoice (cartons) caused $3,890 price variance. Vendor Owens & Minor issued credit memo. Recommend standardising UOM in vendor master."}
             </p>
           </div>
         </div>
-      </div>
+      </Card>
       <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
@@ -1694,19 +1877,23 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
 
   const inv1 = pair.invoice1;
   const inv2 = pair.invoice2;
-  const similarityColor = pair.similarity >= 99 ? "var(--critical)" : pair.similarity >= 95 ? "var(--warning)" : "var(--info)";
+  // Similarity emphasis — destructive for near-exact, warning otherwise.
+  const similarityHigh = pair.similarity >= 99;
+  const similarityWarn = pair.similarity >= 95;
+  const similarityFill = similarityHigh ? "bg-destructive" : similarityWarn ? "bg-warning" : "bg-primary";
+  const similarityText = similarityHigh ? "text-destructive" : similarityWarn ? "text-warning-text" : "text-primary";
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
-      <p className="section-label mb-2">Duplicate Invoice Comparison</p>
-      <div className="card overflow-hidden">
+      <SectionLabel className="mb-2">Duplicate Invoice Comparison</SectionLabel>
+      <Card className="gap-0 py-0">
         {/* Side-by-side comparison */}
-        <div className="grid grid-cols-2 divide-x divide-[var(--border)]">
+        <div className="grid grid-cols-2 divide-x divide-border">
           {/* Invoice A */}
           <div className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="badge success">Original</span>
-              <span className="text-xs font-medium text-[var(--text-primary)]">Invoice A</span>
+            <div className="mb-3 flex items-center gap-2">
+              <Badge className="border-success bg-success/10 text-success-text">Original</Badge>
+              <h3 className="m-0 text-xs font-medium text-foreground">Invoice A</h3>
             </div>
             {[
               { label: "Invoice #", value: inv1.number },
@@ -1714,18 +1901,18 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
               { label: "Amount", value: formatCurrency(inv1.amount) },
               { label: "Submitted via", value: inv1.submittedVia },
             ].map((row, i, arr) => (
-              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}>
-                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
+              <div key={row.label} className={`flex items-baseline justify-between py-2 ${i < arr.length - 1 ? "border-b border-border" : ""}`}>
+                <span className="text-xs text-muted-foreground">{row.label}</span>
+                <span className="text-xs font-medium text-foreground">{row.value}</span>
               </div>
             ))}
           </div>
 
           {/* Invoice B */}
           <div className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="badge critical">Suspected Duplicate</span>
-              <span className="text-xs font-medium text-[var(--text-primary)]">Invoice B</span>
+            <div className="mb-3 flex items-center gap-2">
+              <Badge variant="destructive">Suspected Duplicate</Badge>
+              <h3 className="m-0 text-xs font-medium text-foreground">Invoice B</h3>
             </div>
             {[
               { label: "Invoice #", value: inv2.number },
@@ -1733,51 +1920,51 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
               { label: "Amount", value: formatCurrency(inv2.amount) },
               { label: "Submitted via", value: inv2.submittedVia },
             ].map((row, i, arr) => (
-              <div key={row.label} className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}>
-                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
+              <div key={row.label} className={`flex items-baseline justify-between py-2 ${i < arr.length - 1 ? "border-b border-border" : ""}`}>
+                <span className="text-xs text-muted-foreground">{row.label}</span>
+                <span className="text-xs font-medium text-foreground">{row.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Similarity score */}
-        <div className="border-t border-[var(--border)] px-5 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="section-label">Content Similarity</span>
-            <span className="text-sm font-semibold tabular-nums" style={{ color: similarityColor }}>{pair.similarity}%</span>
+        <div className="border-t border-border px-5 py-4">
+          <div className="mb-2 flex items-center justify-between">
+            <SectionLabel as="h3">Content Similarity</SectionLabel>
+            <span className={`text-sm font-semibold tabular-nums ${similarityText}`}>{pair.similarity}%</span>
           </div>
-          <div className="w-full h-2 bg-[var(--bg-subtle)] rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all" style={{ width: `${pair.similarity}%`, backgroundColor: similarityColor }} />
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className={`h-full rounded-full transition-all ${similarityFill}`} style={{ width: `${pair.similarity}%` }} />
           </div>
-          <div className="flex gap-6 mt-3">
+          <div className="mt-3 flex gap-6">
             <div>
-              <span className="text-[11px] text-[var(--text-muted)]">Amount delta</span>
-              <p className="text-xs font-medium text-[var(--text-primary)] m-0 mt-0.5">{formatCurrency(pair.amountDelta)} ({((pair.amountDelta / inv1.amount) * 100).toFixed(2)}%)</p>
+              <span className="text-[11px] text-muted-foreground">Amount delta</span>
+              <p className="m-0 mt-0.5 text-xs font-medium text-foreground">{formatCurrency(pair.amountDelta)} ({((pair.amountDelta / inv1.amount) * 100).toFixed(2)}%)</p>
             </div>
             <div>
-              <span className="text-[11px] text-[var(--text-muted)]">Days apart</span>
-              <p className="text-xs font-medium text-[var(--text-primary)] m-0 mt-0.5">{pair.daysDelta} days</p>
+              <span className="text-[11px] text-muted-foreground">Days apart</span>
+              <p className="m-0 mt-0.5 text-xs font-medium text-foreground">{pair.daysDelta} days</p>
             </div>
             <div>
-              <span className="text-[11px] text-[var(--text-muted)]">Different channel</span>
-              <p className="text-xs font-medium text-[var(--text-primary)] m-0 mt-0.5">{inv1.submittedVia !== inv2.submittedVia ? "Yes" : "No"}</p>
+              <span className="text-[11px] text-muted-foreground">Different channel</span>
+              <p className="m-0 mt-0.5 text-xs font-medium text-foreground">{inv1.submittedVia !== inv2.submittedVia ? "Yes" : "No"}</p>
             </div>
           </div>
         </div>
 
         {/* AI Analysis */}
         <div className="px-5 pb-5">
-          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-            <p className="section-label mb-1.5">AI Analysis</p>
-            <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
+          <div className="rounded-md border border-border bg-muted px-4 py-3">
+            <SectionLabel as="h3" className="mb-1.5">AI Analysis</SectionLabel>
+            <p className="m-0 text-xs leading-relaxed text-muted-foreground">
               {ex.id === "EX-002"
                 ? "Near-identical invoices from MedSupply Corp submitted through different channels (postal mail vs email) within 6 days. Amount differs by only $200 (0.42%), consistent with manual re-entry error. Same line items, same PO reference. Recommend blocking the duplicate and confirming with vendor."
                 : "Exact duplicate from Henry Schein submitted via EDI and then again via email attachment 4 days later. Amounts are identical ($8,750). Second invoice was blocked before payment was processed."}
             </p>
           </div>
         </div>
-      </div>
+      </Card>
     </PageShell>
   );
 }
@@ -1798,11 +1985,11 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
-      <p className="section-label mb-2">Contract Overage Analysis</p>
-      <div className="card p-6">
+      <SectionLabel className="mb-2">Contract Overage Analysis</SectionLabel>
+      <Card className="p-6">
         {/* Contract summary */}
         <div className="mb-5">
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Contract Summary</p>
+          <h3 className="mb-3 text-sm font-medium text-foreground">Contract Summary</h3>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
@@ -1810,67 +1997,67 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
               { label: "Cap Amount", value: formatCurrency(capAmount) },
               { label: "Current Spend", value: formatCurrency(currentSpend) },
             ].map((row) => (
-              <div key={row.label} className="flex justify-between items-baseline py-1.5 border-b border-[var(--bg-subtle)]">
-                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
+              <div key={row.label} className="flex items-baseline justify-between border-b border-border py-1.5">
+                <span className="text-xs text-muted-foreground">{row.label}</span>
+                <span className="text-xs font-medium text-foreground">{row.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="border-t border-[var(--border)] pt-4 mb-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="section-label">Spend vs Cap</span>
-            <span className="text-sm font-semibold text-red-600 tabular-nums">{pct}% of cap</span>
+        <div className="mb-5 border-t border-border pt-4">
+          <div className="mb-2 flex items-center justify-between">
+            <SectionLabel as="h3">Spend vs Cap</SectionLabel>
+            <span className="text-sm font-semibold tabular-nums text-destructive">{pct}% of cap</span>
           </div>
-          <div className="w-full h-4 bg-[var(--bg-subtle)] rounded-full overflow-hidden relative">
+          <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted">
             {/* Cap marker at 100% */}
-            <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-[var(--text-muted)]" style={{ left: `${(100 / parseFloat(pct)) * 100}%` }} />
-            <div className="h-full rounded-full bg-red-500 transition-all" style={{ width: `${Math.min((barWidth / 150) * 100, 100)}%` }} />
+            <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-muted-foreground" style={{ left: `${(100 / parseFloat(pct)) * 100}%` }} />
+            <div className="h-full rounded-full bg-destructive transition-all" style={{ width: `${Math.min((barWidth / 150) * 100, 100)}%` }} />
           </div>
-          <div className="flex justify-between mt-1">
-            <span className="text-[10px] text-[var(--text-muted)]">$0</span>
-            <span className="text-[10px] text-[var(--text-muted)]">Cap: {formatCurrency(capAmount)}</span>
+          <div className="mt-1 flex justify-between">
+            <span className="text-[10px] text-muted-foreground">$0</span>
+            <span className="text-[10px] text-muted-foreground">Cap: {formatCurrency(capAmount)}</span>
           </div>
         </div>
 
         {/* Overage calculation */}
-        <div className="border-t border-[var(--border)] pt-4 mb-5">
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Overage Calculation</p>
-          <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-[var(--text-secondary)]">Current Spend</span>
-              <span className="text-xs font-medium text-[var(--text-primary)] tabular-nums">{formatCurrency(currentSpend)}</span>
+        <div className="mb-5 border-t border-border pt-4">
+          <h3 className="mb-3 text-sm font-medium text-foreground">Overage Calculation</h3>
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Current Spend</span>
+              <span className="text-xs font-medium tabular-nums text-foreground">{formatCurrency(currentSpend)}</span>
             </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-[var(--text-secondary)]">Contract Cap</span>
-              <span className="text-xs font-medium text-[var(--text-primary)] tabular-nums">- {formatCurrency(capAmount)}</span>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Contract Cap</span>
+              <span className="text-xs font-medium tabular-nums text-foreground">- {formatCurrency(capAmount)}</span>
             </div>
-            <div className="border-t border-red-200 pt-2 mt-2 flex items-center gap-2">
-              <span className="text-xs font-medium text-red-700">Overage</span>
-              <span className="text-sm font-bold text-red-600 tabular-nums">= {formatCurrency(overage)}</span>
+            <div className="mt-2 flex items-center gap-2 border-t border-destructive/30 pt-2">
+              <span className="text-xs font-medium text-destructive">Overage</span>
+              <span className="text-sm font-bold tabular-nums text-destructive">= {formatCurrency(overage)}</span>
             </div>
           </div>
         </div>
 
         {/* Contract note */}
         {contract.terms && (
-          <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
-            <p className="text-xs text-amber-800 m-0 leading-relaxed">{contract.terms}</p>
+          <div className="rounded-md border border-warning/40 bg-warning/10 px-4 py-3">
+            <p className="m-0 text-xs leading-relaxed text-warning-text">{contract.terms}</p>
           </div>
         )}
 
         {/* AI Recommendation */}
         <div className="mt-5">
-          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-            <p className="section-label mb-1.5">AI Recommendation</p>
-            <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
+          <div className="rounded-md border border-border bg-muted px-4 py-3">
+            <SectionLabel as="h3" className="mb-1.5">AI Recommendation</SectionLabel>
+            <p className="m-0 text-xs leading-relaxed text-muted-foreground">
               Flag for procurement review. The contract cap of {formatCurrency(capAmount)} has been exceeded by {formatCurrency(overage)} ({pct}% utilisation). Contract has expired with no auto-renewal. 23 invoices were processed after the cap was breached. Consider renegotiation or competitive bidding for future orders.
             </p>
           </div>
         </div>
-      </div>
+      </Card>
       <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
@@ -1888,11 +2075,11 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
-      <p className="section-label mb-2">Missing Rebate Analysis</p>
-      <div className="card p-6">
+      <SectionLabel className="mb-2">Missing Rebate Analysis</SectionLabel>
+      <Card className="p-6">
         {/* Contract terms */}
         <div className="mb-5">
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Contract Terms</p>
+          <h3 className="mb-3 text-sm font-medium text-foreground">Contract Terms</h3>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
@@ -1901,62 +2088,62 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
               { label: "Threshold", value: formatCurrency(contract.rebateThreshold || 0) },
               { label: "Q1 Spend", value: isEX004 ? "$312,400" : "$94,200" },
             ].map((row) => (
-              <div key={row.label} className="flex justify-between items-baseline py-1.5 border-b border-[var(--bg-subtle)]">
-                <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-                <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
+              <div key={row.label} className="flex items-baseline justify-between border-b border-border py-1.5">
+                <span className="text-xs text-muted-foreground">{row.label}</span>
+                <span className="text-xs font-medium text-foreground">{row.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Rebate calculation */}
-        <div className="border-t border-[var(--border)] pt-4 mb-5">
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Rebate Calculation Breakdown</p>
-          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
+        <div className="mb-5 border-t border-border pt-4">
+          <h3 className="mb-3 text-sm font-medium text-foreground">Rebate Calculation Breakdown</h3>
+          <div className="rounded-md border border-border bg-muted px-4 py-3">
             {isEX004 ? (
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Q1 Spend</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$312,400</span>
+                  <span className="text-muted-foreground">Q1 Spend</span>
+                  <span className="font-medium tabular-nums text-foreground">$312,400</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Quarterly rebate (8.5% × $312,400)</span>
-                  <span className="text-amber-700 font-medium tabular-nums">$26,554</span>
+                  <span className="text-muted-foreground">Quarterly rebate (8.5% × $312,400)</span>
+                  <span className="font-medium tabular-nums text-warning-text">$26,554</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Volume discounts (47 line items)</span>
-                  <span className="text-amber-700 font-medium tabular-nums">$62,876</span>
+                  <span className="text-muted-foreground">Volume discounts (47 line items)</span>
+                  <span className="font-medium tabular-nums text-warning-text">$62,876</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
-                  <span className="text-[var(--text-primary)] font-medium">Total owed to Northfield</span>
-                  <span className="text-red-600 font-bold tabular-nums text-sm">$89,430</span>
+                <div className="flex justify-between border-t border-border pt-2 text-xs">
+                  <span className="font-medium text-foreground">Total owed to Northfield</span>
+                  <span className="text-sm font-bold tabular-nums text-destructive">$89,430</span>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Q1 Spend</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$94,200</span>
+                  <span className="text-muted-foreground">Q1 Spend</span>
+                  <span className="font-medium tabular-nums text-foreground">$94,200</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Threshold</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">- $80,000</span>
+                  <span className="text-muted-foreground">Threshold</span>
+                  <span className="font-medium tabular-nums text-foreground">- $80,000</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
-                  <span className="text-[var(--text-secondary)]">Excess spend</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">= $14,200</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Rebate (7.25% of excess)</span>
-                  <span className="text-amber-700 font-medium tabular-nums">$1,030</span>
+                <div className="flex justify-between border-t border-border pt-2 text-xs">
+                  <span className="text-muted-foreground">Excess spend</span>
+                  <span className="font-medium tabular-nums text-foreground">= $14,200</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Early payment discount (3% on $194K)</span>
-                  <span className="text-amber-700 font-medium tabular-nums">$5,820</span>
+                  <span className="text-muted-foreground">Rebate (7.25% of excess)</span>
+                  <span className="font-medium tabular-nums text-warning-text">$1,030</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
-                  <span className="text-[var(--text-primary)] font-medium">Total owed to Northfield</span>
-                  <span className="text-red-600 font-bold tabular-nums text-sm">$6,850</span>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Early payment discount (3% on $194K)</span>
+                  <span className="font-medium tabular-nums text-warning-text">$5,820</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2 text-xs">
+                  <span className="font-medium text-foreground">Total owed to Northfield</span>
+                  <span className="text-sm font-bold tabular-nums text-destructive">$6,850</span>
                 </div>
               </div>
             )}
@@ -1964,15 +2151,15 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
         </div>
 
         {/* AI Recommendation */}
-        <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-          <p className="section-label mb-1.5">AI Recommendation</p>
-          <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
+        <div className="rounded-md border border-border bg-muted px-4 py-3">
+          <SectionLabel as="h3" className="mb-1.5">AI Recommendation</SectionLabel>
+          <p className="m-0 text-xs leading-relaxed text-muted-foreground">
             {isEX004
               ? "Contact Cardinal Health to claim the outstanding rebate credit of $26,554 plus $62,876 in volume discount adjustments (total $89,430). Reference contract #CTR-2025-CAR-003. No credit memo has been received."
               : "Contact Vizient Inc. to claim $1,030 rebate on Q1 excess spend and $5,820 in missed early-payment discounts across 12 invoices. Reference contract #CTR-2025-VZT-002."}
           </p>
         </div>
-      </div>
+      </Card>
       <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
@@ -1990,73 +2177,71 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
-      <p className="section-label mb-2">Tier Pricing Analysis</p>
-      <div className="card p-6">
+      <SectionLabel className="mb-2">Tier Pricing Analysis</SectionLabel>
+      <Card className="p-6">
         {/* Tier pricing table */}
         <div className="mb-5">
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Contract Tier Pricing</p>
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Tier</th>
-                  <th className="right">Volume</th>
-                  <th className="right">Unit Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tiers.map((tier, i) => (
-                  <tr key={tier.label}>
-                    <td className="text-xs text-[var(--text-primary)] font-medium">{tier.label}</td>
-                    <td className="right text-xs tabular-nums text-[var(--text-secondary)]">
-                      {i === 0 ? `Up to ${tier.maxQty.toLocaleString()} units/month` : `> ${tiers[i - 1].maxQty.toLocaleString()} units/month`}
-                    </td>
-                    <td className="right text-xs tabular-nums text-[var(--text-primary)] font-medium">${tier.unitPrice.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h3 className="mb-3 text-sm font-medium text-foreground">Contract Tier Pricing</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tier</TableHead>
+                <TableHead className="text-right">Volume</TableHead>
+                <TableHead className="text-right">Unit Price</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tiers.map((tier, i) => (
+                <TableRow key={tier.label}>
+                  <TableCell className="text-xs font-medium text-foreground">{tier.label}</TableCell>
+                  <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                    {i === 0 ? `Up to ${tier.maxQty.toLocaleString()} units/month` : `> ${tiers[i - 1].maxQty.toLocaleString()} units/month`}
+                  </TableCell>
+                  <TableCell className="text-right text-xs font-medium tabular-nums text-foreground">${tier.unitPrice.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
 
         {/* Actual calculation */}
-        <div className="border-t border-[var(--border)] pt-4 mb-5">
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">March Invoice Calculation</p>
+        <div className="mb-5 border-t border-border pt-4">
+          <h3 className="mb-3 text-sm font-medium text-foreground">March Invoice Calculation</h3>
           <div className="grid grid-cols-2 gap-4">
             {/* What was charged */}
-            <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3">
-              <p className="section-label text-red-600 mb-2">What Was Charged</p>
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
+              <SectionLabel as="h3" className="mb-2 text-destructive">What Was Charged</SectionLabel>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">March units</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">2,340</span>
+                  <span className="text-muted-foreground">March units</span>
+                  <span className="font-medium tabular-nums text-foreground">2,340</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Rate applied</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$85.00/unit (Tier 1 only)</span>
+                  <span className="text-muted-foreground">Rate applied</span>
+                  <span className="font-medium tabular-nums text-foreground">$85.00/unit (Tier 1 only)</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-red-200 pt-1.5">
-                  <span className="text-red-700 font-medium">Total billed</span>
-                  <span className="text-red-600 font-bold tabular-nums">$198,900</span>
+                <div className="flex justify-between border-t border-destructive/30 pt-1.5 text-xs">
+                  <span className="font-medium text-destructive">Total billed</span>
+                  <span className="font-bold tabular-nums text-destructive">$198,900</span>
                 </div>
               </div>
             </div>
 
             {/* What should have been charged */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-md px-4 py-3">
-              <p className="section-label text-emerald-700 mb-2">Correct Pricing</p>
+            <div className="rounded-md border border-success/40 bg-success/10 px-4 py-3">
+              <SectionLabel as="h3" className="mb-2 text-success-text">Correct Pricing</SectionLabel>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Tier 1: 1,000 units x $85</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$85,000</span>
+                  <span className="text-muted-foreground">Tier 1: 1,000 units x $85</span>
+                  <span className="font-medium tabular-nums text-foreground">$85,000</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[var(--text-secondary)]">Tier 2: 1,340 units x $72</span>
-                  <span className="text-[var(--text-primary)] font-medium tabular-nums">$96,480</span>
+                  <span className="text-muted-foreground">Tier 2: 1,340 units x $72</span>
+                  <span className="font-medium tabular-nums text-foreground">$96,480</span>
                 </div>
-                <div className="flex justify-between text-xs border-t border-emerald-200 pt-1.5">
-                  <span className="text-emerald-700 font-medium">Correct total</span>
-                  <span className="text-emerald-700 font-bold tabular-nums">$181,480</span>
+                <div className="flex justify-between border-t border-success/40 pt-1.5 text-xs">
+                  <span className="font-medium text-success-text">Correct total</span>
+                  <span className="font-bold tabular-nums text-success-text">$181,480</span>
                 </div>
               </div>
             </div>
@@ -2064,38 +2249,38 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
         </div>
 
         {/* Overcharge summary */}
-        <div className="border-t border-[var(--border)] pt-4 mb-5">
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Overcharge Summary</p>
-          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
+        <div className="mb-5 border-t border-border pt-4">
+          <h3 className="mb-3 text-sm font-medium text-foreground">Overcharge Summary</h3>
+          <div className="rounded-md border border-border bg-muted px-4 py-3">
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-[var(--text-secondary)]">Jan 2026 overcharge (2,340 units)</span>
-                <span className="text-red-600 font-medium tabular-nums">$17,420</span>
+                <span className="text-muted-foreground">Jan 2026 overcharge (2,340 units)</span>
+                <span className="font-medium tabular-nums text-destructive">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[var(--text-secondary)]">Feb 2026 overcharge (2,340 units)</span>
-                <span className="text-red-600 font-medium tabular-nums">$17,420</span>
+                <span className="text-muted-foreground">Feb 2026 overcharge (2,340 units)</span>
+                <span className="font-medium tabular-nums text-destructive">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[var(--text-secondary)]">Mar 2026 overcharge (2,340 units)</span>
-                <span className="text-red-600 font-medium tabular-nums">$17,420</span>
+                <span className="text-muted-foreground">Mar 2026 overcharge (2,340 units)</span>
+                <span className="font-medium tabular-nums text-destructive">$17,420</span>
               </div>
-              <div className="flex justify-between text-xs border-t border-[var(--border)] pt-2">
-                <span className="text-[var(--text-primary)] font-medium">Total overcharge (3 months)</span>
-                <span className="text-red-600 font-bold tabular-nums text-sm">$52,260</span>
+              <div className="flex justify-between border-t border-border pt-2 text-xs">
+                <span className="font-medium text-foreground">Total overcharge (3 months)</span>
+                <span className="text-sm font-bold tabular-nums text-destructive">$52,260</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* AI Recommendation */}
-        <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-          <p className="section-label mb-1.5">AI Recommendation</p>
-          <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">
+        <div className="rounded-md border border-border bg-muted px-4 py-3">
+          <SectionLabel as="h3" className="mb-1.5">AI Recommendation</SectionLabel>
+          <p className="m-0 text-xs leading-relaxed text-muted-foreground">
             Request pricing correction from Cardinal Health. Contract #CTR-2025-CAR-003 specifies tiered pricing: $85/unit up to 1,000 units, $72/unit above 1,000 units. Jan–Mar 2026: 2,340 units/month all billed at Tier 1. Monthly overcharge: $17,420. Total retroactive adjustment: $52,260 (3 months).
           </p>
         </div>
-      </div>
+      </Card>
       <GPOComparisonSection exceptionId={ex.id} />
     </PageShell>
   );
@@ -2116,13 +2301,6 @@ const typeLabels: Record<string, string> = {
   som_quantity_outlier: "Volume Outlier",
 };
 
-const severityColors: Record<string, string> = {
-  critical: "badge critical",
-  high: "badge warning",
-  medium: "badge neutral",
-  low: "badge success",
-};
-
 function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -2132,95 +2310,90 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
   const ex = exceptions.find((e) => e.id === exceptionId);
   if (!ex) {
     return (
-      <div className="bg-[var(--bg-base)] min-h-screen flex items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-sm text-[var(--text-muted)]">Exception {exceptionId} not found</p>
-          <button onClick={() => router.back()} className="mt-3 text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline">
-            &larr; Back
-          </button>
+          <p className="text-sm text-muted-foreground">Exception {exceptionId} not found</p>
+          <Button variant="ghost" size="sm" className="mt-3" onClick={() => router.back()}>
+            <ArrowLeft className="size-3.5" />
+            Back
+          </Button>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
+    <main className="min-h-screen bg-background">
       {/* Breadcrumb */}
-      <div className="pt-6 px-8">
-        <button onClick={() => router.back()} className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0">
-          &larr; Back
-        </button>
+      <div className="px-4 pt-6 lg:px-6">
+        <BackButton />
       </div>
 
       {/* Header */}
-      <div className="px-8 pt-3 pb-6">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[var(--text-muted)]">{ex.id}</span>
-          <span className={severityColors[ex.severity] || "badge neutral"}>{typeLabels[ex.type] || ex.type}</span>
-          <span className={`badge ${ex.status === "open" ? "critical" : ex.status === "resolved" ? "success" : ex.status === "escalated" ? "blue" : "warning"}`}>
-            {ex.status === "open" ? "Open" : ex.status === "resolved" ? "Resolved" : ex.status === "escalated" ? "Escalated" : "Under Review"}
-          </span>
+      <div className="px-4 pt-3 pb-6 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
+          <SeverityBadge severity={ex.severity}>{typeLabels[ex.type] || ex.type}</SeverityBadge>
+          <StatusBadge status={ex.status} />
           {ex.category && <CategoryBadge category={ex.category} />}
         </div>
         <div className="mb-1.5">
           <VendorBadge name={ex.vendor} size="lg" />
         </div>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
+        <p className="m-0 text-xs text-muted-foreground">
           Invoice #{ex.invoiceNumber} · {new Date(ex.invoiceDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · Flagged: {formatCurrency(ex.flaggedAmount)}
         </p>
       </div>
 
       {/* Alert bar */}
-      <div className="mx-8 mb-6">
-        <div className="border-l-4 border-red-600 bg-red-50 px-5 py-3.5 rounded-md">
-          <span className="text-xs text-red-900">{ex.description}</span>
-        </div>
+      <div className="mx-4 mb-6 lg:mx-6">
+        <AlertBar>{ex.description}</AlertBar>
       </div>
 
-      <div className="mx-8">
+      <div className="mx-4 lg:mx-6">
         <EscalationBanner flaggedAmount={ex.flaggedAmount} />
       </div>
 
       {/* Workflow Stepper */}
-      <div className="mx-8 mb-6">
-        <div className="card px-8 py-5">
+      <div className="mx-4 mb-6 lg:mx-6">
+        <Card className="px-8 py-5">
           <WorkflowStepper steps={getWorkflowSteps(ex.id)} />
-        </div>
+        </Card>
       </div>
 
       {/* Two-column layout */}
-      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="grid grid-cols-1 items-start gap-6 px-4 pb-8 lg:grid-cols-[1fr_280px] lg:px-6">
         {/* LEFT: Exception Details */}
         <div>
-          <p className="section-label mb-2">Exception Analysis</p>
-          <div className="card p-6">
+          <SectionLabel className="mb-2">Exception Analysis</SectionLabel>
+          <Card className="p-6">
             <div className="mb-5">
-              <p className="text-sm font-medium text-[var(--text-primary)] mb-2">What was detected</p>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{ex.description}</p>
+              <h3 className="mb-2 text-sm font-medium text-foreground">What was detected</h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">{ex.description}</p>
             </div>
 
-            <div className="border-t border-[var(--border)] pt-4 mb-5">
-              <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Key Figures</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-[var(--bg-base)] rounded-md px-4 py-3">
-                  <p className="section-label mb-1">Invoice Amount</p>
-                  <p className="text-lg font-semibold text-[var(--text-primary)]">{formatCurrency(ex.amount)}</p>
+            <div className="mb-5 border-t border-border pt-4">
+              <h3 className="mb-3 text-sm font-medium text-foreground">Key Figures</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-md bg-muted px-4 py-3">
+                  <SectionLabel as="h3" className="mb-1">Invoice Amount</SectionLabel>
+                  <p className="text-lg font-semibold text-foreground">{formatCurrency(ex.amount)}</p>
                 </div>
-                <div className="bg-red-50 rounded-md px-4 py-3">
-                  <p className="section-label mb-1">Flagged Amount</p>
-                  <p className="text-lg font-semibold text-red-600">{formatCurrency(ex.flaggedAmount)}</p>
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
+                  <SectionLabel as="h3" className="mb-1">Flagged Amount</SectionLabel>
+                  <p className="text-lg font-semibold text-destructive">{formatCurrency(ex.flaggedAmount)}</p>
                 </div>
-                <div className="bg-[var(--bg-base)] rounded-md px-4 py-3">
-                  <p className="section-label mb-1">Risk Percentage</p>
-                  <p className="text-lg font-semibold text-[var(--text-primary)]">{((ex.flaggedAmount / ex.amount) * 100).toFixed(1)}%</p>
+                <div className="rounded-md bg-muted px-4 py-3">
+                  <SectionLabel as="h3" className="mb-1">Risk Percentage</SectionLabel>
+                  <p className="text-lg font-semibold text-foreground">{((ex.flaggedAmount / ex.amount) * 100).toFixed(1)}%</p>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-[var(--border)] pt-4">
-              <p className="text-sm font-medium text-[var(--text-primary)] mb-2">AI Recommendation</p>
-              <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            <div className="border-t border-border pt-4">
+              <h3 className="mb-2 text-sm font-medium text-foreground">AI Recommendation</h3>
+              <div className="rounded-md border border-border bg-muted px-4 py-3">
+                <p className="text-xs leading-relaxed text-muted-foreground">
                   {ex.type === "duplicate" && "Block the duplicate invoice and initiate recovery for the flagged amount. Verify vendor billing channel to prevent recurrence."}
                   {ex.type === "missing_rebate" && "Contact vendor to claim the outstanding rebate credit. Reference the contract terms and quarterly spend threshold."}
                   {ex.type === "contract_overage" && "Flag for procurement review. The contract cap has been exceeded. Consider renegotiation or competitive bidding for future orders."}
@@ -2230,12 +2403,12 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* RIGHT: Info panel */}
-        <div className="card p-5">
-          <p className="section-label mb-0">Exception Details</p>
+        <Card className="gap-0 p-5">
+          <SectionLabel as="h2" className="mb-0">Exception Details</SectionLabel>
 
           {[
             { label: "Assigned to", value: ex.assignee || "Unassigned" },
@@ -2247,44 +2420,54 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
           ].map((row, i, arr) => (
             <div
               key={row.label}
-              className={`flex justify-between items-baseline py-2.5 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}
+              className={`flex items-baseline justify-between py-2.5 ${i < arr.length - 1 ? "border-b border-border" : ""}`}
             >
-              <span className="text-xs text-[var(--text-secondary)]">{row.label}</span>
-              <span className="text-xs text-[var(--text-primary)] font-medium">{row.value}</span>
+              <span className="text-xs text-muted-foreground">{row.label}</span>
+              <span className="text-xs font-medium text-foreground">{row.value}</span>
             </div>
           ))}
 
           {/* Actions */}
-          <p className="section-label mt-5 mb-2.5">Actions</p>
+          <SectionLabel as="h3" className="mt-5 mb-2.5">Actions</SectionLabel>
 
-          {actionTaken ? (<>
-            <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-              actionTaken === "blocked" ? "bg-red-50 text-red-700 border border-red-200" :
-              actionTaken === "recovery" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-              actionTaken === "escalated" ? "bg-purple-50 text-purple-700 border border-purple-200" :
-              "bg-gray-50 text-gray-500 border border-gray-200"
-            }`}>
-              {actionTaken === "blocked" ? "Payment Blocked" :
-               actionTaken === "recovery" ? "Recovery Initiated" :
-               actionTaken === "escalated" ? "Escalated to Manager" :
-               "Dismissed"}
-            </div>
-            {actionTaken === "recovery" && (
-              <Link href="/recovery" className="block text-center text-[11px] text-[var(--acl-primary)] no-underline hover:underline mt-2">
-                View in Recovery Queue →
-              </Link>
-            )}
-            {(actionTaken === "blocked" || actionTaken === "escalated") && <PostDisagreeSteps />}
+          {actionTaken ? (
+            <>
+              <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
+                actionTaken === "blocked"
+                  ? "border-destructive/30 bg-destructive/10 text-destructive"
+                  : actionTaken === "recovery"
+                    ? "border-border bg-muted text-foreground"
+                    : actionTaken === "escalated"
+                      ? "border-warning/40 bg-warning/10 text-warning-text"
+                      : "border-border bg-muted text-muted-foreground"
+              }`}>
+                {actionTaken === "blocked"
+                  ? "Payment Blocked"
+                  : actionTaken === "recovery"
+                    ? "Recovery Initiated"
+                    : actionTaken === "escalated"
+                      ? "Escalated to Manager"
+                      : "Dismissed"}
+              </div>
+              {actionTaken === "recovery" && (
+                <Link href="/recovery" className="mt-2 block text-center text-[11px] text-primary no-underline hover:underline">
+                  View in Recovery Queue →
+                </Link>
+              )}
+              {(actionTaken === "blocked" || actionTaken === "escalated") && <PostDisagreeSteps />}
             </>
           ) : (
-            <>
-              <button
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="destructive"
+                className="w-full"
                 onClick={() => setDisclaimerActionGeneric({ action: "block", callback: () => { setActionTaken("blocked"); updateExceptionStatus(ex.id, "under_review"); showToast(`Payment authorization for invoice ${ex.invoiceNumber} has been suspended`, "warning"); } })}
-                className="block w-full bg-red-600 text-white text-xs font-medium px-3 py-2 rounded-md border-none cursor-pointer text-center mb-2 transition-colors hover:bg-red-700"
               >
                 Block Payment
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full border-warning text-warning-text hover:bg-warning/10"
                 onClick={() => setDisclaimerActionGeneric({ action: "recover", callback: () => {
                   const rec = addToRecoveryQueue({
                     exceptionId: ex.id,
@@ -2300,30 +2483,31 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
                   setActionTaken("recovery");
                   showToast(`Recovery process ${rec.id} initiated — vendor notification dispatched`, "success");
                 } })}
-                className="block w-full bg-white text-amber-700 text-xs font-medium px-3 py-2 rounded-md border border-amber-700 cursor-pointer text-center mb-2 transition-colors hover:bg-amber-50"
               >
                 Initiate Recovery
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
                 onClick={() => setDisclaimerActionGeneric({ action: "escalate", callback: () => { setActionTaken("escalated"); updateExceptionStatus(ex.id, "escalated"); showToast(`Exception ${ex.id} escalated for managerial review`, "info"); } })}
-                className="block w-full bg-white text-[var(--text-secondary)] text-xs font-medium px-3 py-2 rounded-md border border-[var(--border-strong)] cursor-pointer text-center mb-2 transition-colors hover:bg-[var(--bg-subtle)]"
               >
                 Escalate to Manager
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full"
                 onClick={() => setDisclaimerActionGeneric({ action: "dismiss", callback: () => { setActionTaken("dismissed"); updateExceptionStatus(ex.id, "resolved"); showToast(`Exception ${ex.id} has been dismissed per analyst determination`, "info"); } })}
-                className="block w-full bg-transparent text-[var(--text-muted)] text-xs font-medium px-3 py-2 rounded-md border-none cursor-pointer text-center transition-colors hover:text-[var(--text-secondary)]"
               >
                 Dismiss
-              </button>
-            </>
+              </Button>
+            </div>
           )}
 
           {/* Audit Trail */}
-          <div className="border-t border-[var(--border)] mt-5 pt-5">
+          <div className="mt-5 border-t border-border pt-5">
             <AuditTrail entries={getAuditTrail(ex.id)} />
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Legal Disclaimer Dialog for generic exception actions */}
@@ -2334,7 +2518,7 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
         action={disclaimerActionGeneric?.action || "block"}
         invoiceNumber={ex.invoiceNumber}
       />
-    </div>
+    </main>
   );
 }
 
@@ -2345,8 +2529,53 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
 // buttons mirror the runner's Approve/Hold/Escalate (NOT the hospital flow's
 // Approve / Request Correction / Escalate).
 
+// Per-type evidence rendering — module-level component (hoisted out of the
+// SomExceptionDetail render so it is a stable component identity).
+function CheckSpecificEvidence({ ex }: { ex: Exception }) {
+  if (ex.type === "som_address_mismatch") {
+    return (
+      <>
+        <EvidenceField label="Check that flagged" value="Address Verification" />
+        <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+        <EvidenceField label="Outcome" value="Declared coordinates do not match the geocoded address" />
+        <EvidenceField label="Data sources" value="Pharmacy Address Database + Google Maps geocode" />
+      </>
+    );
+  }
+  if (ex.type === "som_license_invalid") {
+    return (
+      <>
+        <EvidenceField label="Check that flagged" value="License Verification" />
+        <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+        <EvidenceField label="Outcome" value="State Board permit not in active status" />
+        <EvidenceField label="Data sources" value="State Board of Pharmacy + NPI Registry (live)" />
+      </>
+    );
+  }
+  if (ex.type === "som_price_deviation") {
+    return (
+      <>
+        <EvidenceField label="Check that flagged" value="Price Deviation" />
+        <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+        <EvidenceField label="Outcome" value="One or more line items priced outside contract tolerance" />
+        <EvidenceField label="Data source" value="Manufacturer contract pricing" />
+      </>
+    );
+  }
+  if (ex.type === "som_quantity_outlier") {
+    return (
+      <>
+        <EvidenceField label="Check that flagged" value="Volume Outliers" />
+        <EvidenceField label="Pharmacy on file" value={ex.vendor} />
+        <EvidenceField label="Outcome" value="Controlled-substance volume anomalous for catchment population" />
+        <EvidenceField label="Data source" value="DEA ARCOS Regional Baseline" />
+      </>
+    );
+  }
+  return null;
+}
+
 function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
-  const router = useRouter();
   const { showToast } = useToast();
   const [decision, setDecision] = useState<"approved" | "held" | "escalated" | null>(
     ex.status === "escalated" ? "escalated" : null,
@@ -2355,51 +2584,6 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
 
   // The SOM exception's invoiceNumber field holds the order ID (ORD-*).
   const orderId = ex.invoiceNumber;
-
-  // Per-type evidence rendering.
-  function CheckSpecificEvidence() {
-    if (ex.type === "som_address_mismatch") {
-      return (
-        <>
-          <EvidenceField label="Check that flagged" value="Address Verification" />
-          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
-          <EvidenceField label="Outcome" value="Declared coordinates do not match the geocoded address" />
-          <EvidenceField label="Data sources" value="Pharmacy Address Database + Google Maps geocode" />
-        </>
-      );
-    }
-    if (ex.type === "som_license_invalid") {
-      return (
-        <>
-          <EvidenceField label="Check that flagged" value="License Verification" />
-          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
-          <EvidenceField label="Outcome" value="State Board permit not in active status" />
-          <EvidenceField label="Data sources" value="State Board of Pharmacy + NPI Registry (live)" />
-        </>
-      );
-    }
-    if (ex.type === "som_price_deviation") {
-      return (
-        <>
-          <EvidenceField label="Check that flagged" value="Price Deviation" />
-          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
-          <EvidenceField label="Outcome" value="One or more line items priced outside contract tolerance" />
-          <EvidenceField label="Data source" value="Manufacturer contract pricing" />
-        </>
-      );
-    }
-    if (ex.type === "som_quantity_outlier") {
-      return (
-        <>
-          <EvidenceField label="Check that flagged" value="Volume Outliers" />
-          <EvidenceField label="Pharmacy on file" value={ex.vendor} />
-          <EvidenceField label="Outcome" value="Controlled-substance volume anomalous for catchment population" />
-          <EvidenceField label="Data source" value="DEA ARCOS Regional Baseline" />
-        </>
-      );
-    }
-    return null;
-  }
 
   function handleDecision(kind: "approved" | "held" | "escalated") {
     setDecision(kind);
@@ -2414,69 +2598,62 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
   }
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
+    <main className="min-h-screen bg-background">
       {/* Breadcrumb */}
-      <div className="pt-6 px-8">
-        <button
-          onClick={() => router.back()}
-          className="text-xs text-[var(--acl-primary)] bg-transparent border-none cursor-pointer hover:underline p-0"
-        >
-          &larr; Back
-        </button>
+      <div className="px-4 pt-6 lg:px-6">
+        <BackButton />
       </div>
 
       {/* Header */}
-      <div className="px-8 pt-3 pb-6">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] text-[var(--text-muted)]">{ex.id}</span>
-          <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--acl-primary)]">
+      <div className="px-4 pt-3 pb-6 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">
             SOM · Drug Distributor
           </span>
-          <span className={severityColors[ex.severity] || "badge neutral"}>{typeLabels[ex.type] || ex.type}</span>
-          <span className={`badge ${ex.status === "open" ? "critical" : ex.status === "resolved" ? "success" : ex.status === "escalated" ? "blue" : "warning"}`}>
-            {ex.status === "open" ? "Open" : ex.status === "resolved" ? "Resolved" : ex.status === "escalated" ? "Escalated" : "Under Review"}
-          </span>
+          <SeverityBadge severity={ex.severity}>{typeLabels[ex.type] || ex.type}</SeverityBadge>
+          <StatusBadge status={ex.status} />
           {ex.category && <CategoryBadge category={ex.category} />}
         </div>
         <div className="mb-1.5">
           <VendorBadge name={ex.vendor} size="lg" />
         </div>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
+        <p className="m-0 text-xs text-muted-foreground">
           Order #{orderId} · Detected {new Date(ex.detectedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · Flagged {formatCurrency(ex.flaggedAmount)}
         </p>
       </div>
 
-      <div className="mx-8">
+      <div className="mx-4 lg:mx-6">
         <EscalationBanner flaggedAmount={ex.flaggedAmount} />
       </div>
 
       {/* Body grid */}
-      <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
+      <div className="grid grid-cols-1 items-start gap-5 px-4 pb-8 lg:grid-cols-[1fr_320px] lg:px-6">
         {/* LEFT: Description + evidence */}
         <div className="flex flex-col gap-4">
-          <div className="card p-5">
-            <p className="section-label mb-3">Description</p>
-            <p className="text-sm text-[var(--text-primary)] m-0 leading-relaxed">{ex.description}</p>
-          </div>
+          <Card className="p-5">
+            <SectionLabel className="mb-3">Description</SectionLabel>
+            <p className="m-0 text-sm leading-relaxed text-foreground">{ex.description}</p>
+          </Card>
 
-          <div className="card p-5">
-            <p className="section-label mb-3">Evidence summary</p>
+          <Card className="p-5">
+            <SectionLabel className="mb-3">Evidence summary</SectionLabel>
             <div className="flex flex-col gap-2.5">
-              <CheckSpecificEvidence />
+              <CheckSpecificEvidence ex={ex} />
             </div>
             <Link
               href={`/som/order/${orderId}`}
-              className="inline-flex items-center gap-1.5 mt-4 text-xs font-medium text-[var(--acl-primary)] no-underline hover:underline"
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary no-underline hover:underline"
             >
               View full SOM workflow run →
             </Link>
-          </div>
+          </Card>
         </div>
 
         {/* RIGHT: Meta + actions */}
-        <div className="flex flex-col gap-4 sticky top-4">
-          <div className="card p-5">
-            <p className="section-label mb-3">Exception details</p>
+        <div className="sticky top-4 flex flex-col gap-4">
+          <Card className="gap-0 p-5">
+            <SectionLabel as="h2" className="mb-3">Exception details</SectionLabel>
             {[
               { label: "Order ID", value: orderId, mono: true },
               { label: "Pharmacy", value: ex.vendor },
@@ -2487,51 +2664,58 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
             ].map((row, i, arr) => (
               <div
                 key={row.label}
-                className={`flex justify-between items-baseline py-2 ${i < arr.length - 1 ? "border-b border-[var(--bg-subtle)]" : ""}`}
+                className={`flex items-baseline justify-between py-2 ${i < arr.length - 1 ? "border-b border-border" : ""}`}
               >
-                <span className="text-[11px] text-[var(--text-secondary)]">{row.label}</span>
-                <span className={`text-[11px] text-[var(--text-primary)] font-medium ${row.mono ? "font-mono" : ""}`}>
+                <span className="text-[11px] text-muted-foreground">{row.label}</span>
+                <span className={`text-[11px] font-medium text-foreground ${row.mono ? "font-mono" : ""}`}>
                   {row.value}
                 </span>
               </div>
             ))}
-          </div>
+          </Card>
 
-          <div className="card p-5">
-            <p className="section-label mb-3">Analyst decision</p>
+          <Card className="gap-0 p-5">
+            <SectionLabel as="h2" className="mb-3">Analyst decision</SectionLabel>
             {decision ? (
-              <div className={`px-3 py-2.5 rounded-md text-xs font-medium text-center ${
-                decision === "approved" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                decision === "held" ? "bg-amber-50 text-amber-700 border border-amber-200" :
-                "bg-blue-50 text-blue-700 border border-blue-200"
+              <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
+                decision === "approved"
+                  ? "border-success/40 bg-success/10 text-success-text"
+                  : decision === "held"
+                    ? "border-warning/40 bg-warning/10 text-warning-text"
+                    : "border-border bg-muted text-foreground"
               }`}>
                 {decision === "approved" && "Approved — released to fulfilment"}
                 {decision === "held" && "On hold — awaiting analyst follow-up"}
                 {decision === "escalated" && "Escalated to compliance manager"}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <button
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-success text-success-text hover:bg-success/10"
                   onClick={() => setDisclaimerActionSom({ action: "approve", callback: () => handleDecision("approved") })}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-emerald-600 bg-white text-emerald-700 cursor-pointer hover:bg-emerald-50"
                 >
                   Approve
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-warning text-warning-text hover:bg-warning/10"
                   onClick={() => setDisclaimerActionSom({ action: "hold", callback: () => handleDecision("held") })}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-amber-600 bg-white text-amber-700 cursor-pointer hover:bg-amber-50"
                 >
                   Hold
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setDisclaimerActionSom({ action: "escalate", callback: () => handleDecision("escalated") })}
-                  className="text-xs font-medium px-3 py-2 rounded-md border border-[var(--acl-primary)] bg-white text-[var(--acl-primary)] cursor-pointer hover:bg-blue-50"
                 >
                   Escalate
-                </button>
+                </Button>
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
 
@@ -2543,15 +2727,15 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
         action={disclaimerActionSom?.action || "approve"}
         invoiceNumber={ex.invoiceNumber}
       />
-    </div>
+    </main>
   );
 }
 
 function EvidenceField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-baseline gap-3">
-      <span className="text-[11px] text-[var(--text-secondary)] flex-shrink-0">{label}</span>
-      <span className="text-[11px] text-[var(--text-primary)] font-medium text-right">{value}</span>
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="shrink-0 text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-right text-[11px] font-medium text-foreground">{value}</span>
     </div>
   );
 }

@@ -9,8 +9,8 @@ The invoice detail page is the CORE product view of InvoiceIQ Detect. It renders
 EARS notation.
 
 **App shell**
-- [ ] THE SYSTEM SHALL render the invoice detail page inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
-- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
+- [ ] THE SYSTEM SHALL render the invoice detail page content inside the root layout's `SidebarProvider` + `SidebarInset` + `AppSidebar` shell (provided by `app/layout.tsx`; the page itself renders a `<main>` content region only)
+- [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens — every template (EX-003, EX-006, MatchExceptionDetail, DuplicateDetail, ContractOverageDetail, MissingRebateDetail, TierPricingDetail, GenericExceptionPage, SomExceptionDetail) must theme correctly in both modes
 
 **Template routing**
 - [ ] WHEN the URL exception ID matches a known template mapping THE SYSTEM SHALL render that template's component (Ex003Page, Ex006Page, MatchExceptionDetail, DuplicateDetail, ContractOverageDetail, SuspiciousInvoiceDetail, MissingRebateDetail, TierPricingDetail, SOMExceptionDetail)
@@ -43,8 +43,10 @@ EARS notation.
 **Compliance and safety**
 - [ ] THE SYSTEM SHALL display `LegalDisclaimerDialog` before every action that commits the organization (Agree, Disagree, Block, Approve, Escalate, Recover, Dismiss)
 - [ ] THE SYSTEM SHALL render the AI Recommendation card with an inline confidence score (e.g., "AI confidence 98.7%") — never without
-- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements
-- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all expand/collapse and entrance animations
+- [ ] THE SYSTEM SHALL render focus rings using `var(--ring)` on all interactive elements (shadcn `Button` / `Badge` / `Dialog` / `Select` provide these natively; collapsible group headers render as `Button variant="ghost"`)
+- [ ] THE SYSTEM SHALL color status text with AA-safe tokens — `text-destructive` for critical, `text-warning-text` for amber, `text-success-text` for emerald — never `text-red-400` / `text-amber-600` / `text-emerald-600` raw scales
+- [ ] THE SYSTEM SHALL render a single document-outline heading hierarchy per template — `<h1>` for the exception title, `<h2>` for each major region (Three-Way Match Analysis, Exception Details, Documents, Actions), `<h3>` for sub-regions and dialog titles
+- [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all expand/collapse and entrance animations (CSS transitions are disabled by the `globals.css` reduced-motion block)
 
 ## Template Routing
 
@@ -64,6 +66,10 @@ The page uses `useParams()` to read the exception ID, then routes to a specific 
 | Fallback | `PageShell` + `ActionPanel` | Generic exception detail |
 
 ## Layout (EX-006 -- Primary Template)
+
+### Page padding
+
+All templates use `px-4 lg:px-6` for horizontal page padding (shadcn standard; replaces v1 `px-8` / `mx-8`). The page root is a `<main className="min-h-screen bg-background">` content region (the sidebar shell is supplied by `app/layout.tsx`).
 
 ### Breadcrumb (pt-6, px-4 lg:px-6)
 - shadcn `Button variant="ghost" size="sm"` "Back" using `router.back()`
@@ -181,6 +187,10 @@ This is the `DiscrepancyView` component -- the revamped core of the product. It 
 - **Recovery initiation**: creates entry in recovery queue via `addToRecoveryQueue()`, updates exception status to "under_review"
 - **Invoice status transitions**: pending_review -> waiting_correction (after recovery) or waiting_manager (after escalation) or approved_override (after override)
 
+### Known Data Integrity Issue (audit DI-1)
+
+The 2026-05-21 UI/UX audit flagged EX-006 (STC-2026-19847, the Parkland demo invoice): the on-page three-way match computes a `+$200` variance from `sterisLineItems`, while the alert bar, escalation banner, and recovery modal all assert `$4,600` (the quarterly recurrence figure) and the override modal asserts `$27,750` (the invoice total). The three figures have no on-screen bridge and the alert bar copy ("$4,600 flagged this invoice") is factually wrong — `$4,600` is the cumulative quarterly recurrence, not the per-invoice flag. **Resolving this requires correcting the mock figures in `lib/data.ts` and is out of scope for the v2.0 token migration** (the migration must not change `lib/data.ts`). The v2.0 migration keeps the existing copy faithful; DI-1 is tracked separately for the data-integrity pass. The alert-bar wording is left as-is pending that pass.
+
 ## Data Model
 
 - **Source files**: `lib/data.ts` (sterisLineItems, sterisLineItemsByPO, sterisLineItemsByPS, medlineLineItems, owensLineItems, exceptions, exceptionContracts, exceptionDuplicates, duplicatePairs, addToRecoveryQueue, updateExceptionStatus, formatCurrency)
@@ -271,3 +281,5 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-14: Initial spec created from current codebase — documents the revamp from fixed 10-column spreadsheet to dynamic DiscrepancyView grouped by discrepancy type -->
 <!-- 2026-05-14: Added AJ feedback from Recording 17 — legal disclaimer, formal language, policy document link -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Alert bar → shadcn `Alert variant="destructive"`. Discrepancy groups → collapsible shadcn `Card`. Agree/Disagree → shadcn `Button` (default/destructive/ghost variants) + `Badge` for resolved states. All modals (LegalDisclaimer, Override, Recovery, Escalation) → shadcn `Dialog`. Row backgrounds → `bg-destructive/5` and `bg-warning/5` (Tailwind opacity on v2 tokens). Invoice status stepper retokenized to semantic theme colors (success/primary/muted). Added 23 EARS Acceptance Criteria covering app shell, template routing, three-way match, agree/disagree actions, action panel, status stepper, compliance/safety. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0 (cluster 1): Reconciled spec with v2.0 reality before migrating app/exceptions/[id]/page.tsx. (1) App shell criterion corrected — the page renders a `<main>` content region; the SidebarProvider/SidebarInset/AppSidebar shell is supplied by app/layout.tsx, not the page. (2) Added page-padding rule (`px-4 lg:px-6`, replaces v1 `px-8`/`mx-8`). (3) Added AA-safe status-text criterion (`text-destructive`/`text-warning-text`/`text-success-text` — never `text-red-400`/`text-amber-600`/`text-emerald-600`) per audit DI-3. (4) Added document-outline heading criterion (`<h1>`/`<h2>`/`<h3>`). (5) Dark-mode criterion now enumerates all 9 templates. (6) Documented audit DI-1 (EX-006 three non-reconciling amounts) as a known data-integrity issue out of scope for the token migration — fixing it touches `lib/data.ts`. Code migration: all v1 `var(--*)` tokens → shadcn theme tokens; `.card`→`Card`, `.data-table`→`Table`, `.badge.*`→`Badge`, raw `<button>`→`Button`, `.alert-bar`→`Alert`, hand-rolled `fixed inset-0` modals → shadcn `Dialog`; ChevronDown collapsible headers → `Button variant="ghost"`. -->
+<!-- DI-1 (open, data-integrity pass): EX-006 alert bar / escalation banner / recovery modal assert $4,600, override modal asserts $27,750, on-page three-way match computes +$200 — three figures, no on-screen bridge. Fix requires correcting lib/data.ts mock figures. -->

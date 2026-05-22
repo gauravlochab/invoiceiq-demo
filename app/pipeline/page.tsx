@@ -1,6 +1,12 @@
+// [Spec: domains/pipeline/spec.md] — Multi-Agent Pipeline.
+// v2.0 shadcn migration (cluster 1, 2026-05-22): off the v1 token set per the
+// ui-standard.md v1→v2 map. Agent cards + Activity Feed → shadcn Card/Skeleton;
+// state + feed badges → shadcn Badge; Run Pipeline → shadcn Button; progress →
+// shadcn Progress. Agent-accent confined to icon tile / role label / BorderBeam
+// / running badge; all status surfaces use shadcn theme tokens. Dark mode works.
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Bot, GitCompare, ShieldCheck, TrendingUp, BarChart3,
   Workflow, Play, Loader2, CheckCircle2, ArrowRight,
@@ -9,6 +15,11 @@ import {
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { useToast } from "@/components/Toast";
 import { allExceptions } from "@/lib/data";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress, ProgressTrack, ProgressIndicator } from "@/components/ui/progress";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,6 +37,7 @@ type StepState = "idle" | "running" | "done" | "done-warn" | "done-fail";
 
 // AP exception count — derived from lib/data.ts, never hard-coded, so the
 // pipeline agrees with the dashboard and exceptions list.
+// [Spec: domains/pipeline/spec.md#Business Rules — Agent Definitions]
 const AP_EXCEPTION_COUNT = allExceptions.filter((e) => !e.type.startsWith("som_")).length;
 
 const AGENTS = [
@@ -127,12 +139,15 @@ const RUN_RESULTS: ("done" | "done-warn" | "done-fail")[] = [
 ];
 
 // ── Status icon helper ────────────────────────────────────────────────────────
+// Icons are non-text decorative cues paired with a text label — the vivid
+// --success / --warning are valid here (WCAG 1.4.1).
+// [Spec: domains/pipeline/spec.md#Business Rules — Activity Feed Events]
 
 function StatusIcon({ status }: { status: FeedEvent["status"] }) {
-  if (status === "pass") return <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--agent-recovery)]" />;
-  if (status === "fail") return <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--critical)]" />;
-  if (status === "warn") return <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--agent-compliance)]" />;
-  return <FileText className="w-3 h-3 flex-shrink-0 mt-0.5 text-[var(--text-tertiary)]" />;
+  if (status === "pass") return <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-success" />;
+  if (status === "fail") return <AlertTriangle className="mt-0.5 size-3 shrink-0 text-destructive" />;
+  if (status === "warn") return <AlertTriangle className="mt-0.5 size-3 shrink-0 text-warning" />;
+  return <FileText className="mt-0.5 size-3 shrink-0 text-muted-foreground" />;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -192,57 +207,57 @@ export default function PipelinePage() {
   const runningIdx = stepStates.findIndex(s => s === "running");
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)]">
+    <main className="min-h-screen bg-background">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="px-6 lg:px-8 pt-8 pb-5">
+      {/* [Spec: domains/pipeline/spec.md#Layout — Header region] */}
+      <div className="px-4 pt-8 pb-5 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-1.5 mb-2">
-              <Workflow className="w-3.5 h-3.5 text-[var(--acl-primary)]" />
-              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
+            <div className="mb-2 flex items-center gap-1.5">
+              <Workflow className="size-3.5 text-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Healthcare AP · Multi-Agent Pipeline
               </span>
             </div>
-            <h1 className="text-xl font-semibold tracking-tight m-0 text-[var(--text-primary)]">
+            <h1 className="m-0 text-2xl font-semibold tracking-tight text-foreground">
               Multi-Agent Pipeline
             </h1>
-            <p className="text-xs mt-1 m-0 text-[var(--text-tertiary)]">
+            <p className="m-0 mt-1 text-sm text-muted-foreground">
               5 specialized agents — each hands off to the next across the full invoice lifecycle
             </p>
           </div>
-          <button
+          <Button
+            variant="default"
+            size="sm"
             onClick={runPipeline}
             disabled={isRunning}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-md text-white transition-all cursor-pointer border-none flex-shrink-0 mt-1 disabled:opacity-50 bg-[var(--acl-primary)]"
+            className="mt-1 shrink-0"
           >
-            {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+            {isRunning ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
             {isRunning ? "Running…" : "Run Pipeline"}
-          </button>
+          </Button>
         </div>
       </div>
 
-      <hr className="border-[var(--border)] m-0" />
+      <hr className="m-0 border-border" />
 
       {/* ── Pipeline progress bar ─────────────────────────────────────────── */}
+      {/* [Spec: domains/pipeline/spec.md#Layout — Progress bar] */}
       {isRunning || completedCount > 0 ? (
-        <div className="px-6 lg:px-8 py-3 bg-white border-b border-[var(--border)]">
+        <div className="border-b border-border bg-card px-4 py-3 lg:px-6">
           <div className="flex items-center gap-3">
-            <span className="text-[11px] font-medium text-[var(--text-secondary)]">
+            <span className="text-[11px] font-medium text-muted-foreground">
               {isRunning ? `Processing — Step ${runningIdx + 1} of 5` : "Pipeline complete"}
             </span>
-            <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-[var(--bg-subtle)]">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${(completedCount / 5) * 100}%`,
-                  backgroundColor: isRunning ? "var(--acl-primary)" : "var(--agent-recovery)",
-                }}
-              />
-            </div>
-            <span className="text-[11px] tabular-nums font-medium text-[var(--acl-primary)]">
+            <Progress value={(completedCount / 5) * 100} className="flex-1">
+              <ProgressTrack>
+                <ProgressIndicator className={isRunning ? "bg-primary" : "bg-success"} />
+              </ProgressTrack>
+            </Progress>
+            <Badge variant="outline" className="tabular-nums">
               {completedCount}/5
-            </span>
+            </Badge>
           </div>
         </div>
       ) : null}
@@ -250,40 +265,33 @@ export default function PipelinePage() {
       {loading ? (
         <>
           {/* ── Agent cards skeleton ──────────────────────────────────────── */}
-          <div className="px-6 lg:px-8 py-6">
+          <div className="px-4 py-6 lg:px-6">
             <div className="flex items-stretch gap-0">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-stretch flex-1 min-w-0">
-                  <div className="flex-1 relative overflow-hidden rounded-lg">
-                    <div
-                      className="flex flex-col gap-3 p-4 rounded-lg border-2 border-[var(--border)] bg-white h-full"
-                      style={{ minHeight: 172 }}
-                    >
-                      {/* Icon + step number */}
-                      <div className="flex items-start justify-between">
-                        <div className="w-9 h-9 rounded-lg bg-[var(--border)] animate-pulse" />
-                        <div className="h-5 w-8 bg-[var(--border)] rounded animate-pulse" />
-                      </div>
-                      {/* Agent name + role */}
-                      <div>
-                        <div className="h-3.5 w-24 bg-[var(--border)] rounded animate-pulse mb-1.5" />
-                        <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse" />
-                      </div>
-                      {/* Status badge */}
-                      <div>
-                        <div className="h-5 w-14 bg-[var(--border)] rounded-full animate-pulse" />
-                      </div>
-                      {/* Stat */}
-                      <div className="mt-auto pt-2 border-t border-[var(--border)]">
-                        <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse mb-1.5" />
-                        <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
-                      </div>
+                <div key={i} className="flex min-w-0 flex-1 items-stretch">
+                  <Card className="flex-1 gap-3 p-4" style={{ minHeight: 172 }}>
+                    {/* Icon + step number */}
+                    <div className="flex items-start justify-between">
+                      <Skeleton className="size-9 rounded-lg" />
+                      <Skeleton className="h-5 w-8 rounded" />
                     </div>
-                  </div>
+                    {/* Agent name + role */}
+                    <div>
+                      <Skeleton className="mb-1.5 h-3.5 w-24 rounded" />
+                      <Skeleton className="h-2.5 w-20 rounded" />
+                    </div>
+                    {/* Status badge */}
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                    {/* Stat */}
+                    <div className="mt-auto border-t border-border pt-2">
+                      <Skeleton className="mb-1.5 h-3 w-20 rounded" />
+                      <Skeleton className="h-2.5 w-16 rounded" />
+                    </div>
+                  </Card>
                   {/* Arrow connector skeleton */}
                   {i < 5 && (
-                    <div className="flex items-center justify-center flex-shrink-0 w-8">
-                      <div className="h-4 w-4 bg-[var(--border)] rounded animate-pulse" />
+                    <div className="flex w-8 shrink-0 items-center justify-center">
+                      <Skeleton className="size-4 rounded" />
                     </div>
                   )}
                 </div>
@@ -292,37 +300,38 @@ export default function PipelinePage() {
           </div>
 
           {/* ── Activity Feed skeleton ────────────────────────────────────── */}
-          <div className="px-6 lg:px-8 pb-8">
-            <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden">
+          <div className="px-4 pb-8 lg:px-6">
+            <Card className="gap-0 py-0">
               {/* Feed header skeleton */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
+              <div className="flex items-center justify-between border-b border-border px-5 py-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 bg-[var(--border)] rounded animate-pulse" />
-                  <div className="h-3.5 w-28 bg-[var(--border)] rounded animate-pulse" />
+                  <Skeleton className="size-3.5 rounded" />
+                  <Skeleton className="h-3.5 w-28 rounded" />
                 </div>
-                <div className="h-5 w-16 bg-[var(--border)] rounded-full animate-pulse" />
+                <Skeleton className="h-5 w-16 rounded-full" />
               </div>
               {/* Feed row skeletons */}
-              <div className="divide-y">
+              <div className="divide-y divide-border">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div key={i} className="flex items-start gap-3 px-5 py-3">
-                    <div className="w-3 h-3 bg-[var(--border)] rounded animate-pulse mt-0.5 flex-shrink-0" />
-                    <div className="h-4 w-20 bg-[var(--border)] rounded animate-pulse flex-shrink-0" />
-                    <div className="h-3 w-10 bg-[var(--border)] rounded animate-pulse flex-shrink-0" />
+                    <Skeleton className="mt-0.5 size-3 shrink-0 rounded" />
+                    <Skeleton className="h-4 w-20 shrink-0 rounded" />
+                    <Skeleton className="h-3 w-10 shrink-0 rounded" />
                     <div className="flex-1">
-                      <div className="h-3 w-full bg-[var(--border)] rounded animate-pulse mb-1.5" />
-                      <div className="h-3 w-3/4 bg-[var(--border)] rounded animate-pulse" />
+                      <Skeleton className="mb-1.5 h-3 w-full rounded" />
+                      <Skeleton className="h-3 w-3/4 rounded" />
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
         </>
       ) : (
         <>
           {/* ── Agent cards with connecting flow ──────────────────────────── */}
-          <div className="px-6 lg:px-8 py-6">
+          {/* [Spec: domains/pipeline/spec.md#Layout — Agent cards row] */}
+          <div className="px-4 py-6 lg:px-6">
             <div className="flex items-stretch gap-0">
               {AGENTS.map((agent, i) => {
                 const AgentIcon = agent.Icon;
@@ -331,64 +340,64 @@ export default function PipelinePage() {
                 const isDone = state === "done" || state === "done-warn" || state === "done-fail";
                 const isLast = i === AGENTS.length - 1;
 
-                // Border color based on state
-                const borderColor = isActive
-                  ? agent.color
+                // Status-driven surface — shadcn theme tokens only.
+                // [Spec: domains/pipeline/spec.md#Business Rules — Step State Machine]
+                const surfaceClass = isActive
+                  ? "border-2 bg-card"
+                  : state === "done-fail"
+                  ? "border-2 border-destructive bg-destructive/5"
+                  : state === "done-warn"
+                  ? "border-2 border-warning bg-warning/5"
                   : isDone
-                  ? state === "done-fail" ? "var(--pipeline-fail-border)"
-                    : state === "done-warn" ? "var(--pipeline-warn-border)"
-                    : "var(--pipeline-pass-border)"
-                  : "var(--border)";
-
-                // Background tint when active or done
-                const cardBg = isActive
-                  ? agent.bgColor
-                  : isDone
-                  ? state === "done-fail" ? "var(--pipeline-fail-bg)"
-                    : state === "done-warn" ? "var(--pipeline-warn-bg)"
-                    : "var(--pipeline-pass-bg)"
-                  : "white";
+                  ? "border-2 border-success bg-success/5"
+                  : "border-2 border-border bg-card";
 
                 const card = (
-                  <div
-                    className="flex flex-col gap-3 p-4 rounded-lg border-2 h-full transition-all duration-300"
-                    style={{ borderColor, backgroundColor: cardBg, minHeight: 172 }}
+                  <Card
+                    className={`h-full gap-3 p-4 transition-all duration-300 ${surfaceClass}`}
+                    style={{
+                      minHeight: 172,
+                      // running: per-agent accent border (decorative)
+                      ...(isActive ? { borderColor: agent.color } : null),
+                    }}
                   >
                     {/* Step number + icon row */}
                     <div className="flex items-start justify-between">
                       <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-lg"
                         style={{
                           backgroundColor: isActive || isDone ? agent.color : agent.bgColor,
                         }}
                       >
                         {isActive ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <Loader2 className="size-4 animate-spin text-white" />
                         ) : isDone && state === "done-fail" ? (
-                          <AlertTriangle className="w-4 h-4 text-white" style={{ fill: agent.color }} />
+                          <AlertTriangle className="size-4 text-white" style={{ fill: agent.color }} />
                         ) : isDone ? (
-                          <CheckCircle2 className="w-4 h-4 text-white" />
+                          <CheckCircle2 className="size-4 text-white" />
                         ) : (
-                          <AgentIcon className="w-4 h-4" style={{ color: agent.color }} />
+                          <AgentIcon className="size-4" style={{ color: agent.color }} />
                         )}
                       </div>
-                      <span
-                        className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
-                        style={{
-                          backgroundColor: isActive || isDone ? agent.color + "18" : "var(--bg-subtle)",
-                          color: isActive || isDone ? agent.color : "var(--text-muted)",
-                        }}
+                      <Badge
+                        variant="outline"
+                        className="tabular-nums"
+                        style={
+                          isActive || isDone
+                            ? { backgroundColor: agent.color + "18", color: agent.color, borderColor: "transparent" }
+                            : undefined
+                        }
                       >
                         {agent.step}/5
-                      </span>
+                      </Badge>
                     </div>
 
                     {/* Agent name + role */}
                     <div>
-                      <p className="text-[13px] font-semibold m-0 leading-tight text-[var(--text-primary)]">
+                      <p className="m-0 text-[13px] font-semibold leading-tight text-foreground">
                         {agent.name}
                       </p>
-                      <p className="text-[10px] m-0 mt-0.5" style={{ color: agent.color }}>
+                      <p className="m-0 mt-0.5 text-[10px]" style={{ color: agent.color }}>
                         {agent.role}
                       </p>
                     </div>
@@ -396,53 +405,55 @@ export default function PipelinePage() {
                     {/* Status badge */}
                     <div>
                       {isActive && (
-                        <span
-                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: agent.color + "18", color: agent.color }}
+                        <Badge
+                          variant="outline"
+                          style={{ backgroundColor: agent.color + "18", color: agent.color, borderColor: "transparent" }}
                         >
-                          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: agent.color }} />
+                          <span
+                            className="size-1.5 animate-pulse rounded-full"
+                            style={{ backgroundColor: agent.color }}
+                          />
                           Processing…
-                        </span>
+                        </Badge>
                       )}
-                      {isDone && (
-                        <span
-                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor: state === "done-fail" ? "var(--pipeline-fail-badge)"
-                              : state === "done-warn" ? "var(--pipeline-warn-badge)"
-                              : "var(--pipeline-pass-badge)",
-                            color: state === "done-fail" ? "var(--critical)"
-                              : state === "done-warn" ? "var(--agent-compliance)"
-                              : "var(--agent-recovery)",
-                          }}
-                        >
-                          {state === "done-fail" ? "⚠ Exception found"
-                            : state === "done-warn" ? "⚠ Flag raised"
-                            : "✓ Passed"}
-                        </span>
+                      {isDone && state === "done-fail" && (
+                        <Badge variant="destructive">
+                          <AlertTriangle className="size-3" />
+                          Exception found
+                        </Badge>
+                      )}
+                      {isDone && state === "done-warn" && (
+                        <Badge className="border-warning bg-warning/10 text-warning-text">
+                          <AlertTriangle className="size-3" />
+                          Flag raised
+                        </Badge>
+                      )}
+                      {isDone && state === "done" && (
+                        <Badge className="border-success bg-success/10 text-success-text">
+                          <CheckCircle2 className="size-3" />
+                          Passed
+                        </Badge>
                       )}
                       {!isActive && !isDone && (
-                        <span
-                          className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--pipeline-pass-bg)] text-[var(--agent-recovery)]"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--agent-recovery)]" />
+                        <Badge variant="outline" className="text-muted-foreground">
+                          <span className="size-1.5 rounded-full bg-success" />
                           Active
-                        </span>
+                        </Badge>
                       )}
                     </div>
 
                     {/* Stat */}
-                    <div className="mt-auto pt-2 border-t" style={{ borderColor: borderColor + "66" }}>
-                      <p className="text-[11px] font-semibold m-0 text-[var(--neutral-text)]">{agent.stat}</p>
-                      <p className="text-[10px] m-0 mt-0.5 text-[var(--text-muted)]">{agent.subStat}</p>
+                    <div className="mt-auto border-t border-border pt-2">
+                      <p className="m-0 text-[11px] font-semibold text-foreground">{agent.stat}</p>
+                      <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">{agent.subStat}</p>
                     </div>
-                  </div>
+                  </Card>
                 );
 
                 return (
-                  <div key={agent.name} className="flex items-stretch flex-1 min-w-0">
+                  <div key={agent.name} className="flex min-w-0 flex-1 items-stretch">
                     {/* Card with optional BorderBeam */}
-                    <div className="flex-1 relative overflow-hidden rounded-lg">
+                    <div className="relative flex-1 overflow-hidden rounded-xl">
                       {isActive ? (
                         <>
                           {card}
@@ -451,17 +462,14 @@ export default function PipelinePage() {
                       ) : card}
                     </div>
 
-                    {/* Arrow connector between cards */}
+                    {/* Arrow connector between cards. Idle = neutral border
+                        token; done = per-agent accent (decorative extension). */}
                     {!isLast && (
-                      <div className="flex items-center justify-center flex-shrink-0 w-8">
-                        <div className="flex flex-col items-center gap-0.5">
-                          <ArrowRight
-                            className="w-4 h-4 transition-colors duration-300"
-                            style={{
-                              color: isDone ? agent.color : "var(--border-strong)",
-                            }}
-                          />
-                        </div>
+                      <div className="flex w-8 shrink-0 items-center justify-center">
+                        <ArrowRight
+                          className={`size-4 transition-colors duration-300 ${isDone ? "" : "text-border"}`}
+                          style={isDone ? { color: agent.color } : undefined}
+                        />
                       </div>
                     )}
                   </div>
@@ -470,16 +478,16 @@ export default function PipelinePage() {
             </div>
 
             {/* Handoff labels under each arrow */}
-            <div className="flex mt-1.5">
+            <div className="mt-1.5 flex">
               {AGENTS.map((agent, i) => {
                 const isLast = i === AGENTS.length - 1;
                 const labels = ["Flags + data", "Match results", "Audit verdict", "Recovery task"];
                 return (
-                  <div key={agent.name} className="flex-1 flex min-w-0">
+                  <div key={agent.name} className="flex min-w-0 flex-1">
                     <div className="flex-1" />
                     {!isLast && (
-                      <div className="w-8 flex items-start justify-center">
-                        <span className="text-[9px] text-center leading-tight text-[var(--text-muted)] max-w-[52px]">
+                      <div className="flex w-8 items-start justify-center">
+                        <span className="max-w-[52px] text-center text-[9px] leading-tight text-muted-foreground">
                           {labels[i]}
                         </span>
                       </div>
@@ -491,63 +499,60 @@ export default function PipelinePage() {
           </div>
 
           {/* ── Activity Feed ─────────────────────────────────────────────────── */}
-          <div className="px-6 lg:px-8 pb-8">
-            <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden">
+          {/* [Spec: domains/pipeline/spec.md#Layout — Activity Feed] */}
+          <div className="px-4 pb-8 lg:px-6">
+            <Card className="gap-0 py-0">
               {/* Feed header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
+              <div className="flex items-center justify-between border-b border-border px-5 py-3">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-                  <span className="text-sm font-semibold text-[var(--text-primary)]">
+                  <Clock className="size-3.5 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold text-foreground">
                     Agent Activity Feed
-                  </span>
+                  </h2>
                 </div>
                 <div className="flex items-center gap-2">
                   {isRunning && (
-                    <span
-                      className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--agent-invoice-subtle)] text-[var(--info)]"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                    <Badge variant="outline" className="text-muted-foreground">
+                      <span className="size-1.5 animate-pulse rounded-full bg-primary" />
                       Live
-                    </span>
+                    </Badge>
                   )}
-                  <span
-                    className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-tertiary)]"
-                  >
+                  <Badge variant="secondary">
                     {feedEvents.length} events
-                  </span>
+                  </Badge>
                 </div>
               </div>
 
               {/* Feed rows */}
-              <div className="divide-y max-h-[400px] overflow-y-auto">
+              <div className="max-h-[400px] divide-y divide-border overflow-y-auto">
                 {feedEvents.map((evt, idx) => (
                   <div
                     key={`${evt.agent}-${evt.time}-${idx}`}
                     className="flex items-start gap-3 px-5 py-3 animate-[slideIn_0.2s_ease-out]"
                     style={{
-                      backgroundColor: idx === 0 && isRunning ? evt.agentColor + "06" : undefined,
+                      backgroundColor: idx === 0 && isRunning ? evt.agentColor + "0d" : undefined,
                     }}
                   >
                     <StatusIcon status={evt.status} />
                     <span
-                      className="text-[9px] uppercase tracking-wide font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                      className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
                       style={{ backgroundColor: evt.agentColor + "18", color: evt.agentColor }}
                     >
                       {evt.agent}
                     </span>
-                    <span className="text-[11px] flex-shrink-0 tabular-nums text-[var(--text-muted)]">
+                    <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
                       {evt.time}
                     </span>
-                    <span className="text-[12px] leading-relaxed flex-1 text-[var(--neutral-text)]">
+                    <span className="flex-1 text-[12px] leading-relaxed text-foreground">
                       {evt.message}
                     </span>
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
         </>
       )}
-    </div>
+    </main>
   );
 }
