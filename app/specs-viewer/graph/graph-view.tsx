@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ReactFlow,
@@ -24,9 +24,69 @@ const baseEdges: Edge[] = layoutedEdges.map((edge) => ({
   type: "smoothstep" as const,
 }));
 
+// React Flow renders edges/labels/controls as inline SVG + DOM styles, so it
+// needs concrete color strings rather than Tailwind classes. Resolve the
+// shadcn theme tokens from the live CSS custom properties so the graph tracks
+// light/dark mode instead of hard-coding hex values.
+interface GraphTheme {
+  edge: string;
+  edgeActive: string;
+  labelText: string;
+  labelBg: string;
+  surface: string;
+  border: string;
+  canvas: string;
+  grid: string;
+}
+
+function readTheme(): GraphTheme {
+  if (typeof window === "undefined") {
+    return {
+      edge: "transparent",
+      edgeActive: "transparent",
+      labelText: "transparent",
+      labelBg: "transparent",
+      surface: "transparent",
+      border: "transparent",
+      canvas: "transparent",
+      grid: "transparent",
+    };
+  }
+  const cs = getComputedStyle(document.documentElement);
+  const v = (token: string) => cs.getPropertyValue(token).trim();
+  return {
+    edge: v("--border"),
+    edgeActive: v("--primary"),
+    labelText: v("--foreground"),
+    labelBg: v("--popover"),
+    surface: v("--card"),
+    border: v("--border"),
+    canvas: v("--muted"),
+    grid: v("--border"),
+  };
+}
+
 export default function GraphView() {
   const router = useRouter();
   const [hoveredEdge, setHoveredEdge] = useState<string | null>(null);
+  const [theme, setTheme] = useState<GraphTheme>(() => readTheme());
+
+  // Subscribe to theme changes: re-resolve the shadcn tokens whenever the
+  // `.dark` class toggles on <html>. A deferred initial read also covers the
+  // hand-off from the SSR placeholder to the live computed values.
+  useEffect(() => {
+    const sync = () => setTheme(readTheme());
+    const initial = requestAnimationFrame(sync);
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => {
+      cancelAnimationFrame(initial);
+      observer.disconnect();
+    };
+  }, []);
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node: Node) => {
@@ -49,11 +109,12 @@ export default function GraphView() {
   const styledEdges = baseEdges.map((edge) => {
     const isHovered = edge.id === hoveredEdge;
     const edgeLabel = (edge.data as Record<string, unknown>)?.label as string | undefined;
+    const strokeColor = isHovered ? theme.edgeActive : theme.edge;
     return {
       ...edge,
       label: isHovered ? edgeLabel : undefined,
       style: {
-        stroke: isHovered ? "#0065cb" : "#d1d5db",
+        stroke: strokeColor,
         strokeWidth: isHovered ? 2.5 : 1.5,
         transition: "stroke 0.15s, stroke-width 0.15s",
       },
@@ -61,10 +122,15 @@ export default function GraphView() {
         type: MarkerType.ArrowClosed,
         width: 12,
         height: 12,
-        color: isHovered ? "#0065cb" : "#d1d5db",
+        color: strokeColor,
       },
-      labelStyle: { fill: "#111827", fontSize: 10, fontWeight: 600 },
-      labelBgStyle: { fill: "#ffffff", stroke: "#d1d5db", strokeWidth: 1, fillOpacity: 0.95 },
+      labelStyle: { fill: theme.labelText, fontSize: 10, fontWeight: 600 },
+      labelBgStyle: {
+        fill: theme.labelBg,
+        stroke: theme.border,
+        strokeWidth: 1,
+        fillOpacity: 0.95,
+      },
       labelBgPadding: [8, 4] as [number, number],
       labelBgBorderRadius: 6,
       animated: isHovered,
@@ -72,7 +138,9 @@ export default function GraphView() {
   });
 
   return (
-    <div className="w-full h-[calc(100vh-140px)] rounded-xl border border-[var(--border)] overflow-hidden" style={{ background: "#f0f2f5" }}>
+    <div
+      className="w-full h-[calc(100vh-140px)] rounded-xl border border-border overflow-hidden bg-muted"
+    >
       <ReactFlow
         nodes={layoutedNodes}
         edges={styledEdges}
@@ -87,14 +155,13 @@ export default function GraphView() {
         maxZoom={2}
         defaultEdgeOptions={{ type: "smoothstep" }}
       >
-        <Background gap={24} size={1} color="#e5e7eb" />
+        <Background gap={24} size={1} color={theme.grid} />
         <Controls
           showInteractive={false}
           style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
+            background: theme.surface,
+            border: `1px solid ${theme.border}`,
             borderRadius: 8,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
           }}
         />
       </ReactFlow>

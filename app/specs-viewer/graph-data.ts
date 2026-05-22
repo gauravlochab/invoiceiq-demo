@@ -11,8 +11,6 @@ export interface SpecNodeData {
 
 const DOMAIN_W = 210;
 const DOMAIN_H = 100;
-const RULE_W = 170;
-const RULE_H = 55;
 
 const domainNodes: Node<SpecNodeData>[] = [
   { id: "extract",          type: "domainNode", position: { x: 0, y: 0 }, data: { slug: "extract",          title: "Extract",          group: "domains", description: "Invoice upload, AI extraction, field mapping" } },
