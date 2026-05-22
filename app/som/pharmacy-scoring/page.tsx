@@ -6,6 +6,10 @@
 // rows showing each pharmacy's SOM exception history, flag/penalize/remove
 // actions. Score derives from license + address + price + volume + identity
 // (see lib/som/data/pharmacyScoring.ts for weights).
+//
+// [Spec: domains/som/spec.md#Page 4: Pharmacy Risk Scoring] — v2.0 shadcn
+// migration: Card/Table/Badge/Button primitives, token-driven meters with
+// role="progressbar", theme tokens, px-4 lg:px-6.
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -16,31 +20,60 @@ import {
 import { pharmacyScores, type PharmacyScore } from "@/lib/som/data/pharmacyScoring";
 import { formatCurrency } from "@/lib/data";
 import { useToast } from "@/components/Toast";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
+// [Spec: domains/som/spec.md#Business Rules — Score color mapping v2.0.1]
 function scoreColor(score: number): string {
-  if (score < 30) return "text-red-600";
-  if (score < 60) return "text-amber-600";
-  if (score < 80) return "text-blue-600";
-  return "text-emerald-600";
+  if (score < 30) return "text-destructive";
+  if (score < 60) return "text-warning-text";
+  if (score < 80) return "text-primary";
+  return "text-success-text";
 }
 
-function ratingBadge(rating: string): string {
-  if (rating === "Critical") return "badge critical";
-  if (rating === "High Risk") return "badge warning";
-  if (rating === "Medium Risk") return "badge neutral";
-  return "badge success";
+// Meter fill — non-text element, uses the vivid --warning/--success fills.
+function meterFill(value: number): string {
+  if (value < 30) return "bg-destructive";
+  if (value < 60) return "bg-warning";
+  if (value < 80) return "bg-primary";
+  return "bg-success";
+}
+
+function RatingBadge({ rating }: { rating: string }) {
+  if (rating === "Critical") return <Badge variant="destructive">{rating}</Badge>;
+  if (rating === "High Risk")
+    return (
+      <Badge className="border-warning bg-warning/10 text-warning-text">{rating}</Badge>
+    );
+  if (rating === "Medium Risk") return <Badge variant="secondary">{rating}</Badge>;
+  return <Badge className="border-success bg-success/10 text-success-text">{rating}</Badge>;
 }
 
 function rowRiskBg(score: number): string {
-  if (score < 30) return "bg-red-50/50";
-  if (score < 60) return "bg-amber-50/30";
+  if (score < 60) return "bg-destructive/5";
   return "";
 }
 
 function flaggedColor(pct: number): string {
-  if (pct > 25) return "text-red-600";
-  if (pct > 5) return "text-amber-600";
-  return "text-[var(--text-secondary)]";
+  if (pct > 25) return "text-destructive";
+  if (pct > 5) return "text-warning-text";
+  return "text-muted-foreground";
 }
 
 const exceptionTypeLabels: Record<string, string> = {
@@ -96,140 +129,167 @@ export default function PharmacyScoringPage() {
     }
   }
 
+  function ariaSortFor(key: SortKey): "ascending" | "descending" | "none" {
+    if (sortKey !== key) return "none";
+    return sortDir === "asc" ? "ascending" : "descending";
+  }
+
+  // [Spec: domains/som/spec.md#Page 4 Layout — Summary Strip]
+  const summary: { label: string; value: string; valueClass: string }[] = [
+    { label: "Pharmacies Scored", value: String(sorted.length), valueClass: "text-foreground" },
+    { label: "High / Critical Risk", value: String(highRiskCount), valueClass: "text-destructive" },
+    { label: "Total Flagged $", value: formatCurrency(totalFlagged), valueClass: "text-warning-text" },
+    { label: "Avg Risk Score", value: `${avgScore}/100`, valueClass: scoreColor(avgScore) },
+  ];
+
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
-      {/* Header */}
-      <div className="px-6 lg:px-8 pt-8 pb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <ShieldAlert className="w-4 h-4 text-[var(--acl-primary)]" />
-              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
+    <main className="@container/main flex flex-1 flex-col">
+      {/* Header — [Spec: domains/som/spec.md#Page 4 Layout] */}
+      <div className="px-4 pt-6 pb-4 lg:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="mb-1.5 flex items-center gap-2">
+              <ShieldAlert className="size-4 text-primary" />
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
                 Drug Distributor · SOM
               </span>
             </div>
-            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight m-0">
+            <h1 className="text-2xl font-semibold tracking-tight">
               Pharmacy Risk Scoring
             </h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 m-0">
+            <p className="mt-1 text-sm text-muted-foreground">
               Order-time risk across {sorted.length} pharmacies — license · address · price · volume · identity
             </p>
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => showToast("Pharmacy risk report exported as PDF", "success")}
-            className="px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
           >
             Export Report
-          </button>
+          </Button>
         </div>
       </div>
 
-      <hr className="border-[var(--border)] m-0" />
-
-      {/* Summary */}
-      {loading ? (
-        <div className="px-6 lg:px-8 py-6">
-          <div className="flex border border-[var(--border)] rounded-lg bg-white">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`flex-1 px-6 py-4 ${i < 4 ? "border-r border-[var(--border)]" : ""}`}>
-                <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse mb-3" />
-                <div className="h-7 w-14 bg-[var(--border)] rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="px-6 lg:px-8 py-6">
-          <div className="flex border border-[var(--border)] rounded-lg bg-white">
-            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-              <p className="section-label">Pharmacies Scored</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{sorted.length}</p>
+      {/* Summary strip — shadcn Card, 4 panels with divide-x */}
+      <div className="px-4 py-4 lg:px-6">
+        {loading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <Card className="py-0">
+            <div className="flex flex-col divide-y divide-border @2xl/main:flex-row @2xl/main:divide-x @2xl/main:divide-y-0">
+              {summary.map((s) => (
+                <div key={s.label} className="flex-1 px-5 py-4">
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                  <p className={`mt-1 text-2xl font-semibold tabular-nums ${s.valueClass}`}>
+                    {s.value}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-              <p className="section-label">High / Critical Risk</p>
-              <p className="text-2xl font-bold text-red-600 mt-1 m-0">{highRiskCount}</p>
-            </div>
-            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-              <p className="section-label">Total Flagged $</p>
-              <p className="text-2xl font-bold text-amber-600 mt-1 m-0">{formatCurrency(totalFlagged)}</p>
-            </div>
-            <div className="flex-1 px-6 py-4">
-              <p className="section-label">Avg Risk Score</p>
-              <p className={`text-2xl font-bold mt-1 m-0 ${scoreColor(avgScore)}`}>{avgScore}/100</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pharmacy Table */}
-      <div className="px-6 lg:px-8 pb-8">
-        <div className="card overflow-hidden">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: 30 }}></th>
-                <th>Pharmacy</th>
-                <th>Location</th>
-                <th>
-                  <button
-                    onClick={() => handleSortClick("score")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
-                  >
-                    Score
-                    <ArrowUpDown className="w-3 h-3" />
-                  </button>
-                </th>
-                <th>Rating</th>
-                <th className="right">
-                  <button
-                    onClick={() => handleSortClick("totalSpend")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
-                  >
-                    Spend
-                    <ArrowUpDown className="w-3 h-3" />
-                  </button>
-                </th>
-                <th className="right">
-                  <button
-                    onClick={() => handleSortClick("flaggedAmount")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
-                  >
-                    Flagged $
-                    <ArrowUpDown className="w-3 h-3" />
-                  </button>
-                </th>
-                <th className="right">
-                  <button
-                    onClick={() => handleSortClick("flaggedPct")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
-                  >
-                    Flagged %
-                    <ArrowUpDown className="w-3 h-3" />
-                  </button>
-                </th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((p) => {
-                const expanded = expandedPharmacy === p.id;
-                const action = flaggedPharmacies[p.id];
-                return (
-                  <ExpandablePharmacyRow
-                    key={p.id}
-                    pharmacy={p}
-                    expanded={expanded}
-                    onToggle={() => setExpandedPharmacy(expanded ? null : p.id)}
-                    action={action}
-                    onAction={handleAction}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+          </Card>
+        )}
       </div>
-    </div>
+
+      {/* Pharmacy table */}
+      <div className="px-4 pb-6 lg:px-6">
+        <Card className="py-0">
+          <CardHeader className="border-b py-3.5">
+            <CardTitle>
+              <h2 className="font-[inherit] text-sm font-semibold">Scored pharmacies</h2>
+            </CardTitle>
+            <CardAction className="text-sm text-muted-foreground">
+              Expand a row for the score breakdown
+            </CardAction>
+          </CardHeader>
+          <CardContent className="px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8" />
+                  <TableHead>Pharmacy</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead aria-sort={ariaSortFor("score")}>
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("score")}
+                      className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                    >
+                      Score
+                      <ArrowUpDown
+                        className={`size-3 ${sortKey === "score" ? "text-primary" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead>Rating</TableHead>
+                  <TableHead className="text-right" aria-sort={ariaSortFor("totalSpend")}>
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("totalSpend")}
+                      className="ml-auto inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                    >
+                      Spend
+                      <ArrowUpDown
+                        className={`size-3 ${sortKey === "totalSpend" ? "text-primary" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right" aria-sort={ariaSortFor("flaggedAmount")}>
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("flaggedAmount")}
+                      className="ml-auto inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                    >
+                      Flagged $
+                      <ArrowUpDown
+                        className={`size-3 ${sortKey === "flaggedAmount" ? "text-primary" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right" aria-sort={ariaSortFor("flaggedPct")}>
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("flaggedPct")}
+                      className="ml-auto inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                    >
+                      Flagged %
+                      <ArrowUpDown
+                        className={`size-3 ${sortKey === "flaggedPct" ? "text-primary" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading
+                  ? [0, 1, 2, 3, 4].map((i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={9}>
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  : sorted.map((p) => {
+                      const expanded = expandedPharmacy === p.id;
+                      const action = flaggedPharmacies[p.id];
+                      return (
+                        <ExpandablePharmacyRow
+                          key={p.id}
+                          pharmacy={p}
+                          expanded={expanded}
+                          onToggle={() => setExpandedPharmacy(expanded ? null : p.id)}
+                          action={action}
+                          onAction={handleAction}
+                        />
+                      );
+                    })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
 }
 
@@ -250,158 +310,195 @@ function ExpandablePharmacyRow({
 }) {
   return (
     <>
-      <tr className={`group cursor-pointer hover:bg-[var(--bg-base)] ${rowRiskBg(p.score)}`} onClick={onToggle}>
-        <td className="text-[var(--text-muted)]">
-          {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        </td>
-        <td>
+      <TableRow
+        className={`group cursor-pointer ${rowRiskBg(p.score)}`}
+        onClick={onToggle}
+        aria-expanded={expanded}
+      >
+        <TableCell className="text-muted-foreground">
+          {expanded ? (
+            <ChevronDown className="size-3.5" />
+          ) : (
+            <ChevronRight className="size-3.5" />
+          )}
+        </TableCell>
+        <TableCell>
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[var(--text-primary)]">{p.name}</span>
-            <span className="text-[10px] text-[var(--text-muted)] font-mono">{p.id}</span>
+            <span className="text-sm font-medium text-foreground">{p.name}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">{p.id}</span>
           </div>
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
-            <span className="text-xs text-[var(--text-secondary)]">{p.city}, {p.state}</span>
+            <MapPin className="size-3 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {p.city}, {p.state}
+            </span>
           </div>
-        </td>
-        <td className={`text-sm font-semibold tabular-nums ${scoreColor(p.score)}`}>
+        </TableCell>
+        <TableCell className={`text-sm font-semibold tabular-nums ${scoreColor(p.score)}`}>
           {p.score}/100
-        </td>
-        <td>
-          <span className={ratingBadge(p.rating)}>{p.rating}</span>
-        </td>
-        <td className="right text-xs tabular-nums text-[var(--text-primary)]">
+        </TableCell>
+        <TableCell>
+          <RatingBadge rating={p.rating} />
+        </TableCell>
+        <TableCell className="text-right text-sm tabular-nums text-foreground">
           {p.totalSpend > 0 ? formatCurrency(p.totalSpend) : "—"}
-        </td>
-        <td className={`right text-xs tabular-nums font-medium ${flaggedColor(p.flaggedPct)}`}>
+        </TableCell>
+        <TableCell
+          className={`text-right text-sm font-medium tabular-nums ${flaggedColor(p.flaggedPct)}`}
+        >
           {p.flaggedAmount > 0 ? formatCurrency(p.flaggedAmount) : "—"}
-        </td>
-        <td className={`right text-xs tabular-nums font-medium ${flaggedColor(p.flaggedPct)}`}>
+        </TableCell>
+        <TableCell
+          className={`text-right text-sm font-medium tabular-nums ${flaggedColor(p.flaggedPct)}`}
+        >
           {p.flaggedPct > 0 ? `${p.flaggedPct}%` : "—"}
-        </td>
-        <td onClick={(e) => e.stopPropagation()}>
+        </TableCell>
+        <TableCell onClick={(e) => e.stopPropagation()}>
           {action ? (
-            <span className={`text-[11px] font-medium ${
-              action === "flag" ? "text-amber-700"
-              : action === "penalize" ? "text-red-700"
-              : "text-red-800"
-            }`}>
+            <span
+              className={`text-xs font-medium ${
+                action === "flag" ? "text-warning-text" : "text-destructive"
+              }`}
+            >
               {action === "flag" ? "Flagged" : action === "penalize" ? "Penalised" : "Removed"}
             </span>
           ) : (
             <div className="flex items-center gap-1">
-              <button
+              <Button
+                variant="outline"
+                size="icon-sm"
                 onClick={() => onAction(p.id, "flag")}
-                className="text-[10px] px-2 py-1 rounded border border-amber-300 bg-white text-amber-700 hover:bg-amber-50 cursor-pointer"
+                aria-label={`Flag ${p.name} for review`}
                 title="Flag for review"
               >
-                <Flag className="w-3 h-3" />
-              </button>
-              <button
+                <Flag />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon-sm"
                 onClick={() => onAction(p.id, "penalize")}
-                className="text-[10px] px-2 py-1 rounded border border-red-300 bg-white text-red-700 hover:bg-red-50 cursor-pointer"
+                aria-label={`Apply penalty to ${p.name}`}
                 title="Apply penalty"
               >
-                <AlertTriangle className="w-3 h-3" />
-              </button>
-              <button
+                <AlertTriangle />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon-sm"
                 onClick={() => onAction(p.id, "remove")}
-                className="text-[10px] px-2 py-1 rounded border border-red-300 bg-white text-red-700 hover:bg-red-50 cursor-pointer"
+                aria-label={`Remove ${p.name} from approved network`}
                 title="Remove from approved network"
               >
-                <XCircle className="w-3 h-3" />
-              </button>
+                <XCircle />
+              </Button>
             </div>
           )}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
 
       {/* Expanded panel */}
       {expanded && (
-        <tr className="bg-[var(--bg-base)]">
-          <td colSpan={9} className="p-0">
-            <div className="px-8 py-5 border-t border-[var(--border)]">
-              <div className="grid grid-cols-[260px_1fr] gap-6">
+        <TableRow className="bg-muted/40 hover:bg-muted/40">
+          <TableCell colSpan={9} className="p-0">
+            <div className="border-t border-border px-8 py-5">
+              <div className="grid grid-cols-1 gap-6 @3xl/main:grid-cols-[260px_1fr]">
                 {/* Score breakdown */}
                 <div>
-                  <p className="section-label mb-2">Score breakdown</p>
-                  <div className="card p-4 flex flex-col gap-2">
-                    <ScoreBar icon={ScrollText} label="License (40%)" value={p.components.license} />
-                    <ScoreBar icon={MapPin} label="Address (20%)" value={p.components.address} />
-                    <ScoreBar icon={DollarSign} label="Price (15%)" value={p.components.price} />
-                    <ScoreBar icon={BarChart3} label="Pattern (15%)" value={p.components.volume} />
-                    <ScoreBar icon={Fingerprint} label="Identity (10%)" value={p.components.identity} />
-                  </div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Score breakdown
+                  </h3>
+                  <Card>
+                    <CardContent className="flex flex-col gap-2">
+                      <ScoreBar icon={ScrollText} label="License (40%)" value={p.components.license} />
+                      <ScoreBar icon={MapPin} label="Address (20%)" value={p.components.address} />
+                      <ScoreBar icon={DollarSign} label="Price (15%)" value={p.components.price} />
+                      <ScoreBar icon={BarChart3} label="Pattern (15%)" value={p.components.volume} />
+                      <ScoreBar icon={Fingerprint} label="Identity (10%)" value={p.components.identity} />
+                    </CardContent>
+                  </Card>
                 </div>
 
                 {/* Exception history */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="section-label m-0">Exception history</p>
-                    <span className="text-[10px] text-[var(--text-muted)]">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Exception history
+                    </h3>
+                    <span className="text-[10px] text-muted-foreground">
                       {p.exceptions.length} exception{p.exceptions.length === 1 ? "" : "s"}
                     </span>
                   </div>
 
-                  <div className="card max-h-[400px] overflow-y-auto">
+                  <Card className="max-h-[400px] overflow-y-auto py-0">
                     {p.exceptions.length === 0 ? (
-                      <div className="p-5 text-center">
-                        <p className="text-xs text-[var(--text-muted)] m-0">No SOM exceptions on file</p>
-                      </div>
+                      <CardContent className="py-5 text-center">
+                        <p className="text-xs text-muted-foreground">
+                          No SOM exceptions on file
+                        </p>
+                      </CardContent>
                     ) : (
-                      <table className="data-table w-full">
-                        <thead className="sticky top-0 bg-white">
-                          <tr>
-                            <th>Type</th>
-                            <th>Detected</th>
-                            <th className="right">Flagged</th>
-                            <th></th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Detected</TableHead>
+                            <TableHead className="text-right">Flagged</TableHead>
+                            <TableHead className="text-right">
+                              <span className="sr-only">View</span>
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {p.exceptions.map((ex) => (
-                            <tr key={ex.id}>
-                              <td>
+                            <TableRow key={ex.id}>
+                              <TableCell>
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="text-[11px] font-medium text-[var(--text-primary)]">
+                                  <span className="text-[11px] font-medium text-foreground">
                                     {exceptionTypeLabels[ex.type] || ex.type}
                                   </span>
-                                  <span className="text-[10px] text-[var(--text-muted)] font-mono">{ex.id}</span>
+                                  <span className="font-mono text-[10px] text-muted-foreground">
+                                    {ex.id}
+                                  </span>
                                 </div>
-                              </td>
-                              <td className="text-[11px] text-[var(--text-secondary)]">
-                                {new Date(ex.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                              </td>
-                              <td className="right text-[11px] tabular-nums font-medium text-red-600">
+                              </TableCell>
+                              <TableCell className="text-[11px] text-muted-foreground">
+                                {new Date(ex.date).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] font-medium tabular-nums text-destructive">
                                 {formatCurrency(ex.amount)}
-                              </td>
-                              <td>
+                              </TableCell>
+                              <TableCell className="text-right">
                                 <Link
                                   href={`/exceptions/${ex.id}`}
-                                  className="text-[11px] text-[var(--acl-primary)] no-underline hover:underline"
+                                  className="text-[11px] text-primary no-underline hover:underline"
                                 >
                                   View →
                                 </Link>
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     )}
-                  </div>
+                  </Card>
                 </div>
               </div>
             </div>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );
 }
 
 // ─── Score bar (component contribution) ──────────────────────────────────────
+// Token-driven meter with role="progressbar" + ARIA values per ui-standard.md.
 
 function ScoreBar({
   icon: Icon,
@@ -412,22 +509,25 @@ function ScoreBar({
   label: string;
   value: number;
 }) {
-  const color =
-    value < 30 ? "bg-red-500"
-    : value < 60 ? "bg-amber-500"
-    : value < 80 ? "bg-blue-500"
-    : "bg-emerald-500";
+  const clamped = Math.max(0, Math.min(100, value));
   return (
     <div className="flex items-center gap-2">
-      <Icon className="w-3 h-3 text-[var(--text-muted)] flex-shrink-0" />
-      <span className="text-[10px] text-[var(--text-secondary)] flex-shrink-0 w-[110px]">{label}</span>
-      <div className="flex-1 bg-[var(--bg-subtle)] rounded-full h-1.5 overflow-hidden">
+      <Icon className="size-3 shrink-0 text-muted-foreground" />
+      <span className="w-[110px] shrink-0 text-[10px] text-muted-foreground">{label}</span>
+      <div
+        role="progressbar"
+        aria-label={`${label} score`}
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+      >
         <div
-          className={`h-full rounded-full ${color}`}
-          style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+          className={`h-full rounded-full ${meterFill(value)}`}
+          style={{ width: `${clamped}%` }}
         />
       </div>
-      <span className={`text-[10px] tabular-nums font-medium w-[28px] text-right ${scoreColor(value)}`}>
+      <span className={`w-[28px] text-right text-[10px] font-medium tabular-nums ${scoreColor(value)}`}>
         {value}
       </span>
     </div>

@@ -11,6 +11,9 @@
 // Each row deep-links to /exceptions/[id] which already routes SOM-* IDs to
 // SomExceptionDetail (built in Phase 2). The unified /exceptions page stays
 // untouched and continues to show all verticals.
+//
+// [Spec: domains/som/spec.md#Page 3: SOM Exceptions] — v2.0 shadcn migration:
+// Card/Table/Badge/Button/ToggleGroup primitives, theme tokens, px-4 lg:px-6.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -22,6 +25,23 @@ import {
   type Severity,
   type Status,
 } from "@/lib/data";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 // SOM-only filter
 const somExceptions = exceptions.filter((e) => e.type.startsWith("som_"));
@@ -67,31 +87,53 @@ const somTypeLabels: Record<string, string> = {
 
 // ─── Style helpers ────────────────────────────────────────────────────────────
 
-function typeBadgeClass(type: string): string {
-  if (type === "som_license_invalid" || type === "som_quantity_outlier") return "badge critical";
-  if (type === "som_address_mismatch" || type === "som_price_deviation") return "badge warning";
-  return "badge neutral";
+// [Spec: domains/som/spec.md#Business Rules — Type badge colors]
+// license_invalid / quantity_outlier = critical → destructive variant.
+// address_mismatch / price_deviation = warning → token-styled badge.
+function TypeBadge({ type }: { type: string }) {
+  const label = somTypeLabels[type] || type;
+  if (type === "som_license_invalid" || type === "som_quantity_outlier") {
+    return <Badge variant="destructive">{label}</Badge>;
+  }
+  if (type === "som_address_mismatch" || type === "som_price_deviation") {
+    return (
+      <Badge className="border-warning bg-warning/10 text-warning-text">{label}</Badge>
+    );
+  }
+  return <Badge variant="secondary">{label}</Badge>;
 }
 
-function statusBadgeClass(status: Status): string {
-  if (status === "open") return "badge critical";
-  if (status === "under_review") return "badge warning";
-  if (status === "escalated") return "badge blue";
-  if (status === "resolved") return "badge success";
-  return "badge neutral";
+function StatusBadge({ status }: { status: Status }) {
+  const label =
+    status === "open"
+      ? "Open"
+      : status === "under_review"
+        ? "Under Review"
+        : status === "escalated"
+          ? "Escalated"
+          : "Resolved";
+  if (status === "open") return <Badge variant="destructive">{label}</Badge>;
+  if (status === "under_review") return <Badge variant="outline">{label}</Badge>;
+  if (status === "escalated") return <Badge variant="secondary">{label}</Badge>;
+  if (status === "resolved")
+    return (
+      <Badge className="border-success bg-success/10 text-success-text">{label}</Badge>
+    );
+  return <Badge variant="secondary">{label}</Badge>;
 }
 
 function severityDotClass(severity: Severity): string {
-  if (severity === "critical") return "status-dot critical";
-  if (severity === "high") return "status-dot warning";
-  if (severity === "medium") return "status-dot blue";
-  return "status-dot neutral";
+  if (severity === "critical") return "bg-destructive";
+  if (severity === "high") return "bg-warning";
+  if (severity === "medium") return "bg-primary";
+  return "bg-border";
 }
 
-function flaggedColor(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "var(--critical)";
-  if (severity === "medium") return "var(--warning)";
-  return "var(--text-secondary)";
+// Flagged-amount text — AA-safe status tokens (ui-standard.md v2.0.1).
+function flaggedColorClass(severity: Severity): string {
+  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "medium") return "text-warning-text";
+  return "text-muted-foreground";
 }
 
 // ─── Sort ────────────────────────────────────────────────────────────────────
@@ -127,6 +169,12 @@ export default function SomExceptionsPage() {
     }
   }
 
+  // aria-sort value for a given sortable column.
+  function ariaSortFor(key: SortKey): "ascending" | "descending" | "none" {
+    if (sortKey !== key) return "none";
+    return sortDir === "asc" ? "ascending" : "descending";
+  }
+
   // Counts for the filter chips
   const counts = {
     all: somExceptions.length,
@@ -155,174 +203,196 @@ export default function SomExceptionsPage() {
   const openCount = counts.open;
   const criticalCount = counts.critical;
 
+  // [Spec: domains/som/spec.md#Page 3 Layout — Summary Strip]
+  const summary: { label: string; value: string; valueClass: string }[] = [
+    { label: "Total exceptions", value: String(somExceptions.length), valueClass: "text-foreground" },
+    { label: "Open / Under Review", value: String(openCount), valueClass: "text-warning-text" },
+    { label: "Critical", value: String(criticalCount), valueClass: "text-destructive" },
+    { label: "Total flagged $", value: formatCurrency(totalFlagged), valueClass: "text-destructive" },
+  ];
+
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
-      {/* Header */}
-      <div className="px-6 lg:px-8 pt-8 pb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <ShieldAlert className="w-4 h-4 text-[var(--acl-primary)]" />
-              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
-                Drug Distributor · SOM
-              </span>
-            </div>
-            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight m-0">
-              Exceptions
-            </h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 m-0">
-              {somExceptions.length} suspicious-order exceptions across {new Set(somExceptions.map((e) => e.vendor)).size} pharmacies
-            </p>
-          </div>
+    <main className="@container/main flex flex-1 flex-col">
+      {/* Header — [Spec: domains/som/spec.md#Page 3 Layout] */}
+      <div className="px-4 pt-6 pb-4 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <ShieldAlert className="size-4 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
+            Drug Distributor · SOM
+          </span>
         </div>
+        <h1 className="text-2xl font-semibold tracking-tight">Exceptions</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {somExceptions.length} suspicious-order exceptions across{" "}
+          {new Set(somExceptions.map((e) => e.vendor)).size} pharmacies
+        </p>
       </div>
 
-      <hr className="border-[var(--border)] m-0" />
-
-      {/* Summary strip */}
-      <div className="px-6 lg:px-8 py-6">
-        <div className="flex border border-[var(--border)] rounded-lg bg-white">
-          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-            <p className="section-label">Total exceptions</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{somExceptions.length}</p>
+      {/* Summary strip — shadcn Card, 4 panels with divide-x */}
+      <div className="px-4 py-4 lg:px-6">
+        <Card className="py-0">
+          <div className="flex flex-col divide-y divide-border @2xl/main:flex-row @2xl/main:divide-x @2xl/main:divide-y-0">
+            {summary.map((s) => (
+              <div key={s.label} className="flex-1 px-5 py-4">
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+                <p className={`mt-1 text-2xl font-semibold tabular-nums ${s.valueClass}`}>
+                  {s.value}
+                </p>
+              </div>
+            ))}
           </div>
-          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-            <p className="section-label">Open / Under Review</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1 m-0">{openCount}</p>
-          </div>
-          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-            <p className="section-label">Critical</p>
-            <p className="text-2xl font-bold text-red-600 mt-1 m-0">{criticalCount}</p>
-          </div>
-          <div className="flex-1 px-6 py-4">
-            <p className="section-label">Total flagged $</p>
-            <p className="text-2xl font-bold text-red-600 mt-1 m-0">{formatCurrency(totalFlagged)}</p>
-          </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Filter chips */}
-      <div className="px-6 lg:px-8 pb-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {filterChips.map((f) => {
-            const active = filter === f.key;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                disabled={f.count === 0 && f.key !== "all"}
-                className={`text-[11px] font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  active
-                    ? "bg-[var(--acl-primary)] text-white border-[var(--acl-primary)]"
-                    : f.count === 0
-                    ? "bg-white text-[var(--text-muted)] border-[var(--border)] cursor-not-allowed opacity-60"
-                    : "bg-white text-[var(--text-secondary)] border-[var(--border-strong)] hover:bg-[var(--bg-subtle)]"
-                }`}
-              >
-                {f.label} <span className={active ? "opacity-80" : "opacity-60"}>({f.count})</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Filter chips — shadcn ToggleGroup, single-select. Base UI's
+          ToggleGroup is single-select by default (multiple={false}) and
+          models value as an array; an empty selection re-selects "all". */}
+      <div className="px-4 pb-3 lg:px-6">
+        <ToggleGroup
+          value={[filter]}
+          onValueChange={(v) => {
+            const next = v.find((k) => k !== filter) ?? v[0];
+            setFilter((next as FilterKey) ?? "all");
+          }}
+          variant="outline"
+          size="sm"
+          className="flex-wrap"
+          aria-label="Filter exceptions"
+        >
+          {filterChips.map((f) => (
+            <ToggleGroupItem
+              key={f.key}
+              value={f.key}
+              disabled={f.count === 0 && f.key !== "all"}
+              className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+            >
+              {f.label}
+              <Badge variant="secondary" className="ml-1">
+                {f.count}
+              </Badge>
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {/* Table */}
-      <div className="px-6 lg:px-8 pb-8">
-        <div className="card overflow-hidden">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Exception</th>
-                <th>Type</th>
-                <th>Pharmacy</th>
-                <th>Order #</th>
-                <th className="right">
-                  <button
-                    onClick={() => handleSort("flaggedAmount")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
-                  >
-                    Flagged
-                    <ArrowUpDown className="w-3 h-3" />
-                  </button>
-                </th>
-                <th>Severity</th>
-                <th>Status</th>
-                <th>
-                  <button
-                    onClick={() => handleSort("detectedAt")}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer"
-                  >
-                    Detected
-                    <ArrowUpDown className="w-3 h-3" />
-                  </button>
-                </th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.length === 0 ? (
-                <tr>
-                  <td colSpan={9}>
-                    <div className="px-5 py-10 text-center text-xs text-[var(--text-muted)]">
-                      No exceptions match this filter.
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                sorted.map((ex) => (
-                  <tr key={ex.id} className="group">
-                    <td>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-mono text-[var(--text-primary)]">{ex.id}</span>
+      <div className="px-4 pb-6 lg:px-6">
+        <Card className="py-0">
+          <CardHeader className="border-b py-3.5">
+            <CardTitle>
+              <h2 className="font-[inherit] text-sm font-semibold">
+                Suspicious-order exceptions
+              </h2>
+            </CardTitle>
+            <CardAction className="text-sm text-muted-foreground">
+              {sorted.length} shown
+            </CardAction>
+          </CardHeader>
+          <CardContent className="px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Exception</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Pharmacy</TableHead>
+                  <TableHead>Order #</TableHead>
+                  <TableHead className="text-right" aria-sort={ariaSortFor("flaggedAmount")}>
+                    <button
+                      type="button"
+                      onClick={() => handleSort("flaggedAmount")}
+                      className="ml-auto inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                    >
+                      Flagged
+                      <ArrowUpDown
+                        className={`size-3 ${sortKey === "flaggedAmount" ? "text-primary" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead aria-sort={ariaSortFor("detectedAt")}>
+                    <button
+                      type="button"
+                      onClick={() => handleSort("detectedAt")}
+                      className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                    >
+                      Detected
+                      <ArrowUpDown
+                        className={`size-3 ${sortKey === "detectedAt" ? "text-primary" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <span className="sr-only">Review</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sorted.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9}>
+                      <div className="py-10 text-center text-sm text-muted-foreground">
+                        No exceptions match this filter.
                       </div>
-                    </td>
-                    <td>
-                      <span className={typeBadgeClass(ex.type)}>{somTypeLabels[ex.type] || ex.type}</span>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
-                        <span className="text-xs font-medium text-[var(--text-primary)]">{ex.vendor}</span>
-                      </div>
-                    </td>
-                    <td className="font-mono text-[11px] text-[var(--text-secondary)]">{ex.invoiceNumber}</td>
-                    <td className="right">
-                      <span className="text-xs font-medium tabular-nums" style={{ color: flaggedColor(ex.severity) }}>
-                        {formatCurrency(ex.flaggedAmount)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="flex items-center gap-1.5">
-                        <span className={severityDotClass(ex.severity)} />
-                        <span className="text-xs text-[var(--text-secondary)]">
-                          {ex.severity.charAt(0).toUpperCase() + ex.severity.slice(1)}
-                        </span>
-                      </span>
-                    </td>
-                    <td>
-                      <span className={statusBadgeClass(ex.status)}>
-                        {ex.status === "open" ? "Open"
-                          : ex.status === "under_review" ? "Under Review"
-                          : ex.status === "escalated" ? "Escalated"
-                          : "Resolved"}
-                      </span>
-                    </td>
-                    <td className="text-xs text-[var(--text-secondary)]">{formatDate(ex.detectedAt)}</td>
-                    <td>
-                      <Link
-                        href={`/exceptions/${ex.id}`}
-                        className="text-[11px] text-[var(--text-muted)] group-hover:text-[var(--acl-primary)] font-medium no-underline hover:underline transition-colors"
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sorted.map((ex) => (
+                    <TableRow key={ex.id} className="group">
+                      <TableCell className="font-mono text-xs text-foreground">
+                        {ex.id}
+                      </TableCell>
+                      <TableCell>
+                        <TypeBadge type={ex.type} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="size-3 text-muted-foreground" />
+                          <span className="text-sm font-medium text-foreground">
+                            {ex.vendor}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-[11px] text-muted-foreground">
+                        {ex.invoiceNumber}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right text-sm font-medium tabular-nums ${flaggedColorClass(ex.severity)}`}
                       >
-                        Review →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {formatCurrency(ex.flaggedAmount)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className={`size-1.5 shrink-0 rounded-full ${severityDotClass(ex.severity)}`}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {ex.severity.charAt(0).toUpperCase() + ex.severity.slice(1)}
+                          </span>
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={ex.status} />
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatDate(ex.detectedAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          href={`/exceptions/${ex.id}`}
+                          className="text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
+                        >
+                          Review →
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </main>
   );
 }

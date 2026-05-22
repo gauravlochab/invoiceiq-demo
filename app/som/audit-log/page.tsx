@@ -10,28 +10,36 @@
 // Data is module-level + seeded — refreshing won't lose entries, but new
 // entries added via override modal will reset on hard reload. This is a
 // known limitation; production would persist to DB.
+//
+// [Spec: domains/som/spec.md#Page 6: Override Audit Log] — v2.0 shadcn
+// migration: Card/Badge primitives, theme tokens, px-4 lg:px-6.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ShieldAlert, FileCheck2, User, Clock } from "lucide-react";
 import { getAuditLog, type AuditLogEntry } from "@/lib/som/data/auditLog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
+// [Spec: domains/som/spec.md#Page 6 Business Rules — Rating colors]
 function severityColor(rating: string): string {
-  if (rating === "Critical") return "text-red-600";
-  if (rating === "High Risk") return "text-amber-700";
-  return "text-blue-600";
+  if (rating === "Critical") return "text-destructive";
+  if (rating === "High Risk") return "text-warning-text";
+  return "text-primary";
 }
 
-function severityBadge(rating: string): string {
-  if (rating === "Critical") return "badge critical";
-  if (rating === "High Risk") return "badge warning";
-  return "badge neutral";
+function severityBadgeVariant(
+  rating: string,
+): "destructive" | "outline" | "secondary" {
+  if (rating === "Critical") return "destructive";
+  if (rating === "High Risk") return "outline";
+  return "secondary";
 }
 
 function roleColor(role: string): string {
-  if (role === "Head of Procurement") return "text-[var(--acl-primary)]";
-  if (role === "Compliance Manager") return "text-emerald-700";
-  if (role === "Pharmacy Director") return "text-amber-700";
-  return "text-[var(--text-secondary)]";
+  if (role === "Head of Procurement") return "text-primary";
+  if (role === "Compliance Manager") return "text-success-text";
+  if (role === "Pharmacy Director") return "text-warning-text";
+  return "text-muted-foreground";
 }
 
 function formatTimestamp(iso: string): string {
@@ -46,121 +54,124 @@ function formatTimestamp(iso: string): string {
 
 export default function AuditLogPage() {
   // Re-read on every mount so newly-added entries from the override modal
-  // appear when the analyst navigates back here.
-  const [entries, setEntries] = useState<AuditLogEntry[]>([]);
-  useEffect(() => {
-    setEntries(getAuditLog());
-  }, []);
+  // appear when the analyst navigates back here. The component remounts on
+  // each client-side navigation to this route, so the lazy useState
+  // initializer re-runs the read — no effect, no cascading render.
+  // [Spec: domains/som/spec.md#Page 6 Business Rules — append-only]
+  const [entries] = useState<AuditLogEntry[]>(() => getAuditLog());
 
   const totalReleased = entries.length;
   const totalAtCritical = entries.filter((e) => e.ratingAtOverride === "Critical").length;
   const uniquePharmacies = new Set(entries.map((e) => e.pharmacyId)).size;
   const uniqueApprovers = new Set(entries.map((e) => e.approverName)).size;
 
+  // [Spec: domains/som/spec.md#Page 6 Layout — Summary Strip]
+  const summary: { label: string; value: number; valueClass: string }[] = [
+    { label: "Total overrides", value: totalReleased, valueClass: "text-foreground" },
+    { label: "Released at Critical", value: totalAtCritical, valueClass: "text-destructive" },
+    { label: "Unique pharmacies", value: uniquePharmacies, valueClass: "text-foreground" },
+    { label: "Unique approvers", value: uniqueApprovers, valueClass: "text-foreground" },
+  ];
+
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
-      {/* Header */}
-      <div className="px-6 lg:px-8 pt-8 pb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <FileCheck2 className="w-4 h-4 text-[var(--acl-primary)]" />
-              <span className="text-[11px] uppercase tracking-[0.08em] font-semibold text-[var(--acl-primary)]">
-                Drug Distributor · Compliance Trail
-              </span>
-            </div>
-            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight m-0">
-              Override Audit Log
-            </h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 m-0">
-              Every analyst decision to release a system-blocked order, with full justification.
-            </p>
-          </div>
+    <main className="@container/main flex flex-1 flex-col">
+      {/* Header — [Spec: domains/som/spec.md#Page 6 Layout] */}
+      <div className="px-4 pt-6 pb-4 lg:px-6">
+        <div className="mb-1.5 flex items-center gap-2">
+          <FileCheck2 className="size-4 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
+            Drug Distributor · Compliance Trail
+          </span>
         </div>
+        <h1 className="text-2xl font-semibold tracking-tight">Override Audit Log</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Every analyst decision to release a system-blocked order, with full justification.
+        </p>
       </div>
 
-      <hr className="border-[var(--border)] m-0" />
-
-      {/* Summary strip */}
-      <div className="px-6 lg:px-8 py-6">
-        <div className="flex border border-[var(--border)] rounded-lg bg-white">
-          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-            <p className="section-label">Total overrides</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{totalReleased}</p>
+      {/* Summary strip — shadcn Card, 4 panels with divide-x */}
+      <div className="px-4 py-4 lg:px-6">
+        <Card className="py-0">
+          <div className="flex flex-col divide-y divide-border @2xl/main:flex-row @2xl/main:divide-x @2xl/main:divide-y-0">
+            {summary.map((s) => (
+              <div key={s.label} className="flex-1 px-5 py-4">
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+                <p className={`mt-1 text-2xl font-semibold tabular-nums ${s.valueClass}`}>
+                  {s.value}
+                </p>
+              </div>
+            ))}
           </div>
-          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-            <p className="section-label">Released at Critical</p>
-            <p className="text-2xl font-bold text-red-600 mt-1 m-0">{totalAtCritical}</p>
-          </div>
-          <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-            <p className="section-label">Unique pharmacies</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{uniquePharmacies}</p>
-          </div>
-          <div className="flex-1 px-6 py-4">
-            <p className="section-label">Unique approvers</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{uniqueApprovers}</p>
-          </div>
-        </div>
+        </Card>
       </div>
 
       {/* Entries — card list, full justification visible */}
-      <div className="px-6 lg:px-8 pb-8 flex flex-col gap-3">
+      <div className="flex flex-col gap-3 px-4 pb-6 lg:px-6">
         {entries.length === 0 ? (
-          <div className="card p-8 text-center">
-            <p className="text-xs text-[var(--text-muted)] m-0">No override entries yet.</p>
-          </div>
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-sm text-muted-foreground">No override entries yet.</p>
+            </CardContent>
+          </Card>
         ) : (
           entries.map((e) => (
-            <div key={e.id} className="card p-5">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-[10px] text-[var(--text-muted)]">{e.id}</span>
-                    <span className={severityBadge(e.ratingAtOverride)}>{e.ratingAtOverride}</span>
+            <Card key={e.id}>
+              <CardContent>
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        {e.id}
+                      </span>
+                      <Badge variant={severityBadgeVariant(e.ratingAtOverride)}>
+                        {e.ratingAtOverride}
+                      </Badge>
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {e.pharmacyName}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        Order {e.orderId}
+                      </span>
+                    </h3>
                   </div>
-                  <h3 className="text-sm font-semibold text-[var(--text-primary)] m-0">
-                    {e.pharmacyName}
-                    <span className="ml-2 text-[11px] font-normal text-[var(--text-secondary)]">
-                      Order {e.orderId}
+                  <div className="text-right">
+                    <p
+                      className={`text-lg font-bold tabular-nums ${severityColor(e.ratingAtOverride)}`}
+                    >
+                      {e.scoreAtOverride}/100
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">at override</p>
+                  </div>
+                </div>
+
+                <div className="mb-3 rounded-md border-l-2 border-primary bg-muted p-3">
+                  <div className="mb-1 flex items-center gap-1">
+                    <ShieldAlert className="size-3 text-primary" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Justification
                     </span>
-                  </h3>
-                </div>
-                <div className="text-right">
-                  <p className={`text-lg font-bold tabular-nums m-0 ${severityColor(e.ratingAtOverride)}`}>
-                    {e.scoreAtOverride}/100
+                  </div>
+                  <p className="text-xs leading-relaxed text-foreground">
+                    {e.justification}
                   </p>
-                  <p className="text-[10px] text-[var(--text-muted)] m-0">at override</p>
                 </div>
-              </div>
 
-              <div className="bg-[var(--bg-base)] rounded-md p-3 mb-3 border-l-2 border-[var(--acl-primary)]">
-                <div className="flex items-center gap-1 mb-1">
-                  <ShieldAlert className="w-3 h-3 text-[var(--acl-primary)]" />
-                  <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--text-secondary)]">
-                    Justification
-                  </span>
-                </div>
-                <p className="text-xs text-[var(--text-primary)] m-0 leading-relaxed">{e.justification}</p>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <User className="w-3 h-3" />
-                    <span className="font-medium text-[var(--text-primary)]">{e.approverName}</span>
+                    <User className="size-3" />
+                    <span className="font-medium text-foreground">{e.approverName}</span>
                     <span className={roleColor(e.approverRole)}>· {e.approverRole}</span>
                   </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="size-3" />
+                    {formatTimestamp(e.timestamp)}
+                  </span>
                 </div>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatTimestamp(e.timestamp)}
-                </span>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))
         )}
       </div>
-
-    </div>
+    </main>
   );
 }
