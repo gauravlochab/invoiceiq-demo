@@ -101,7 +101,9 @@ The page renders inside the global `SidebarProvider` + `SidebarInset` shell (per
 
 **Loading State** — shadcn `Skeleton` placeholders, 350ms simulated delay, 7-row table skeleton
 
-### Duplicates View (inside `TabsContent value="duplicates"`)
+### Duplicates View (inside `TabsContent value="duplicates"`, and the standalone `/duplicates` route)
+
+The Duplicates view is reachable two ways and renders the **same** `DuplicatePairCard` surface and action modals in both: (1) the Duplicates tab of `/exceptions`, and (2) the dedicated `/duplicates` route (`app/duplicates/page.tsx`), which presents the duplicate queue full-page with a `max-w-[900px]` reading column, its own page header, and the "How It Works" strip. The standalone route exists for a focused duplicate-review workflow; both must stay v2.0-consistent.
 
 **Summary line** — `text-sm text-muted-foreground`: "AI scanned 1,847 invoices • {count} pairs flagged • {amount} at risk"
 
@@ -164,6 +166,7 @@ The page renders inside the global `SidebarProvider` + `SidebarInset` shell (per
 | Invoice Detail | navigates to | Clicking an exception row navigates to the invoice detail page |
 | Dashboard | feeds into | Exception counts and severity stats displayed on dashboard KPIs |
 | Extract | reads from | Exception records reference extracted invoice data |
+| Duplicates (`/duplicates`) | shares surface | The standalone `/duplicates` route renders the same `DuplicatePairCard` + action modals as this spec's Duplicates View |
 
 ## Forbidden Patterns
 
@@ -175,7 +178,7 @@ Use affirmative phrasing per SpecLayer v1.1.
 - **Show resolved exceptions in the list with a Status badge** — Reason: resolved exceptions remain visible for audit trail completeness; use the Status filter to hide them.
 - **Use shadcn `Card` + `Table` primitives for the data table surface** — Reason: ad-hoc `<div className="data-table">` and `.card` utility classes are deprecated in ui-standard.md v2.0.
 - **Use shadcn `Badge variant="..."` for all Type and Status indicators** — Reason: `.badge.critical` / `.badge.warning` / `.badge.success` utility classes deprecated in v2.0.
-- **Use theme tokens (`bg-card`, `text-foreground`, `text-muted-foreground`, `text-destructive`, `text-warning`) for surfaces and text** — Reason: hex tokens (`--bg-surface`, `--critical`, `--text-primary`) removed in v2.0.
+- **Use theme tokens for surfaces and text** — surfaces use `bg-card` / `text-foreground` / `text-muted-foreground` / `border-border`; status TEXT uses `text-destructive` / `text-warning-text` (AA-safe per ui-standard.md v2.0.1); the vivid `--warning` / `--success` are reserved for fills, dots, and borders only — Reason: hex tokens (`--bg-surface`, `--critical`, `--text-primary`) removed in v2.0, and `text-warning` fails WCAG 1.4.3 as body text.
 - **Use shadcn `Dialog` for the Reject / Override / Escalate modals** — Reason: custom modal implementations diverge in keyboard handling and focus trap; shadcn `Dialog` is Radix-backed and accessible by default.
 
 ## AJ Feedback (Parkland Demo)
@@ -186,3 +189,5 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Filter chips → shadcn `ToggleGroup`; data table → shadcn `Table` + `Card`; Type/Status indicators → `Badge variant`; modals → shadcn `Dialog`; loading → shadcn `Skeleton`; similarity bar → shadcn `Progress`. All v1 hex tokens migrated to shadcn theme classes. Added 18 EARS Acceptance Criteria covering app shell, view toggle, filter/search, table, bulk actions, duplicates view, loading, accessibility. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
 <!-- 2026-05-22 v2.0 code migration (cluster 1): `app/exceptions/page.tsx` migrated off the v1 token set per the ui-standard.md v1→v2 map. View toggle → shadcn `Tabs`; filter chips → shadcn `ToggleGroup` + count `Badge`; vendor filter & escalate-manager picker → shadcn `Select`; search → shadcn `Input`; data table → shadcn `Table` + `Card`; row checkboxes → shadcn `Checkbox`; Type/Status indicators → shadcn `Badge variant`; the 3 hand-rolled `fixed inset-0` modals → shadcn `Dialog` (Radix-backed focus trap + Esc); Reject/Override/Escalate action buttons → shadcn `Button`; Assign/Export header menus → shadcn `DropdownMenu`; similarity bar → shadcn `Progress`; loading → shadcn `Skeleton`; override-modal audit notice → shadcn `Alert`. All `var(--bg-*)`/`var(--text-*)`/`var(--border*)`/`bg-white`/`bg-red-*`/`bg-amber-*`/`bg-emerald-*` and the raw hex `#DC2626`/`#B45309` retokenized to shadcn theme classes; status text uses AA-safe `text-warning-text`/`text-success-text`. SOM rows now excluded consistently — a single derived `apExceptions` set drives the header subtitle, tab count, filter-chip counts, and table rows (resolves audit "three disagreeing counts"). Sortable headers are focusable `<button>`s in `TableHead` with `aria-sort` (resolves audit A11Y-3). `DuplicatePairCard` vendor/ID promoted to `<h3>`. Page padding `px-6 lg:px-8` → `px-4 lg:px-6`. Verified in light + dark mode. -->
+<!-- 2026-05-22 v2.0.1 reconciliation: Migrated the standalone `/duplicates` route (app/duplicates/page.tsx) from v1 to v2.0 shadcn (Cluster 2). The Duplicates View section now documents that this route shares the `DuplicatePairCard` surface + action modals with the Duplicates tab. Status-text criteria corrected to AA-safe `text-warning-text` (ui-standard.md v2.0.1). Code reconciliation for /duplicates: `.card`→`Card` (CardHeader/CardContent/CardFooter), `.badge.*`→`Badge` variants, hand-rolled similarity bar→shadcn `Progress` with `ProgressIndicator` color override, hand-rolled `fixed inset-0` Reject/Override/Escalate modals→shadcn `Dialog`, manager `<select>`→shadcn `Select`, `<textarea>`→shadcn `Textarea`, raw `<button>`→`Button`, skeletons→`Skeleton`. All v1 `var(--*)` tokens, `bg-white`, raw hex (`#DC2626`/`#B45309`), `bg-red/amber/emerald/purple/blue-*` retired. Page padding `px-8`→`px-4 lg:px-6`. Real `<h1>`/`<h3>` outline. Dark mode verified. (The /exceptions Duplicates tab itself is migrated separately under Cluster 1.) -->
+

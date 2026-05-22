@@ -12,13 +12,13 @@ EARS notation.
 - [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
 
 **Summary strip**
-- [ ] THE SYSTEM SHALL render a 5-cell summary strip in a shadcn `Card` separated by `divide-x divide-border`: Vendors Scored, High Risk (`text-destructive`), Total Discrepancy (`text-warning`), Avg Score (color-coded), Avg Recovery (color-coded)
+- [ ] THE SYSTEM SHALL render a 5-cell summary strip in a shadcn `Card` separated by `divide-x divide-border`: Vendors Scored, High Risk (`text-destructive`), Total Discrepancy (`text-warning-text`), Avg Score (color-coded), Avg Recovery (color-coded)
 
 **Score and rating color coding**
-- [ ] THE SYSTEM SHALL color score values: `text-destructive` < 30, `text-warning` 30-59, `text-success` >= 60
-- [ ] THE SYSTEM SHALL render Rating badges using shadcn `Badge`: `variant="destructive"` for Critical, `bg-warning/10 text-warning border-warning` for High Risk, `variant="secondary"` for Medium Risk, `bg-success/10 text-success border-success` for Low Risk
-- [ ] THE SYSTEM SHALL color Discrepancy % values: `text-destructive` > 15%, `text-warning` > 5%, `text-muted-foreground` <= 5%
-- [ ] THE SYSTEM SHALL color Recovery % values: `text-success` >= 80%, `text-warning` >= 40%, `text-destructive` < 40%
+- [ ] THE SYSTEM SHALL color score values: `text-destructive` < 30, `text-warning-text` 30-59, `text-success-text` >= 60
+- [ ] THE SYSTEM SHALL render Rating badges using shadcn `Badge`: `variant="destructive"` for Critical, `bg-warning/10 text-warning-text border-warning` for High Risk, `variant="secondary"` for Medium Risk, `bg-success/10 text-success-text border-success` for Low Risk
+- [ ] THE SYSTEM SHALL color Discrepancy % values: `text-destructive` > 15%, `text-warning-text` > 5%, `text-muted-foreground` <= 5%
+- [ ] THE SYSTEM SHALL color Recovery % values: `text-success-text` >= 80%, `text-warning-text` >= 40%, `text-destructive` < 40%
 
 **Row tinting and table**
 - [ ] THE SYSTEM SHALL render the vendor table using shadcn `Table` primitives wrapped in a shadcn `Card` + `CardContent`, with horizontal scroll (`overflow-x-auto`, `min-w-[900px]`)
@@ -33,7 +33,8 @@ EARS notation.
 
 **Expanded row**
 - [ ] WHEN a user clicks a vendor row THE SYSTEM SHALL toggle an expanded sub-row showing exception history cards inside a `bg-muted/30` sub-row
-- [ ] THE SYSTEM SHALL render each exception card as a shadcn `Card` containing ID (`font-mono text-xs text-muted-foreground`), type `Badge` (`variant="outline"` styled warning), date, description, amount (`text-destructive` right-aligned)
+- [ ] THE SYSTEM SHALL render each exception card as a shadcn `Card` containing ID (`font-mono text-xs text-muted-foreground`), type `Badge` (`variant="secondary"`), date, description, amount (`text-destructive` right-aligned)
+- [ ] THE SYSTEM SHALL expose `aria-sort` (`ascending` / `descending` / `none`) on every sortable column header
 
 **Vendor actions**
 - [ ] THE SYSTEM SHALL render three action buttons per row using shadcn `Button variant="ghost" size="sm"`: Flag (Flag icon), Penalize (AlertTriangle icon), Remove (XCircle icon + text)
@@ -58,33 +59,33 @@ Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
 
 ## Business Rules
 
-### Score Color Coding (v2.0 theme tokens)
+### Score Color Coding (v2.0.1 theme tokens — AA-safe text)
 | Score Range | Class |
 |-------------|-------|
 | < 30        | `text-destructive` |
-| 30-59       | `text-warning` |
-| >= 60       | `text-success` |
+| 30-59       | `text-warning-text` |
+| >= 60       | `text-success-text` |
 
 ### Rating Badges (shadcn `Badge`)
 | Rating       | Class |
 |--------------|-------|
 | Critical     | `variant="destructive"` |
-| High Risk    | `bg-warning/10 text-warning border-warning` (custom override since shadcn lacks built-in warning) |
+| High Risk    | `bg-warning/10 text-warning-text border-warning` (custom override since shadcn lacks built-in warning) |
 | Medium Risk  | `variant="secondary"` |
-| Low Risk     | `bg-success/10 text-success border-success` |
+| Low Risk     | `bg-success/10 text-success-text border-success` |
 
 ### Discrepancy % Color Coding
 | Discrepancy % | Class |
 |---------------|-------|
 | > 15%         | `text-destructive` |
-| > 5%          | `text-warning` |
+| > 5%          | `text-warning-text` |
 | <= 5%         | `text-muted-foreground` |
 
 ### Recovery % Color Coding
 | Recovery % | Class |
 |------------|-------|
-| >= 80%     | `text-success` |
-| >= 40%     | `text-warning` |
+| >= 80%     | `text-success-text` |
+| >= 40%     | `text-warning-text` |
 | < 40%      | `text-destructive` |
 
 ### Row Background Tinting (v2.0 — Tailwind opacity on theme tokens)
@@ -144,7 +145,7 @@ Clicking a vendor row toggles an expanded sub-row showing that vendor's exceptio
 2. **Browse vendors**: Analyst scans the table. High-risk rows are visually highlighted with red/amber background tints and colored score/discrepancy values.
 3. **Sort**: Analyst clicks column headers to re-sort by spend, discrepancy, recovery, or score. Pagination resets to page 1 on sort change.
 4. **Drill into vendor**: Clicking a row expands it to show exception history cards. Clicking again collapses.
-5. **Take action**: Analyst clicks Flag, Penalize, or Remove on a vendor. A browser confirm dialog appears. On confirmation, the action is recorded in local state, a toast fires, and the action column shows "Done".
+5. **Take action**: Analyst clicks Flag, Penalize, or Remove on a vendor. A shadcn `AlertDialog` confirmation appears. On confirmation, the action is recorded in local state, a toast fires, and the action column shows "Done".
 6. **Paginate**: Analyst uses pagination controls to navigate through vendors (10 per page default, adjustable).
 7. **Export**: "Export Report" button triggers a toast "Vendor risk report exported as PDF" (no actual file generated).
 
@@ -167,7 +168,7 @@ Use affirmative phrasing per SpecLayer v1.1.
 - **Annotate every vendor score comparison with its date range** — Reason: scores are point-in-time; comparing Q1 to Q3 without context misleads.
 - **Show aggregated metrics in the vendor scorecard, not individual invoice details** — Reason: scorecards may be shared with vendors during negotiations.
 - **Use shadcn `Card`, `Table`, `Badge`, `Button`, `AlertDialog` primitives for the table surface, badges, action buttons, and confirmation dialogs** — Reason: deprecates `.data-table`, `.badge.*`, browser `confirm()` from v1.
-- **Use theme tokens (`text-destructive`, `text-warning`, `text-success`, `text-muted-foreground`, `bg-destructive/5`, `bg-warning/5`, `bg-muted/30`) for all status colors, row tints, and sub-row backgrounds** — Reason: hex tokens (`text-red-600`, `text-amber-600`, `text-emerald-600`, `bg-red-50/50`, `bg-amber-50/30`) removed in v2.0.
+- **Use theme tokens for all status colors, row tints, and sub-row backgrounds** — status TEXT uses `text-destructive` / `text-warning-text` / `text-success-text` / `text-muted-foreground` (AA-safe per ui-standard.md v2.0.1); row tints use `bg-destructive/5` / `bg-warning/5`; sub-rows use `bg-muted/30` — Reason: hex tokens (`text-red-600`, `text-amber-600`, `text-emerald-600`, `bg-red-50/50`, `bg-amber-50/30`) removed in v2.0, and `text-warning` / `text-success` fail WCAG 1.4.3 as body text.
 
 ## AJ Feedback (Parkland Demo)
 
@@ -180,3 +181,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Added AJ feedback from Recording 17 — company logos, enterprise credibility -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Summary strip → shadcn `Card` with divide-x divide-border. Vendor table → shadcn `Table` primitives wrapped in `Card`. Score/Discrepancy %/Recovery % retokenized to text-destructive/text-warning/text-success/text-muted-foreground. Row tints → bg-destructive/5 / bg-warning/5. Rating badges → shadcn `Badge` variants. Action buttons → shadcn `Button variant="ghost" size="sm"` with shadcn `AlertDialog` confirmation (replaces browser confirm). Loading → `Skeleton`. Added 18 EARS Acceptance Criteria. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0.1 reconciliation: Migrated app/vendor-scoring/page.tsx from v1 to v2.0 shadcn (Cluster 2). Status-text criteria corrected to AA-safe `text-warning-text` / `text-success-text` (ui-standard.md v2.0.1). Code reconciliation: `.card`→`Card`, `.data-table`→shadcn `Table` primitives, `.badge.*`→`Badge` variants, raw `<button>` row actions→`Button variant="ghost" size="sm"`, browser `confirm()`→shadcn `AlertDialog` (3 confirmations: Flag/Penalize/Remove). Sortable headers now expose `aria-sort` (added AC + Forbidden-pattern follow-through; SortHead module-level component mirrors app/page.tsx idiom). All v1 `var(--*)` tokens, `bg-white`, `text-red/amber/emerald-600`, `bg-red-50/50`, `bg-amber-50/30`, `hover:bg-amber-50/red-50` retired. Real `<h1>`/`<h2>` outline. Dark mode verified. -->
