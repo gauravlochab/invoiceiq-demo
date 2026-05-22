@@ -8,7 +8,7 @@ The Extract page is the entry point for AI-powered invoice data extraction. It l
 EARS notation.
 
 **App shell**
-- [ ] THE SYSTEM SHALL render the Extract page inside `SidebarProvider` + `SidebarInset` with `AppSidebar` and `SiteHeader`
+- [ ] THE SYSTEM SHALL render the Extract page inside the shared `SidebarProvider` + `SidebarInset` shell provided by `app/layout.tsx` — the page component itself renders only page content, never a second shell
 - [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
 
 **Stage 1: Upload / Select**
@@ -42,7 +42,7 @@ EARS notation.
 
 ## Layout
 
-Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
+The shared `SidebarProvider` + `SidebarInset` shell is supplied by `app/layout.tsx`; the Extract page renders page content only. Page-level horizontal padding is `px-4 lg:px-6` (shadcn standard).
 
 ### Stage 1: Upload / Select (v2.0)
 - Full-page scrollable layout with `max-w-5xl` centered content.
@@ -185,3 +185,5 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Upload zone, document cards, results panes → shadcn `Card`. Document library grid uses container queries (@md/main, @lg/main, @xl/main). Action buttons → shadcn `Button` variants. Document badges → shadcn `Badge` (variant="destructive" for Duplicate/Suspicious, bg-warning/10 for Mismatch). Error display → shadcn `Alert variant="destructive"`. Upload progress → shadcn `Progress`. Preview overlay → shadcn `Dialog`. Line items table → shadcn `Table`. Loading → `Skeleton`. Pipeline nodes lit via bg-primary instead of --acl-primary. MagicUI AnimatedBeam + BorderBeam retained. Added 16 EARS Acceptance Criteria. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0 code reconciliation (cluster 4): Migrated app/extract/page.tsx from v1 tokens to v2.0 shadcn. The spec's v2.0 design intent was authored ahead of code; this entry records that the code now matches it. Token migration per ui-standard.md v1→v2 map: v1 surface/text/border tokens and bg-white → shadcn theme tokens (bg-background/bg-card/bg-muted/text-foreground/text-muted-foreground/border-border). Upload zone, document cards, results panes, processing pipeline panel → shadcn `Card`. All raw `<button>` → shadcn `Button` (variants: default/outline/ghost/destructive/link). Document + flag badges → shadcn `Badge` (Mismatch = bg-warning/10 text-warning-text border-warning; Duplicate/Suspicious + critical flags = variant="destructive"; warning flags = warning style). Error display → `Alert variant="destructive"`. Upload progress bars → token-driven meters with role="progressbar" + ARIA value attributes. Preview overlay → shadcn `Dialog`. Line-items table → shadcn `Table`. `.section-label` → real `<h2>`/`<h3>` headings or `text-xs text-muted-foreground` labels. PDF iframes given `title`. Pipeline node lit-state colors driven by `bg-primary`/`border-border`/`bg-muted` token classes. Reconciliation note: the shared SidebarProvider+SidebarInset shell is owned by app/layout.tsx — the page renders content only; the App shell AC and Layout section corrected accordingly. -->
+
