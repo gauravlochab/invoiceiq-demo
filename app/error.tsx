@@ -42,7 +42,7 @@ export default function Error({
             width: 56,
             height: 56,
             borderRadius: 12,
-            backgroundColor: "var(--warning-subtle)",
+            backgroundColor: "var(--accent)",
             marginBottom: 24,
           }}
         >
@@ -53,7 +53,7 @@ export default function Error({
           style={{
             fontSize: 22,
             fontWeight: 600,
-            color: "var(--text-primary)",
+            color: "var(--foreground)",
             margin: "0 0 8px",
           }}
         >
@@ -63,7 +63,7 @@ export default function Error({
         <p
           style={{
             fontSize: 14,
-            color: "var(--text-secondary)",
+            color: "var(--muted-foreground)",
             margin: "0 0 32px",
             lineHeight: 1.5,
           }}
@@ -78,8 +78,8 @@ export default function Error({
               padding: "10px 20px",
               fontSize: 14,
               fontWeight: 500,
-              color: "#fff",
-              backgroundColor: "var(--acl-primary)",
+              color: "var(--primary-foreground)",
+              backgroundColor: "var(--primary)",
               border: "none",
               borderRadius: 8,
               cursor: "pointer",
@@ -93,8 +93,8 @@ export default function Error({
               padding: "10px 20px",
               fontSize: 14,
               fontWeight: 500,
-              color: "var(--text-primary)",
-              backgroundColor: "var(--bg-surface)",
+              color: "var(--foreground)",
+              backgroundColor: "var(--card)",
               border: "1px solid var(--border)",
               borderRadius: 8,
               cursor: "pointer",

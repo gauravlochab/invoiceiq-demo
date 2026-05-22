@@ -13,12 +13,12 @@ describe("EscalationBanner", () => {
     expect(screen.getByText("Manager Approval Required")).toBeInTheDocument();
   });
 
-  it("flaggedAmount={10000} has amber-related classes (not red)", () => {
+  it("flaggedAmount={10000} has warning-related classes (not destructive)", () => {
     const { container } = render(<EscalationBanner flaggedAmount={10000} />);
     const banner = container.firstChild as HTMLElement;
-    expect(banner.className).toContain("bg-amber-50");
-    expect(banner.className).toContain("border-amber-200");
-    expect(banner.className).not.toContain("bg-red-50");
+    expect(banner.className).toContain("bg-warning/10");
+    expect(banner.className).toContain("border-warning/30");
+    expect(banner.className).not.toContain("bg-destructive/10");
   });
 
   it('flaggedAmount={50000} contains "VP Approval Required"', () => {
@@ -26,11 +26,11 @@ describe("EscalationBanner", () => {
     expect(screen.getByText("VP Approval Required")).toBeInTheDocument();
   });
 
-  it("flaggedAmount={50000} has red-related classes", () => {
+  it("flaggedAmount={50000} has destructive-related classes", () => {
     const { container } = render(<EscalationBanner flaggedAmount={50000} />);
     const banner = container.firstChild as HTMLElement;
-    expect(banner.className).toContain("bg-red-50");
-    expect(banner.className).toContain("border-red-200");
+    expect(banner.className).toContain("bg-destructive/10");
+    expect(banner.className).toContain("border-destructive/30");
   });
 
   it('flaggedAmount={123890} contains "Chief Financial Officer"', () => {

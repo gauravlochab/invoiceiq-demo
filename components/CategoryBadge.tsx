@@ -1,13 +1,11 @@
 "use client";
 
-const categoryClassMap: Record<string, string> = {
-  "Medical Equipment": "badge category-equipment",
-  "Pharmaceuticals": "badge category-pharma",
-  "Surgical Supplies": "badge category-surgical",
-  "Sterilization": "badge category-sterilization",
-  "GPO — General": "badge category-gpo",
-};
+import { Badge } from "@/components/ui/badge";
 
+// [Spec: rules/ui-standard.md#v1→v2 Migration Map]
+// Product categories — rendered with the shadcn Badge primitive. The category
+// name is its own label, so color is not the only signal (WCAG 1.4.1). A stable
+// data-category attribute keeps each category identifiable for tests/automation.
 const categoryLabels: Record<string, string> = {
   "Medical Equipment": "Medical Equipment",
   "Pharmaceuticals": "Pharmaceuticals",
@@ -16,13 +14,21 @@ const categoryLabels: Record<string, string> = {
   "GPO — General": "GPO — General",
 };
 
+const categorySlugs: Record<string, string> = {
+  "Medical Equipment": "category-equipment",
+  "Pharmaceuticals": "category-pharma",
+  "Surgical Supplies": "category-surgical",
+  "Sterilization": "category-sterilization",
+  "GPO — General": "category-gpo",
+};
+
 export function CategoryBadge({ category }: { category: string }) {
-  const className = categoryClassMap[category];
   const label = categoryLabels[category];
-  if (!className) return null;
+  const slug = categorySlugs[category];
+  if (!label) return null;
   return (
-    <span className={`${className} inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap`}>
+    <Badge variant="secondary" data-category={slug}>
       {label}
-    </span>
+    </Badge>
   );
 }

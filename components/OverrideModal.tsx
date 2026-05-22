@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ShieldAlert, AlertTriangle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,14 +50,19 @@ export function OverrideModal({
   const [approverRole, setApproverRole] = useState<ApproverRole>("Compliance Manager");
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
+  // Reset the form whenever the dialog re-opens — done during render via the
+  // "adjusting state on prop change" pattern instead of an effect (no cascading
+  // renders; React re-renders immediately with the cleared values).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
       setJustification("");
       setApproverName("");
       setApproverRole("Compliance Manager");
       setSubmitted(false);
     }
-  }, [open]);
+  }
 
   const justificationOk = justification.trim().length >= MIN_JUSTIFICATION;
   const nameOk = approverName.trim().length >= 2;

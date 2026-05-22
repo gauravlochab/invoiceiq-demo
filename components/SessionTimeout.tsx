@@ -24,8 +24,10 @@ export function SessionTimeout() {
   const countdownRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const deadlineRef = useRef(0);
 
-  const resetIdle = useCallback(() => {
-    setShowWarning(false);
+  // Schedules (or re-schedules) the idle timer. Pure timer/external-system work
+  // — deliberately does NOT touch `showWarning`, so it is safe to call from an
+  // effect body without triggering cascading renders.
+  const scheduleIdleTimer = useCallback(() => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
     idleTimer.current = setTimeout(() => {
@@ -40,19 +42,26 @@ export function SessionTimeout() {
     }, IDLE_MS);
   }, []);
 
+  // User-triggered reset (activity / "Extend Session"): clears the warning,
+  // then re-arms the timer.
+  const resetIdle = useCallback(() => {
+    setShowWarning(false);
+    scheduleIdleTimer();
+  }, [scheduleIdleTimer]);
+
   useEffect(() => {
     const events = ["mousedown", "keydown", "scroll", "touchstart"];
     const handler = () => {
       if (!showWarning) resetIdle();
     };
     events.forEach((e) => window.addEventListener(e, handler, { passive: true }));
-    resetIdle();
+    scheduleIdleTimer();
     return () => {
       events.forEach((e) => window.removeEventListener(e, handler));
       if (idleTimer.current) clearTimeout(idleTimer.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [resetIdle, showWarning]);
+  }, [resetIdle, scheduleIdleTimer, showWarning]);
 
   const minutes = Math.floor(remaining / 60000);
   const seconds = Math.floor((remaining % 60000) / 1000);

@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -115,14 +116,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-2">
           {/* Light theme: navy bulb; Dark theme: white bulb */}
-          <img
+          <Image
             src="/branding/acl-icon-clean.svg"
             alt="Agile C-Level"
+            width={28}
+            height={28}
             className="h-7 w-auto shrink-0 dark:hidden"
           />
-          <img
+          <Image
             src="/branding/acl-icon-white.svg"
             alt="Agile C-Level"
+            width={28}
+            height={28}
             className="hidden h-7 w-auto shrink-0 dark:block"
           />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">

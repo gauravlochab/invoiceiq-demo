@@ -52,9 +52,13 @@ export default function CommandPalette({ open, onClose }: Props) {
     [onClose, router]
   );
 
-  useEffect(() => {
+  // Clear the search box each time the palette re-opens — done during render
+  // via the "adjusting state on prop change" pattern instead of an effect.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) setSearch("");
-  }, [open]);
+  }
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) {

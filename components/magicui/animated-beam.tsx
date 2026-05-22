@@ -4,7 +4,6 @@ import {
   RefObject,
   useEffect,
   useId,
-  useRef,
   useState,
 } from "react";
 import { motion } from "framer-motion";
@@ -20,21 +19,6 @@ interface AnimatedBeamProps {
   colorFrom?: string;
   colorTo?: string;
   dotted?: boolean;
-}
-
-function useClientRect(ref: RefObject<HTMLElement | null>) {
-  const [rect, setRect] = useState({ x: 0, y: 0, w: 0, h: 0 });
-  useEffect(() => {
-    function update() {
-      if (!ref.current) return;
-      const r = ref.current.getBoundingClientRect();
-      setRect({ x: r.left, y: r.top, w: r.width, h: r.height });
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [ref]);
-  return rect;
 }
 
 /**

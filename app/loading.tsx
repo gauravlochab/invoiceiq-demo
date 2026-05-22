@@ -6,7 +6,7 @@ export default function Loading() {
         style={{
           height: 40,
           width: 320,
-          backgroundColor: "var(--bg-subtle)",
+          backgroundColor: "var(--muted)",
           borderRadius: 8,
           marginBottom: 32,
         }}
@@ -24,7 +24,7 @@ export default function Loading() {
           <div
             key={i}
             style={{
-              backgroundColor: "var(--bg-surface)",
+              backgroundColor: "var(--card)",
               border: "1px solid var(--border)",
               borderRadius: 12,
               padding: 24,
@@ -35,7 +35,7 @@ export default function Loading() {
               style={{
                 height: 12,
                 width: 96,
-                backgroundColor: "var(--bg-subtle)",
+                backgroundColor: "var(--muted)",
                 borderRadius: 6,
                 marginBottom: 16,
               }}
@@ -45,7 +45,7 @@ export default function Loading() {
               style={{
                 height: 28,
                 width: 72,
-                backgroundColor: "var(--bg-subtle)",
+                backgroundColor: "var(--muted)",
                 borderRadius: 6,
                 marginBottom: 12,
               }}
@@ -55,7 +55,7 @@ export default function Loading() {
               style={{
                 height: 10,
                 width: 64,
-                backgroundColor: "var(--bg-subtle)",
+                backgroundColor: "var(--muted)",
                 borderRadius: 6,
               }}
             />
@@ -65,7 +65,7 @@ export default function Loading() {
 
       <div
         style={{
-          backgroundColor: "var(--bg-surface)",
+          backgroundColor: "var(--card)",
           border: "1px solid var(--border)",
           borderRadius: 12,
           padding: 24,
@@ -76,7 +76,7 @@ export default function Loading() {
           style={{
             height: 14,
             width: 160,
-            backgroundColor: "var(--bg-subtle)",
+            backgroundColor: "var(--muted)",
             borderRadius: 6,
             marginBottom: 24,
           }}
@@ -95,7 +95,7 @@ export default function Loading() {
               style={{
                 height: 12,
                 flex: 2,
-                backgroundColor: "var(--bg-subtle)",
+                backgroundColor: "var(--muted)",
                 borderRadius: 6,
               }}
             />
@@ -104,7 +104,7 @@ export default function Loading() {
               style={{
                 height: 12,
                 flex: 1,
-                backgroundColor: "var(--bg-subtle)",
+                backgroundColor: "var(--muted)",
                 borderRadius: 6,
               }}
             />
@@ -113,7 +113,7 @@ export default function Loading() {
               style={{
                 height: 12,
                 flex: 1,
-                backgroundColor: "var(--bg-subtle)",
+                backgroundColor: "var(--muted)",
                 borderRadius: 6,
               }}
             />
@@ -122,7 +122,7 @@ export default function Loading() {
               style={{
                 height: 12,
                 width: 80,
-                backgroundColor: "var(--bg-subtle)",
+                backgroundColor: "var(--muted)",
                 borderRadius: 6,
               }}
             />

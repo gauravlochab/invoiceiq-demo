@@ -11,10 +11,10 @@ describe("CategoryBadge", () => {
     expect(badge.tagName).toBe("SPAN");
   });
 
-  it('"Medical Equipment" has correct CSS class', () => {
+  it('"Medical Equipment" exposes its category slug', () => {
     render(<CategoryBadge category="Medical Equipment" />);
     const badge = screen.getByText("Medical Equipment");
-    expect(badge.className).toContain("category-equipment");
+    expect(badge.getAttribute("data-category")).toBe("category-equipment");
   });
 
   it('"Pharmaceuticals" renders text "Pharmaceuticals"', () => {

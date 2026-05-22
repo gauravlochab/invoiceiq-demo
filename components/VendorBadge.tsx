@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { getVendorInfo } from "@/lib/vendors";
 
 interface VendorBadgeProps {
@@ -21,7 +22,7 @@ export function VendorBadge({ name, size = "sm", showName = true }: VendorBadgeP
   return (
     <span className={`inline-flex items-center ${s.gap}`}>
       {vendor.logo ? (
-        <img
+        <Image
           src={vendor.logo}
           alt={vendor.name}
           width={s.px}

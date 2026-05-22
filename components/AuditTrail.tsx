@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Edit3, Bot, Shield, ArrowUpRight, Bell, Ban, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, Bot, Shield, ArrowUpRight, Bell, Ban, ChevronDown, ChevronUp } from "lucide-react";
 import { type AuditEntry } from "@/lib/audit-trail";
 
 const actionIcons: Record<string, typeof Eye> = {
@@ -20,7 +20,7 @@ const actionIcons: Record<string, typeof Eye> = {
 
 const actorTypeColors: Record<string, string> = {
   user: "var(--primary)",
-  agent: "var(--agent-validation-v2)",
+  agent: "var(--agent-validation)",
   system: "var(--muted-foreground)",
 };
 

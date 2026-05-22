@@ -14,7 +14,7 @@
 // Fail criteria:
 //   - State board permit is expired / suspended / inactive / not_found
 
-import type { Task, TaskResult } from "../types";
+import type { Task } from "../types";
 import { queryStateBoard } from "../actions/queryStateBoard";
 import { queryNpi } from "../actions/queryNpi";
 

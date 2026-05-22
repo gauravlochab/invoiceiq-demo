@@ -22,7 +22,7 @@ export default function NotFound() {
           style={{
             fontSize: 72,
             fontWeight: 700,
-            color: "var(--text-primary)",
+            color: "var(--foreground)",
             margin: "0 0 4px",
             lineHeight: 1,
           }}
@@ -34,7 +34,7 @@ export default function NotFound() {
           style={{
             fontSize: 20,
             fontWeight: 600,
-            color: "var(--text-primary)",
+            color: "var(--foreground)",
             margin: "0 0 8px",
           }}
         >
@@ -44,12 +44,12 @@ export default function NotFound() {
         <p
           style={{
             fontSize: 14,
-            color: "var(--text-secondary)",
+            color: "var(--muted-foreground)",
             margin: "0 0 32px",
             lineHeight: 1.5,
           }}
         >
-          The page you're looking for doesn't exist or has been moved.
+          The page you&rsquo;re looking for doesn&rsquo;t exist or has been moved.
         </p>
 
         <Link
@@ -59,8 +59,8 @@ export default function NotFound() {
             padding: "10px 20px",
             fontSize: 14,
             fontWeight: 500,
-            color: "#fff",
-            backgroundColor: "var(--acl-primary)",
+            color: "var(--primary-foreground)",
+            backgroundColor: "var(--primary)",
             borderRadius: 8,
             textDecoration: "none",
           }}

@@ -16,7 +16,7 @@
 // sources for the customer's actual feeds (BI warehouse, ARCOS, compounding
 // software, etc.).
 
-import type { Task, TaskResult, TaskStatus } from "../types";
+import type { Task, TaskStatus } from "../types";
 import { queryDemographics } from "../actions/queryDemographics";
 import { findOrderHistoryByPharmacyId } from "../data/orderHistory";
 import { findAffinityByCity, ndcTherapeuticClass } from "../data/regionalAffinity";
