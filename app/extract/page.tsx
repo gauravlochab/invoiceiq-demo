@@ -1,3 +1,8 @@
+// [Spec: domains/extract/spec.md v2.0] — migrated to shadcn v2.0 design system.
+// v1 surface/text/border tokens and white surfaces replaced with shadcn theme tokens;
+// raw buttons → Button, .card → Card, .badge.* → Badge, .alert-bar → Alert,
+// hand-rolled modal → Dialog, .section-label → real headings/muted labels.
+// See spec CHANGELOG 2026-05-22. Behavior unchanged — design-system migration only.
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -5,8 +10,30 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { AnimatedBeam } from "@/components/magicui/animated-beam";
-import { FileText, Bot, BarChart3, AlertTriangle, Upload as UploadIcon, X, Eye, ArrowLeft } from "lucide-react";
+import {
+  FileText,
+  Bot,
+  BarChart3,
+  AlertTriangle,
+  Upload as UploadIcon,
+  Eye,
+  ArrowLeft,
+  Loader2,
+  X,
+} from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 // Maps each invoice to its corresponding exception ID for deep-linking
 const DOC_TO_EXCEPTION: Record<string, string> = {
@@ -77,20 +104,20 @@ interface ExtractedData {
 // ── Static data ─────────────────────────────────────────────────────────────
 
 const initialDocuments: Document[] = [
-  // \u2500\u2500 Invoices \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  { id: "invoice-STC-2026-19847",      label: "Steris Corporation",       sub: "Invoice \u00b7 Feb 28, 2026",  type: "invoice",      badge: "match_exception" },
-  { id: "invoice-MS-2026-0847",         label: "MedSupply Corp",           sub: "Invoice \u00b7 Jan 15, 2026",  type: "invoice",      badge: null },
-  { id: "invoice-MS-2026-0923",         label: "MedSupply Corp",           sub: "Invoice \u00b7 Jan 21, 2026",  type: "invoice",      badge: "duplicate" },
-  { id: "invoice-MTS-INV-00291",        label: "MedTech Solutions",        sub: "Invoice \u00b7 Feb 14, 2026",  type: "invoice",      badge: "suspicious" },
-  { id: "invoice-CH-2026-0341",         label: "Cardinal Health",          sub: "Invoice \u00b7 Mar 15, 2026",  type: "invoice",      badge: "match_exception" },
-  { id: "invoice-CH-2026-0412",         label: "Cardinal Health",          sub: "Invoice \u00b7 Mar 22, 2026",  type: "invoice",      badge: null },
-  { id: "invoice-CH-Q1-2026-REBATE",    label: "Cardinal Health",          sub: "Invoice \u00b7 Mar 31, 2026",  type: "invoice",      badge: null },
-  { id: "invoice-BME-2026-Q1-047",      label: "BioMed Equipment Inc.",    sub: "Invoice \u00b7 Mar 28, 2026",  type: "invoice",      badge: "match_exception" },
-  { id: "invoice-BME-2026-Q1-031",      label: "BioMed Equipment Inc.",    sub: "Invoice \u00b7 Feb 10, 2026",  type: "invoice",      badge: null },
-  { id: "invoice-MDL-2026-44821",       label: "Medline Industries",       sub: "Invoice \u00b7 Mar 10, 2026",  type: "invoice",      badge: "match_exception" },
-  { id: "invoice-MDL-2026-44390",       label: "Medline Industries",       sub: "Invoice \u00b7 Feb 18, 2026",  type: "invoice",      badge: null },
-  { id: "invoice-HS-2026-77341",        label: "Henry Schein",             sub: "Invoice \u00b7 Jan 30, 2026",  type: "invoice",      badge: "duplicate" },
-  { id: "invoice-OM-2026-38920",        label: "Owens & Minor",       sub: "Invoice \u00b7 Feb 05, 2026",  type: "invoice",      badge: "match_exception" },
+  // ── Invoices ────────────────────────────────────────────────────────────────
+  { id: "invoice-STC-2026-19847",      label: "Steris Corporation",       sub: "Invoice · Feb 28, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-MS-2026-0847",         label: "MedSupply Corp",           sub: "Invoice · Jan 15, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-MS-2026-0923",         label: "MedSupply Corp",           sub: "Invoice · Jan 21, 2026",  type: "invoice",      badge: "duplicate" },
+  { id: "invoice-MTS-INV-00291",        label: "MedTech Solutions",        sub: "Invoice · Feb 14, 2026",  type: "invoice",      badge: "suspicious" },
+  { id: "invoice-CH-2026-0341",         label: "Cardinal Health",          sub: "Invoice · Mar 15, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-CH-2026-0412",         label: "Cardinal Health",          sub: "Invoice · Mar 22, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-CH-Q1-2026-REBATE",    label: "Cardinal Health",          sub: "Invoice · Mar 31, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-BME-2026-Q1-047",      label: "BioMed Equipment Inc.",    sub: "Invoice · Mar 28, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-BME-2026-Q1-031",      label: "BioMed Equipment Inc.",    sub: "Invoice · Feb 10, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-MDL-2026-44821",       label: "Medline Industries",       sub: "Invoice · Mar 10, 2026",  type: "invoice",      badge: "match_exception" },
+  { id: "invoice-MDL-2026-44390",       label: "Medline Industries",       sub: "Invoice · Feb 18, 2026",  type: "invoice",      badge: null },
+  { id: "invoice-HS-2026-77341",        label: "Henry Schein",             sub: "Invoice · Jan 30, 2026",  type: "invoice",      badge: "duplicate" },
+  { id: "invoice-OM-2026-38920",        label: "Owens & Minor",       sub: "Invoice · Feb 05, 2026",  type: "invoice",      badge: "match_exception" },
   { id: "invoice-BD-2026-50112",        label: "Becton Dickinson",          sub: "Invoice · Jan 08, 2026",  type: "invoice",      badge: null },
   { id: "invoice-BD-2026-50287",        label: "Becton Dickinson",          sub: "Invoice · Feb 19, 2026",  type: "invoice",      badge: null },
   { id: "invoice-STR-2026-61034",       label: "Stryker Medical",           sub: "Invoice · Jan 22, 2026",  type: "invoice",      badge: null },
@@ -113,9 +140,9 @@ const initialDocuments: Document[] = [
   { id: "invoice-BME-2026-Q1-063",      label: "BioMed Equipment Inc.",     sub: "Invoice · Mar 21, 2026",  type: "invoice",      badge: null },
   { id: "invoice-HS-2026-77502",        label: "Henry Schein",              sub: "Invoice · Feb 09, 2026",  type: "invoice",      badge: null },
   { id: "invoice-OM-2026-39104",        label: "Owens & Minor",            sub: "Invoice · Mar 07, 2026",  type: "invoice",      badge: null },
-  // \u2500\u2500 Supporting Documents \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // ── Supporting Documents ────────────────────────────────────────────────────
   { id: "po-NMC-2026-PO-2847",          label: "Northfield Medical",       sub: "Purchase Order",               type: "po",           badge: null },
-  { id: "packingslip-STC-PS-2026-0392", label: "Steris Corporation",       sub: "Packing Slip \u00b7 Feb 25, 2026", type: "packing_slip", badge: null },
+  { id: "packingslip-STC-PS-2026-0392", label: "Steris Corporation",       sub: "Packing Slip · Feb 25, 2026", type: "packing_slip", badge: null },
 ];
 
 // ── Cached extraction results ────────────────────────────────────────────────
@@ -263,10 +290,10 @@ function getFlagCodes(flags: ExtractedData["flags"]): string[] {
 function KVRow({ label, value, revealed }: { label: string; value?: string; revealed: boolean }) {
   if (!revealed) return null;
   return (
-    <div className="flex justify-between py-1.5 border-b border-[var(--bg-subtle)]">
-      <span className="text-xs text-[var(--text-muted)]">{label}</span>
-      <span className="text-xs text-[var(--text-primary)] font-medium max-w-[200px] truncate text-right">
-        {value ?? "\u2014"}
+    <div className="flex justify-between py-1.5 border-b border-border">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs text-foreground font-medium max-w-[200px] truncate text-right">
+        {value ?? "—"}
       </span>
     </div>
   );
@@ -275,42 +302,50 @@ function KVRow({ label, value, revealed }: { label: string; value?: string; reve
 function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-5">
-      <div className="section-label mb-2">{title}</div>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+        {title}
+      </h3>
       {children}
     </div>
   );
 }
 
 function SkeletonLoading() {
-  const widths = ["w-full", "w-3/4", "w-1/2", "w-full", "w-2/3", "w-4/5", "w-1/2", "w-3/4"];
   return (
     <div className="px-4 py-4">
       <div className="flex items-center gap-2 mb-4">
-        <div
-          className="w-3 h-3 rounded-full animate-spin"
-          style={{ border: "1px solid var(--border-strong)", borderTopColor: "var(--acl-primary)" }}
-        />
-        <span className="section-label">EXTRACTING WITH INVOICE AGENT</span>
+        <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground m-0">
+          Extracting with Invoice Agent
+        </h2>
       </div>
       <div className="space-y-3">
-        {widths.map((w, i) => (
-          <div key={i} className={`${w} h-3 rounded animate-pulse bg-[var(--bg-subtle)]`} />
+        {["w-full", "w-3/4", "w-1/2", "w-full", "w-2/3", "w-4/5", "w-1/2", "w-3/4"].map((w, i) => (
+          <Skeleton key={i} className={`${w} h-3`} />
         ))}
       </div>
     </div>
   );
 }
 
+// Document status badge — Mismatch uses the warning role; Duplicate/Suspicious
+// use the destructive variant. [Spec: domains/extract/spec.md#Business Rules]
 function DocBadge({ badge }: { badge: Document["badge"] }) {
   if (!badge) return null;
-  const config: Record<string, { text: string; cls: string }> = {
-    match_exception: { text: "Mismatch", cls: "warning" },
-    duplicate:       { text: "Duplicate", cls: "critical" },
-    suspicious:      { text: "Suspicious", cls: "critical" },
-  };
-  const c = config[badge];
-  if (!c) return null;
-  return <span className={`badge ${c.cls}`}>{c.text}</span>;
+  if (badge === "match_exception") {
+    return (
+      <Badge variant="outline" className="bg-warning/10 text-warning-text border-warning">
+        Mismatch
+      </Badge>
+    );
+  }
+  if (badge === "duplicate") {
+    return <Badge variant="destructive">Duplicate</Badge>;
+  }
+  if (badge === "suspicious") {
+    return <Badge variant="destructive">Suspicious</Badge>;
+  }
+  return null;
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
@@ -399,7 +434,7 @@ export default function ExtractPage() {
       setLoading(false);
       setStage("results");
       setProcessingStep(0);
-      showToast("Invoice extracted \u2014 " + (cached.lineItems?.length || 0) + " line items found", "success");
+      showToast("Invoice extracted — " + (cached.lineItems?.length || 0) + " line items found", "success");
       return;
     }
 
@@ -421,7 +456,7 @@ export default function ExtractPage() {
         setStage("results");
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Network error \u2014 is the server running?";
+      const msg = err instanceof Error ? err.message : "Network error — is the server running?";
       setExtractError(msg);
       showToast(msg, "error");
       setStage("upload");
@@ -456,7 +491,7 @@ export default function ExtractPage() {
       setLoading(false);
       setStage("results");
       setProcessingStep(0);
-      showToast("Invoice extracted \u2014 " + (cached.lineItems?.length || 0) + " line items found", "success");
+      showToast("Invoice extracted — " + (cached.lineItems?.length || 0) + " line items found", "success");
       return;
     }
 
@@ -479,7 +514,7 @@ export default function ExtractPage() {
         setStage("results");
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Network error \u2014 is the server running?";
+      const msg = err instanceof Error ? err.message : "Network error — is the server running?";
       setExtractError(msg);
       showToast(msg, "error");
       setStage("upload");
@@ -489,13 +524,8 @@ export default function ExtractPage() {
     }
   }, [showToast]);
 
-  const handleDocSelect = (id: string) => {
-    setSelectedDoc(id);
-    setExtracted(null);
-    setRevealIndex(0);
-    setAllRevealed(false);
-    setLoading(false);
-  };
+  // Kept for parity with the original handler set (cached extraction entry point).
+  void handleExtract;
 
   // ── File upload handlers ────────────────────────────────────────────────────
 
@@ -556,7 +586,7 @@ export default function ExtractPage() {
         setStage("results");
       }
     } catch {
-      setExtractError("Upload failed \u2014 check your connection");
+      setExtractError("Upload failed — check your connection");
       showToast("Upload failed", "error");
       setStage("upload");
     } finally {
@@ -591,60 +621,41 @@ export default function ExtractPage() {
   const supportingDocs = documentList.filter((d) => d.type !== "invoice");
 
   // ── Pipeline node styling helpers ──────────────────────────────────────────
-  const pipelineNodeStyle = (nodeIndex: number, defaultBg: string, defaultBorder: string) => {
-    if (processingStep >= nodeIndex) {
-      return {
-        width: 48,
-        height: 48,
-        borderRadius: 10,
-        background: "var(--acl-primary)",
-        border: "1px solid var(--acl-primary)",
-        display: "flex" as const,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-        transition: "all 0.3s ease",
-      };
-    }
-    return {
-      width: 48,
-      height: 48,
-      borderRadius: 10,
-      background: defaultBg,
-      border: `1px solid ${defaultBorder}`,
-      display: "flex" as const,
-      alignItems: "center" as const,
-      justifyContent: "center" as const,
-      transition: "all 0.3s ease",
-    };
-  };
+  // Node visual state is driven by Tailwind token classes (bg-primary / bg-card /
+  // bg-muted / border-border) so it follows the active theme in light and dark.
+  // [Spec: domains/extract/spec.md#Stage 2: Processing]
+  const pipelineNodeClass = (nodeIndex: number) =>
+    `flex h-12 w-12 items-center justify-center rounded-[10px] border transition-all duration-300 ${
+      processingStep >= nodeIndex
+        ? "bg-primary border-primary text-primary-foreground"
+        : "bg-card border-border text-muted-foreground"
+    }`;
 
-  const pipelineIconColor = (nodeIndex: number, defaultColor: string) => {
-    return processingStep >= nodeIndex ? "#ffffff" : defaultColor;
-  };
-
-  const pipelineLabelColor = (nodeIndex: number, defaultColor: string) => {
-    return processingStep >= nodeIndex ? "var(--acl-primary)" : defaultColor;
-  };
+  const pipelineLabelClass = (nodeIndex: number) =>
+    `text-[11px] font-semibold uppercase tracking-[0.06em] whitespace-nowrap transition-colors duration-300 ${
+      processingStep >= nodeIndex ? "text-primary" : "text-muted-foreground"
+    }`;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]">
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
 
       {/* ═══════════════════════════════════════════════════════════════════════
           STAGE 1 -- UPLOAD / SELECT
           ═══════════════════════════════════════════════════════════════════════ */}
       {stage === "upload" && (
         <div className="flex-1 overflow-auto">
-          <div className="max-w-5xl mx-auto px-6 py-8">
+          <div className="max-w-5xl mx-auto px-4 lg:px-6 py-8">
 
             {/* Page header */}
             <div className="mb-6">
-              <h1 className="text-lg font-semibold text-[var(--text-primary)]">Extract Invoice</h1>
-              <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+              <h1 className="text-2xl font-semibold text-foreground">Extract Invoice</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Upload an invoice PDF or select from recent invoices below to begin AI-powered extraction.
               </p>
             </div>
 
             {/* ── Upload area ─────────────────────────────────────────────── */}
+            {/* [Spec: domains/extract/spec.md#Stage 1: Upload / Select] */}
             <input
               type="file"
               accept=".pdf"
@@ -652,8 +663,16 @@ export default function ExtractPage() {
               className="hidden"
               onChange={handleFileSelect}
             />
-            <div
+            <Card
+              role="button"
+              tabIndex={0}
               onClick={() => !uploading && fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === " ") && !uploading) {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
               onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); }}
               onDrop={(e) => {
@@ -663,43 +682,49 @@ export default function ExtractPage() {
                 const file = e.dataTransfer.files[0];
                 if (file?.type === "application/pdf") setUploadedFile(file);
               }}
-              className={`card min-h-[200px] flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
+              className={`min-h-[200px] flex flex-col items-center justify-center text-center cursor-pointer border-2 transition-all duration-200 ${
                 isDragOver
-                  ? "border-[var(--acl-primary)] bg-[var(--acl-primary-subtle)] border-solid"
+                  ? "border-primary border-solid bg-accent"
                   : uploadedFile
-                    ? "border-[var(--acl-primary)] border-solid bg-white"
-                    : "border-dashed border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-subtle)] bg-white"
+                    ? "border-primary border-solid"
+                    : "border-dashed border-border hover:border-muted-foreground hover:bg-muted/40"
               }`}
-              style={{ borderWidth: 2 }}
             >
               {uploadedFile ? (
                 <div className="flex flex-col items-center gap-3 px-4 py-2">
-                  <div className="w-12 h-12 rounded-full bg-[var(--acl-primary-subtle)] flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-[var(--acl-primary)]" />
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-[var(--text-primary)]">{uploadedFile.name}</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5">
+                    <div className="text-sm font-medium text-foreground">{uploadedFile.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
                       {(uploadedFile.size / 1024).toFixed(0)} KB
                     </div>
                   </div>
                   {!uploading && (
-                    <button
+                    <Button
+                      size="sm"
                       onClick={(e) => { e.stopPropagation(); handleUploadAndExtract(); }}
-                      className="px-5 py-2 text-sm font-medium rounded-md bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer border-none"
                     >
                       Upload &amp; Extract
-                    </button>
+                    </Button>
                   )}
                   {uploading && (
                     <div className="w-64">
-                      <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>Uploading...</span>
-                        <span>{uploadProgress.toFixed(0)}%</span>
+                        <span className="tabular-nums">{uploadProgress.toFixed(0)}%</span>
                       </div>
-                      <div className="w-full h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
+                      <div
+                        className="w-full h-1.5 bg-muted rounded-full overflow-hidden"
+                        role="progressbar"
+                        aria-label="Upload progress"
+                        aria-valuenow={Math.round(uploadProgress)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
                         <div
-                          className="h-full bg-[var(--acl-primary)] rounded-full transition-all duration-300"
+                          className="h-full bg-primary rounded-full transition-all duration-300"
                           style={{ width: `${uploadProgress}%` }}
                         />
                       </div>
@@ -708,62 +733,62 @@ export default function ExtractPage() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 px-4 py-4">
-                  <div className="w-12 h-12 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center">
-                    <UploadIcon className="w-6 h-6 text-[var(--text-muted)]" />
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <UploadIcon className="w-6 h-6 text-muted-foreground" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-[var(--text-primary)]">Upload Invoice</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-1">
+                    <div className="text-sm font-medium text-foreground">Upload Invoice</div>
+                    <div className="text-xs text-muted-foreground mt-1">
                       Drag and drop your invoice PDF here, or click to browse files
                     </div>
                   </div>
-                  <div className="text-xs text-[var(--border-strong)]">Supported: PDF up to 10MB</div>
+                  <div className="text-xs text-muted-foreground">Supported: PDF up to 10MB</div>
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* ── Error display ────────────────────────────────────────────── */}
             {extractError && (
-              <div className="alert-bar critical mt-4">
-                <div className="text-xs font-medium">Extraction failed</div>
-                <div className="text-xs mt-0.5 opacity-80">{extractError}</div>
-              </div>
+              <Alert variant="destructive" className="mt-4">
+                <AlertTriangle />
+                <AlertTitle>Extraction failed</AlertTitle>
+                <AlertDescription>{extractError}</AlertDescription>
+              </Alert>
             )}
 
             {/* ── Section divider ─────────────────────────────────────────── */}
             <div className="mt-8 mb-5">
-              <div className="section-label">RECENT INVOICES</div>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground m-0">
+                Recent Invoices
+              </h2>
             </div>
 
             {/* ── Invoice cards grid ──────────────────────────────────────── */}
             {docListLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="card p-4">
-                    <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded animate-pulse mb-3" />
-                    <div
-                      className="h-3.5 bg-[var(--border)] rounded animate-pulse mb-2"
-                      style={{ width: `${60 + i * 8}%` }}
-                    />
-                    <div className="h-2.5 w-3/4 bg-[var(--border)] rounded animate-pulse mb-3" />
+                  <Card key={i} className="p-4 gap-0">
+                    <Skeleton className="w-8 h-8 rounded mb-3" />
+                    <Skeleton className="h-3.5 rounded mb-2" style={{ width: `${60 + i * 8}%` }} />
+                    <Skeleton className="h-2.5 w-3/4 rounded mb-3" />
                     <div className="flex gap-2 mt-3">
-                      <div className="h-7 flex-1 bg-[var(--bg-subtle)] rounded animate-pulse" />
-                      <div className="h-7 flex-1 bg-[var(--bg-subtle)] rounded animate-pulse" />
+                      <Skeleton className="h-7 flex-1 rounded" />
+                      <Skeleton className="h-7 flex-1 rounded" />
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {invoiceDocs.map((doc) => (
-                  <div key={doc.id} className="card p-4 flex flex-col">
-                    <div className="w-9 h-9 rounded-lg bg-[var(--bg-subtle)] flex items-center justify-center mb-3">
-                      <FileText className="w-[18px] h-[18px] text-[var(--text-secondary)]" />
+                  <Card key={doc.id} className="p-4 gap-0 flex flex-col">
+                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center mb-3">
+                      <FileText className="w-[18px] h-[18px] text-muted-foreground" />
                     </div>
-                    <div className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
+                    <div className="text-sm font-semibold text-foreground leading-tight">
                       {doc.label}
                     </div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{doc.sub}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{doc.sub}</div>
                     {doc.badge && (
                       <div className="mt-2">
                         <DocBadge badge={doc.badge} />
@@ -771,21 +796,24 @@ export default function ExtractPage() {
                     )}
                     <div className="flex-1 min-h-[12px]" />
                     <div className="flex gap-2 mt-3">
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
                         onClick={() => setPreviewDoc(doc)}
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors cursor-pointer border-none"
                       >
                         <Eye className="w-3 h-3" />
                         Preview
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1"
                         onClick={() => handleExtractDoc(doc.id)}
-                        className="flex-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] transition-colors cursor-pointer border-none"
                       >
                         Extract
-                      </button>
+                      </Button>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
@@ -794,29 +822,33 @@ export default function ExtractPage() {
             {supportingDocs.length > 0 && !docListLoading && (
               <>
                 <div className="mt-6 mb-3">
-                  <div className="section-label">SUPPORTING DOCUMENTS</div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground m-0">
+                    Supporting Documents
+                  </h2>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {supportingDocs.map((doc) => (
-                    <div key={doc.id} className="card p-4 flex flex-col">
-                      <div className="w-9 h-9 rounded-lg bg-[var(--bg-subtle)] flex items-center justify-center mb-3">
-                        <FileText className="w-[18px] h-[18px] text-[var(--text-muted)]" />
+                    <Card key={doc.id} className="p-4 gap-0 flex flex-col">
+                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center mb-3">
+                        <FileText className="w-[18px] h-[18px] text-muted-foreground" />
                       </div>
-                      <div className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
+                      <div className="text-sm font-semibold text-foreground leading-tight">
                         {doc.label}
                       </div>
-                      <div className="text-xs text-[var(--text-muted)] mt-0.5">{doc.sub}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{doc.sub}</div>
                       <div className="flex-1 min-h-[12px]" />
                       <div className="flex gap-2 mt-3">
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
                           onClick={() => setPreviewDoc(doc)}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors cursor-pointer border-none"
                         >
                           <Eye className="w-3 h-3" />
                           Preview
-                        </button>
+                        </Button>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </>
@@ -828,84 +860,78 @@ export default function ExtractPage() {
       {/* ═══════════════════════════════════════════════════════════════════════
           STAGE 2 -- PROCESSING
           ═══════════════════════════════════════════════════════════════════════ */}
+      {/* [Spec: domains/extract/spec.md#Stage 2: Processing] */}
       {stage === "processing" && (
-        <div className="flex-1 flex flex-col items-center justify-center px-6">
-          <div
+        <div className="flex-1 flex flex-col items-center justify-center px-4 lg:px-6">
+          <Card
             ref={pipelineRef}
-            className="relative w-full max-w-3xl"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 0,
-              padding: "32px 40px",
-              background: "white",
-              borderRadius: 12,
-              border: "1px solid var(--border)",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-            }}
+            className="relative w-full max-w-3xl flex-row items-center justify-center gap-0 py-8 px-10"
           >
             {/* Node 1 - Invoice PDF */}
-            <div ref={node1Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(1, "white", "var(--border)")}>
-                <FileText size={22} color={pipelineIconColor(1, "var(--text-secondary)")} />
+            <div ref={node1Ref} className="flex flex-col items-center gap-1.5 z-[1]">
+              <div className={pipelineNodeClass(1)}>
+                <FileText size={22} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(1, "var(--text-muted)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Invoice PDF</span>
+              <span className={pipelineLabelClass(1)}>Invoice PDF</span>
             </div>
-            <div style={{ flex: 1, minWidth: 56 }} />
+            <div className="flex-1 min-w-[56px]" />
             {/* Node 2 - AI Extraction */}
-            <div ref={node2Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(2, "var(--acl-primary-subtle)", "var(--acl-primary)")}>
-                <Bot size={22} color={pipelineIconColor(2, "var(--acl-primary)")} />
+            <div ref={node2Ref} className="flex flex-col items-center gap-1.5 z-[1]">
+              <div className={pipelineNodeClass(2)}>
+                <Bot size={22} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(2, "var(--acl-primary)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>AI Extraction</span>
+              <span className={pipelineLabelClass(2)}>AI Extraction</span>
             </div>
-            <div style={{ flex: 1, minWidth: 56 }} />
+            <div className="flex-1 min-w-[56px]" />
             {/* Node 3 - Structured Data */}
-            <div ref={node3Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(3, "white", "var(--border)")}>
-                <BarChart3 size={22} color={pipelineIconColor(3, "var(--acl-primary)")} />
+            <div ref={node3Ref} className="flex flex-col items-center gap-1.5 z-[1]">
+              <div className={pipelineNodeClass(3)}>
+                <BarChart3 size={22} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(3, "var(--text-muted)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Structured Data</span>
+              <span className={pipelineLabelClass(3)}>Structured Data</span>
             </div>
-            <div style={{ flex: 1, minWidth: 56 }} />
+            <div className="flex-1 min-w-[56px]" />
             {/* Node 4 - Exception Queue */}
-            <div ref={node4Ref} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 1 }}>
-              <div style={pipelineNodeStyle(4, "var(--critical-subtle)", "var(--critical-border)")}>
-                <AlertTriangle size={22} color={pipelineIconColor(4, "var(--critical)")} />
+            <div ref={node4Ref} className="flex flex-col items-center gap-1.5 z-[1]">
+              <div className={pipelineNodeClass(4)}>
+                <AlertTriangle size={22} />
               </div>
-              <span style={{ fontSize: 11, color: pipelineLabelColor(4, "var(--critical)"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", transition: "color 0.3s ease" }}>Exception Queue</span>
+              <span className={pipelineLabelClass(4)}>Exception Queue</span>
             </div>
 
             {/* Beams */}
-            <AnimatedBeam containerRef={pipelineRef} fromRef={node1Ref} toRef={node2Ref} duration={2} delay={0} colorFrom="var(--text-muted)" colorTo="var(--acl-primary)" />
-            <AnimatedBeam containerRef={pipelineRef} fromRef={node2Ref} toRef={node3Ref} duration={2} delay={0.7} colorFrom="var(--text-muted)" colorTo="var(--acl-primary)" />
-            <AnimatedBeam containerRef={pipelineRef} fromRef={node3Ref} toRef={node4Ref} duration={2} delay={1.4} colorFrom="var(--acl-primary)" colorTo="var(--critical)" />
-          </div>
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node1Ref} toRef={node2Ref} duration={2} delay={0} colorFrom="var(--muted-foreground)" colorTo="var(--primary)" />
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node2Ref} toRef={node3Ref} duration={2} delay={0.7} colorFrom="var(--muted-foreground)" colorTo="var(--primary)" />
+            <AnimatedBeam containerRef={pipelineRef} fromRef={node3Ref} toRef={node4Ref} duration={2} delay={1.4} colorFrom="var(--primary)" colorTo="var(--destructive)" />
+          </Card>
 
           {/* Progress indicator */}
           <div className="mt-8 flex flex-col items-center gap-3">
             <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 rounded-full animate-spin"
-                style={{ border: "2px solid var(--border)", borderTopColor: "var(--acl-primary)" }}
-              />
-              <span className="text-sm font-medium text-[var(--text-primary)]">
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              <span className="text-sm font-medium text-foreground">
                 {uploading ? "Uploading and extracting..." : (PROCESSING_STEP_LABELS[processingStep] || "Extracting with AI agent...")}
               </span>
             </div>
-            <span className="text-xs text-[var(--text-muted)]">
+            <span className="text-xs text-muted-foreground">
               {selectedDocMeta ? selectedDocMeta.label : "Processing document"}
             </span>
             {uploading && (
               <div className="w-64 mt-1">
-                <div className="w-full h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
+                <div
+                  className="w-full h-1.5 bg-muted rounded-full overflow-hidden"
+                  role="progressbar"
+                  aria-label="Upload progress"
+                  aria-valuenow={Math.round(uploadProgress)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
                   <div
-                    className="h-full bg-[var(--acl-primary)] rounded-full transition-all duration-300"
+                    className="h-full bg-primary rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <div className="text-xs text-[var(--text-muted)] text-center mt-1">
+                <div className="text-xs text-muted-foreground text-center mt-1 tabular-nums">
                   {uploadProgress.toFixed(0)}%
                 </div>
               </div>
@@ -917,22 +943,24 @@ export default function ExtractPage() {
       {/* ═══════════════════════════════════════════════════════════════════════
           STAGE 3 -- RESULTS
           ═══════════════════════════════════════════════════════════════════════ */}
+      {/* [Spec: domains/extract/spec.md#Stage 3: Results] */}
       {stage === "results" && (
         <div className="flex flex-1 overflow-hidden">
           {/* Left column: PDF preview (60%) */}
           <div className="flex flex-col overflow-hidden" style={{ flex: "0 0 60%", maxWidth: "60%" }}>
             {/* Header bar */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-[var(--border)] shrink-0">
+            <div className="flex items-center justify-between px-4 py-2 bg-card border-b border-border shrink-0">
               <div className="flex items-center gap-3">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleBackToUpload}
-                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer bg-transparent border-none px-0"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Upload
-                </button>
-                <div className="w-px h-4 bg-[var(--border)]" />
-                <span className="text-xs font-medium text-[var(--text-primary)]">
+                </Button>
+                <div className="w-px h-4 bg-border" />
+                <span className="text-sm font-semibold text-foreground">
                   {selectedDocMeta ? selectedDocMeta.label : "Document"}
                 </span>
                 {selectedDocMeta && <DocBadge badge={selectedDocMeta.badge} />}
@@ -940,25 +968,26 @@ export default function ExtractPage() {
             </div>
 
             {/* PDF embed */}
-            <div className="flex-1 p-4 overflow-hidden min-h-0 bg-[var(--bg-subtle)]">
+            <div className="flex-1 p-4 overflow-hidden min-h-0 bg-muted/30">
               {selectedDoc ? (
                 <div className="relative overflow-hidden w-full h-full rounded-lg min-h-[500px]">
                   <iframe
+                    title={`Invoice PDF — ${selectedDocMeta ? selectedDocMeta.label : selectedDoc}`}
                     src={`/documents/pdfs/${selectedDoc}.pdf`}
-                    className="w-full h-full rounded-lg border border-[var(--border)] min-h-[500px] bg-white"
+                    className="w-full h-full rounded-lg border border-border min-h-[500px] bg-card"
                   />
                   {loading && (
                     <BorderBeam
                       duration={3}
-                      colorFrom="var(--acl-primary)"
-                      colorTo="var(--acl-primary-hover)"
+                      colorFrom="var(--primary)"
+                      colorTo="var(--primary)"
                       borderWidth={2}
                     />
                   )}
                 </div>
               ) : (
-                <div className="w-full h-full rounded-lg flex items-center justify-center bg-white border border-[var(--border)] min-h-[500px]">
-                  <span className="text-sm text-[var(--text-muted)]">No document loaded</span>
+                <div className="w-full h-full rounded-lg flex items-center justify-center bg-card border border-border min-h-[500px]">
+                  <span className="text-sm text-muted-foreground">No document loaded</span>
                 </div>
               )}
             </div>
@@ -966,7 +995,7 @@ export default function ExtractPage() {
 
           {/* Right column: Extracted data (40%) */}
           <div
-            className="flex flex-col overflow-hidden border-l border-[var(--border)] bg-white"
+            className="flex flex-col overflow-hidden border-l border-border bg-card"
             style={{ flex: "0 0 40%", maxWidth: "40%" }}
           >
             <div className="flex-1 overflow-auto">
@@ -975,18 +1004,20 @@ export default function ExtractPage() {
               {!loading && !extracted && extractError && (
                 <div className="flex items-center justify-center h-full px-6">
                   <div className="text-center">
-                    <div className="text-xs text-red-600 mb-1 font-medium">Extraction failed</div>
-                    <div className="text-xs text-[var(--text-muted)]">{extractError}</div>
+                    <div className="text-xs text-destructive mb-1 font-medium">Extraction failed</div>
+                    <div className="text-xs text-muted-foreground">{extractError}</div>
                   </div>
                 </div>
               )}
 
               {!loading && extracted && (
                 <div className="px-4 py-4">
-                  <div className="section-label mb-4">EXTRACTED FIELDS</div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-4 m-0">
+                    Extracted Fields
+                  </h2>
 
                   {extracted.vendor && (
-                    <FieldGroup title="VENDOR">
+                    <FieldGroup title="Vendor">
                       <KVRow label="Name"    value={extracted.vendor.name}    revealed={isRevealed()} />
                       <KVRow label="Address" value={extracted.vendor.address} revealed={isRevealed()} />
                       <KVRow label="Email"   value={extracted.vendor.email}   revealed={isRevealed()} />
@@ -997,14 +1028,14 @@ export default function ExtractPage() {
                   )}
 
                   {extracted.billTo && (
-                    <FieldGroup title="BILL TO">
+                    <FieldGroup title="Bill To">
                       <KVRow label="Name"    value={extracted.billTo.name}    revealed={isRevealed()} />
                       <KVRow label="Address" value={extracted.billTo.address} revealed={isRevealed()} />
                     </FieldGroup>
                   )}
 
                   {extracted.invoiceNumber && (
-                    <FieldGroup title="INVOICE">
+                    <FieldGroup title="Invoice">
                       <KVRow label="Invoice #"     value={String(extracted.invoiceNumber)}           revealed={isRevealed()} />
                       <KVRow label="Date"          value={String(extracted.invoiceDate ?? "")}       revealed={isRevealed()} />
                       <KVRow label="PO Reference"  value={String(extracted.poReference ?? "")}       revealed={isRevealed()} />
@@ -1021,15 +1052,15 @@ export default function ExtractPage() {
                   )}
 
                   {Array.isArray(extracted.lineItems) && extracted.lineItems.length > 0 && (
-                    <FieldGroup title={`LINE ITEMS (${extracted.lineItems.length})`}>
+                    <FieldGroup title={`Line Items (${extracted.lineItems.length})`}>
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-xs">
                           <thead>
-                            <tr className="bg-[var(--bg-subtle)] border-b border-[var(--border)]">
+                            <tr className="bg-muted border-b border-border">
                               {["ITEM CODE", "DESCRIPTION", "QTY", "UNIT PRICE", "TOTAL"].map((h) => (
                                 <th
                                   key={h}
-                                  className="px-1.5 py-1.5 text-[10px] font-medium tracking-wide uppercase text-[var(--text-muted)] text-left whitespace-nowrap"
+                                  className="px-1.5 py-1.5 text-[10px] font-medium tracking-wide uppercase text-muted-foreground text-left whitespace-nowrap"
                                 >
                                   {h}
                                 </th>
@@ -1041,20 +1072,20 @@ export default function ExtractPage() {
                               const rowRevealed = isRevealed();
                               if (!rowRevealed) return null;
                               return (
-                                <tr key={idx} className="border-b border-[var(--bg-subtle)]">
-                                  <td className="px-1.5 py-1.5 font-mono text-[10px] text-[var(--text-secondary)] whitespace-nowrap">
+                                <tr key={idx} className="border-b border-border">
+                                  <td className="px-1.5 py-1.5 font-mono text-[10px] text-muted-foreground whitespace-nowrap">
                                     {String(item.itemCode ?? "")}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-xs text-[var(--text-primary)] max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
+                                  <td className="px-1.5 py-1.5 text-xs text-foreground max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
                                     {String(item.description ?? "")}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-[var(--text-primary)] text-right">
+                                  <td className="px-1.5 py-1.5 text-foreground text-right tabular-nums">
                                     {String(item.quantity ?? "")}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-[var(--text-primary)] whitespace-nowrap text-right">
+                                  <td className="px-1.5 py-1.5 text-foreground whitespace-nowrap text-right tabular-nums">
                                     ${Number(item.unitPrice ?? 0).toFixed(2)}
                                   </td>
-                                  <td className="px-1.5 py-1.5 text-[var(--text-primary)] whitespace-nowrap text-right font-medium">
+                                  <td className="px-1.5 py-1.5 text-foreground whitespace-nowrap text-right font-medium tabular-nums">
                                     ${Number(item.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                                   </td>
                                 </tr>
@@ -1064,9 +1095,9 @@ export default function ExtractPage() {
                         </table>
                       </div>
                       {isRevealed() && (
-                        <div className="border-t border-[var(--border)] mt-1 pt-2 flex justify-between">
-                          <span className="text-xs text-[var(--text-muted)]">TOTAL AMOUNT</span>
-                          <span className="text-sm font-semibold text-[var(--text-primary)]">
+                        <div className="border-t border-border mt-1 pt-2 flex justify-between">
+                          <span className="text-xs text-muted-foreground">TOTAL AMOUNT</span>
+                          <span className="text-sm font-semibold text-foreground tabular-nums">
                             ${Number(extracted.totalAmount ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -1075,15 +1106,24 @@ export default function ExtractPage() {
                   )}
 
                   {flagCodes.length > 0 && (
-                    <FieldGroup title="FLAGS DETECTED">
-                      <div className="flex flex-col gap-1.5">
+                    <FieldGroup title="Flags Detected">
+                      <div className="flex flex-col gap-1.5 items-start">
                         {flagCodes.map((code, idx) => {
                           const flagRevealed = isRevealed();
                           if (!flagRevealed) return null;
                           const { label, severity } = flagLabel(code);
                           return (
                             <div key={idx}>
-                              <span className={`badge ${severity}`}>{label}</span>
+                              {severity === "critical" ? (
+                                <Badge variant="destructive">{label}</Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-warning/10 text-warning-text border-warning"
+                                >
+                                  {label}
+                                </Badge>
+                              )}
                             </div>
                           );
                         })}
@@ -1096,35 +1136,42 @@ export default function ExtractPage() {
 
             {/* Bottom action bar */}
             {!loading && extracted && allRevealed && (
-              <div className="px-4 py-3 flex flex-col gap-2 border-t border-[var(--border)] bg-white shrink-0">
+              <div className="px-4 py-3 flex flex-col gap-2 border-t border-border bg-card shrink-0">
                 {hasNoPO ? (
-                  <button
+                  <Button
+                    variant="destructive"
+                    className="w-full"
                     onClick={() => router.push("/exceptions/EX-003")}
-                    className="w-full bg-red-600 text-white text-xs font-medium py-1.5 px-3 rounded-md border-none cursor-pointer hover:bg-red-700 transition-colors"
                   >
                     Search for PO Match &rarr;
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    className="w-full"
                     onClick={() => {
                       const exId = selectedDoc ? DOC_TO_EXCEPTION[selectedDoc] : null;
                       router.push(exId ? `/exceptions/${exId}` : "/exceptions");
                     }}
-                    className="w-full bg-[var(--acl-primary)] text-white text-xs font-medium py-1.5 px-3 rounded-md border-none cursor-pointer hover:bg-[var(--acl-primary-hover)] transition-colors"
                   >
                     Match Against PO &rarr;
-                  </button>
+                  </Button>
                 )}
-                <Link
-                  href={
-                    selectedDoc && DOC_TO_EXCEPTION[selectedDoc]
-                      ? `/exceptions/${DOC_TO_EXCEPTION[selectedDoc]}`
-                      : "/exceptions"
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="w-full"
+                  render={
+                    <Link
+                      href={
+                        selectedDoc && DOC_TO_EXCEPTION[selectedDoc]
+                          ? `/exceptions/${DOC_TO_EXCEPTION[selectedDoc]}`
+                          : "/exceptions"
+                      }
+                    />
                   }
-                  className="text-xs text-[var(--acl-primary)] text-center no-underline hover:underline"
                 >
                   View in Exception Queue &rarr;
-                </Link>
+                </Button>
               </div>
             )}
           </div>
@@ -1134,50 +1181,50 @@ export default function ExtractPage() {
       {/* ═══════════════════════════════════════════════════════════════════════
           PDF PREVIEW OVERLAY
           ═══════════════════════════════════════════════════════════════════════ */}
-      {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"
-            onClick={() => setPreviewDoc(null)}
-          />
-          <div
-            className="relative bg-white rounded-lg shadow-lg w-[800px] h-[85vh] flex flex-col"
-            style={{ maxWidth: "90vw" }}
+      {/* [Spec: domains/extract/spec.md#Preview Overlay] */}
+      <Dialog
+        open={previewDoc !== null}
+        onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+      >
+        {previewDoc && (
+          <DialogContent
+            showCloseButton={false}
+            className="w-[800px] sm:max-w-[90vw] h-[85vh] p-0 gap-0 flex flex-col"
           >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
-              <span className="text-sm font-medium text-[var(--text-primary)]">
+            <DialogHeader className="flex-row items-center justify-between px-5 py-3 border-b border-border space-y-0">
+              <DialogTitle className="text-sm font-medium text-foreground">
                 {previewDoc.label} &mdash; {previewDoc.sub}
-              </span>
+              </DialogTitle>
               <div className="flex gap-2 items-center">
                 {previewDoc.type === "invoice" && (
-                  <button
+                  <Button
+                    size="sm"
                     onClick={() => {
                       const docId = previewDoc.id;
                       setPreviewDoc(null);
                       handleExtractDoc(docId);
                     }}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--acl-primary)] text-white hover:bg-[var(--acl-primary-hover)] cursor-pointer border-none transition-colors"
                   >
                     Extract this invoice
-                  </button>
+                  </Button>
                 )}
-                <button
-                  onClick={() => setPreviewDoc(null)}
-                  className="p-1.5 rounded-md hover:bg-[var(--bg-subtle)] cursor-pointer bg-transparent border-none transition-colors"
+                <DialogClose
+                  render={<Button variant="ghost" size="icon-sm" aria-label="Close preview" />}
                 >
-                  <X className="w-4 h-4 text-[var(--text-muted)]" />
-                </button>
+                  <X className="w-4 h-4" />
+                </DialogClose>
               </div>
-            </div>
+            </DialogHeader>
             <div className="flex-1 min-h-0">
               <iframe
+                title={`PDF preview — ${previewDoc.label}`}
                 src={`/documents/pdfs/${previewDoc.id}.pdf`}
                 className="w-full h-full border-none"
               />
             </div>
-          </div>
-        </div>
-      )}
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }
