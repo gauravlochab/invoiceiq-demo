@@ -38,7 +38,7 @@ export function VendorBadge({ name, size = "sm", showName = true }: VendorBadgeP
         </span>
       )}
       {showName && (
-        <span className={`${s.name} text-[var(--text-primary)] truncate`}>
+        <span className={`${s.name} text-foreground truncate`}>
           {size === "sm" ? vendor.shortName : vendor.name}
         </span>
       )}

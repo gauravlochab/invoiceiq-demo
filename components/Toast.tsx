@@ -31,17 +31,17 @@ const iconMap = {
 };
 
 const styleMap = {
-  success: "bg-emerald-50 border-emerald-200 text-emerald-800",
-  info: "bg-blue-50 border-blue-200 text-blue-800",
-  warning: "bg-amber-50 border-amber-200 text-amber-800",
-  error: "bg-red-50 border-red-200 text-red-800",
+  success: "bg-success/10 border-success/30 text-success-text",
+  info: "bg-primary/10 border-primary/30 text-foreground",
+  warning: "bg-warning/10 border-warning/30 text-warning-text",
+  error: "bg-destructive/10 border-destructive/30 text-destructive",
 };
 
 const iconColorMap = {
-  success: "text-emerald-500",
-  info: "text-blue-500",
-  warning: "text-amber-500",
-  error: "text-red-500",
+  success: "text-success",
+  info: "text-primary",
+  warning: "text-warning",
+  error: "text-destructive",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -75,7 +75,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <span className="flex-1 text-xs font-medium leading-relaxed">{toast.message}</span>
               <button
                 onClick={() => dismiss(toast.id)}
-                className="flex-shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors cursor-pointer bg-transparent border-none"
+                className="flex-shrink-0 p-0.5 rounded hover:bg-accent transition-colors cursor-pointer bg-transparent border-none"
               >
                 <X className="w-3.5 h-3.5 opacity-50" />
               </button>

@@ -16,18 +16,13 @@ export default function TrustFooter() {
   return (
     <>
       <footer
-        className="flex items-center justify-between px-4 shrink-0"
-        style={{
-          height: 28,
-          background: "var(--bg-subtle)",
-          borderTop: "1px solid var(--border)",
-        }}
+        className="flex items-center justify-between px-4 shrink-0 h-7 bg-muted border-t border-border"
       >
         <div className="flex items-center gap-4">
           {badges.map((b) => (
             <span
               key={b.label}
-              className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-[var(--text-muted)]"
+              className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground"
             >
               <b.icon className="w-3 h-3" />
               {b.label}
@@ -36,7 +31,7 @@ export default function TrustFooter() {
         </div>
         <button
           onClick={() => setDialogOpen(true)}
-          className="text-[10px] uppercase tracking-wide font-medium text-[var(--acl-primary)] hover:underline bg-transparent border-none cursor-pointer p-0"
+          className="text-[10px] uppercase tracking-wide font-medium text-primary hover:underline bg-transparent border-none cursor-pointer p-0"
         >
           Security &amp; Compliance
         </button>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ShieldAlert, AlertTriangle, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -75,16 +76,16 @@ export function OverrideModal({
   }
 
   const ratingColor =
-    rating === "Critical" ? "text-red-600 bg-red-50 border-red-200"
-    : rating === "High Risk" ? "text-amber-700 bg-amber-50 border-amber-200"
-    : "text-blue-700 bg-blue-50 border-blue-200";
+    rating === "Critical" ? "text-destructive bg-destructive/10 border-destructive/40"
+    : rating === "High Risk" ? "text-warning-text bg-warning/10 border-warning/40"
+    : "text-primary bg-primary/10 border-primary/40";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-lg p-0 gap-0">
-        <DialogHeader className="px-5 py-4 border-b border-[var(--border)]">
+        <DialogHeader className="px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-red-600" />
+            <ShieldAlert className="w-4 h-4 text-destructive" />
             <DialogTitle className="text-sm font-semibold">Authorization Override Request</DialogTitle>
           </div>
           <DialogDescription className="sr-only">
@@ -110,53 +111,53 @@ export function OverrideModal({
           </div>
 
           <div>
-            <label className="block text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] mb-1.5">
-              Formal Justification <span className="text-red-600">*</span>
+            <label className="block text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+              Formal Justification <span className="text-destructive">*</span>
             </label>
             <textarea
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               placeholder="Please provide formal justification for authorizing this transaction despite the flagged risk indicators."
               rows={5}
-              className={`w-full text-xs px-3 py-2 rounded-md border focus:outline-none focus:ring-2 ${
+              className={`w-full text-xs px-3 py-2 rounded-md border bg-card text-foreground focus:outline-none focus:ring-2 ${
                 submitted && !justificationOk
-                  ? "border-red-400 focus:ring-red-200"
-                  : "border-[var(--border-strong)] focus:border-[var(--acl-primary)] focus:ring-[var(--acl-primary)]/20"
+                  ? "border-destructive focus:ring-destructive/20"
+                  : "border-input focus:border-ring focus:ring-ring/20"
               }`}
             />
-            <p className="text-[10px] text-[var(--text-muted)] mt-1 m-0">
+            <p className="text-[10px] text-muted-foreground mt-1 m-0">
               {justification.trim().length}/{MIN_JUSTIFICATION} min characters
               {submitted && !justificationOk && (
-                <span className="text-red-600 ml-2">— please add more detail</span>
+                <span className="text-destructive ml-2">— please add more detail</span>
               )}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] mb-1.5">
-                Approver name <span className="text-red-600">*</span>
+              <label className="block text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+                Approver name <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 value={approverName}
                 onChange={(e) => setApproverName(e.target.value)}
                 placeholder="Full name"
-                className={`w-full text-xs px-3 py-2 rounded-md border focus:outline-none focus:ring-2 ${
+                className={`w-full text-xs px-3 py-2 rounded-md border bg-card text-foreground focus:outline-none focus:ring-2 ${
                   submitted && !nameOk
-                    ? "border-red-400 focus:ring-red-200"
-                    : "border-[var(--border-strong)] focus:border-[var(--acl-primary)] focus:ring-[var(--acl-primary)]/20"
+                    ? "border-destructive focus:ring-destructive/20"
+                    : "border-input focus:border-ring focus:ring-ring/20"
                 }`}
               />
             </div>
             <div>
-              <label className="block text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)] mb-1.5">
+              <label className="block text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
                 Role
               </label>
               <select
                 value={approverRole}
                 onChange={(e) => setApproverRole(e.target.value as ApproverRole)}
-                className="w-full text-xs px-3 py-2 rounded-md border border-[var(--border-strong)] bg-white focus:outline-none focus:ring-2 focus:border-[var(--acl-primary)] focus:ring-[var(--acl-primary)]/20"
+                className="w-full text-xs px-3 py-2 rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:border-ring focus:ring-ring/20"
               >
                 {APPROVER_ROLES.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -166,29 +167,23 @@ export function OverrideModal({
           </div>
         </div>
 
-        <DialogFooter className="px-5 py-4 border-t border-[var(--border)] bg-[var(--bg-base)] flex-row justify-between items-center gap-2">
+        <DialogFooter className="px-5 py-4 border-t border-border bg-muted flex-row justify-between items-center gap-2">
           <a
             href="/documents/policies/exception-review-policy.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[10px] text-[var(--acl-primary)] hover:underline"
+            className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
           >
             <FileText className="w-3 h-3" />
             View Policy Document
           </a>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="text-xs font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer"
-            >
+            <Button variant="outline" size="sm" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="text-xs font-medium px-3 py-1.5 rounded-md border border-red-600 bg-red-600 text-white hover:bg-red-700 cursor-pointer"
-            >
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleSubmit}>
               Authorize Release
-            </button>
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

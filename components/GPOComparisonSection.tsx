@@ -4,12 +4,43 @@ import { getGPOComparisons } from "@/lib/gpo-contracts";
 import type { GPOComparison } from "@/lib/gpo-contracts";
 import { formatCurrency } from "@/lib/data";
 import { Shield } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
-const STATUS_STYLES: Record<GPOComparison["status"], { bg: string; text: string; label: string }> = {
-  compliant: { bg: "var(--success-subtle)", text: "var(--success-text)", label: "Compliant" },
-  minor_variance: { bg: "var(--warning-subtle)", text: "var(--warning-text)", label: "Minor Variance" },
-  significant_variance: { bg: "var(--critical-subtle)", text: "var(--critical-text)", label: "Over GPO Rate" },
+// [Spec: rules/ui-standard.md#v1→v2 Migration Map] — status chips driven by
+// shadcn theme tokens; over-GPO-rate is critical (destructive), minor variance
+// uses --warning-text, compliant uses --success-text. All AA-safe as text.
+const STATUS_STYLES: Record<
+  GPOComparison["status"],
+  { className: string; label: string }
+> = {
+  compliant: {
+    className: "border-success/40 bg-success/10 text-success-text",
+    label: "Compliant",
+  },
+  minor_variance: {
+    className: "border-warning/40 bg-warning/10 text-warning-text",
+    label: "Minor Variance",
+  },
+  significant_variance: {
+    className: "border-destructive/40 bg-destructive/10 text-destructive",
+    label: "Over GPO Rate",
+  },
 };
+
+function varianceColor(status: GPOComparison["status"]): string {
+  if (status === "significant_variance") return "text-destructive";
+  if (status === "minor_variance") return "text-warning-text";
+  return "text-success-text";
+}
 
 export function GPOComparisonSection({ exceptionId }: { exceptionId: string }) {
   const comparisons = getGPOComparisons(exceptionId);
@@ -22,78 +53,79 @@ export function GPOComparisonSection({ exceptionId }: { exceptionId: string }) {
   return (
     <div className="mt-6">
       <div className="flex items-center gap-2 mb-2">
-        <Shield className="w-3.5 h-3.5 text-[var(--acl-primary)]" />
-        <p className="section-label mb-0">GPO Contract Comparison</p>
+        <Shield className="w-3.5 h-3.5 text-primary" />
+        <p className="mb-0 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          GPO Contract Comparison
+        </p>
       </div>
-      <div className="card overflow-hidden">
-        <div className="px-5 py-3 border-b border-[var(--border)] flex items-center justify-between">
-          <span className="text-xs text-[var(--text-secondary)]">
+      <Card className="overflow-hidden gap-0 py-0">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
             Comparing invoiced prices against {gpoName} contract {contractId}
           </span>
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md" style={{ background: "var(--info-subtle)", color: "var(--acl-primary)" }}>
+          <Badge variant="outline" className="text-[10px]">
             {gpoName}
-          </span>
+          </Badge>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th className="right">Invoiced Price</th>
-                <th className="right">GPO Rate</th>
-                <th className="right">Variance</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead className="text-right">Invoiced Price</TableHead>
+                <TableHead className="text-right">GPO Rate</TableHead>
+                <TableHead className="text-right">Variance</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {comparisons.map((c) => {
                 const style = STATUS_STYLES[c.status];
                 return (
-                  <tr key={c.itemCode}>
-                    <td>
-                      <span className="font-mono text-[11px] text-[var(--text-muted)] block">{c.itemCode}</span>
-                      <span className="text-xs text-[var(--text-primary)]">{c.itemDescription}</span>
-                    </td>
-                    <td className="right text-xs tabular-nums text-[var(--text-primary)]">
+                  <TableRow key={c.itemCode}>
+                    <TableCell>
+                      <span className="font-mono text-[11px] text-muted-foreground block">{c.itemCode}</span>
+                      <span className="text-xs text-foreground">{c.itemDescription}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-foreground">
                       ${c.invoicedPrice.toFixed(2)}
-                    </td>
-                    <td className="right text-xs tabular-nums" style={{ color: "var(--success-text)" }}>
+                    </TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-success-text">
                       ${c.gpoRate.toFixed(2)}
-                    </td>
-                    <td className="right">
+                    </TableCell>
+                    <TableCell className="text-right">
                       {c.variance > 0 ? (
-                        <span className="text-xs tabular-nums font-medium" style={{ color: c.status === "significant_variance" ? "var(--critical)" : c.status === "minor_variance" ? "var(--warning)" : "var(--success)" }}>
+                        <span className={`text-xs tabular-nums font-medium ${varianceColor(c.status)}`}>
                           +${c.variance.toFixed(2)} ({c.variancePct.toFixed(1)}%)
                         </span>
                       ) : (
-                        <span className="text-xs tabular-nums text-[var(--text-muted)]">&mdash;</span>
+                        <span className="text-xs tabular-nums text-muted-foreground">&mdash;</span>
                       )}
-                    </td>
-                    <td>
+                    </TableCell>
+                    <TableCell>
                       <span
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-md inline-block"
-                        style={{ background: style.bg, color: style.text }}
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-md border inline-block ${style.className}`}
                       >
                         {style.label}
                       </span>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
-        <div className="border-t border-[var(--border)] px-5 py-3 flex items-center justify-between">
-          <span className="text-xs text-[var(--text-secondary)]">
+        <div className="border-t border-border px-5 py-3 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
             {gpoName} contract {contractId}
           </span>
-          <span className="text-xs font-medium" style={{ color: "var(--critical)" }}>
+          <span className="text-xs font-medium text-destructive">
             Potential savings: {formatCurrency(Math.round(totalSavings))} per unit cycle
           </span>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

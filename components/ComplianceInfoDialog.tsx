@@ -8,7 +8,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Shield, ShieldCheck, Lock, Database, Users, FileText, Globe } from "lucide-react";
+import { Shield, ShieldCheck, Lock, Users, FileText, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/Toast";
 
 interface ComplianceInfoDialogProps {
@@ -57,7 +58,7 @@ export default function ComplianceInfoDialog({ open, onClose }: ComplianceInfoDi
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
-            <Shield className="w-4 h-4 text-[var(--acl-primary)]" />
+            <Shield className="w-4 h-4 text-primary" />
             Security &amp; Compliance
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed mt-1">
@@ -69,36 +70,37 @@ export default function ComplianceInfoDialog({ open, onClose }: ComplianceInfoDi
           {sections.map((s) => (
             <div
               key={s.title}
-              className="flex items-start gap-3 rounded-md border border-[var(--border)] bg-[var(--bg-subtle)] px-3.5 py-2.5"
+              className="flex items-start gap-3 rounded-md border border-border bg-muted px-3.5 py-2.5"
             >
-              <s.icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-[var(--acl-primary)]" />
+              <s.icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-[var(--text-primary)] m-0 leading-tight">{s.title}</p>
-                <p className="text-[11px] text-[var(--text-secondary)] m-0 mt-0.5 leading-relaxed">{s.detail}</p>
+                <p className="text-xs font-semibold text-foreground m-0 leading-tight">{s.title}</p>
+                <p className="text-[11px] text-muted-foreground m-0 mt-0.5 leading-relaxed">{s.detail}</p>
               </div>
             </div>
           ))}
         </div>
 
         <DialogFooter className="mt-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               showToast("Security whitepaper download will be available soon.", "info");
               onClose();
             }}
-            className="px-4 py-2 text-xs font-medium rounded-md border border-[var(--border-strong)] text-[var(--text-secondary)] bg-white hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
           >
             Download Security Whitepaper
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={() => {
               showToast("BAA request submitted. Our compliance team will reach out within 1 business day.", "success");
               onClose();
             }}
-            className="px-4 py-2 text-xs font-medium rounded-md text-white border-none transition-colors cursor-pointer bg-[var(--acl-primary)] hover:bg-[var(--acl-primary-hover)]"
           >
             Request BAA
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

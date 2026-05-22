@@ -12,8 +12,8 @@ export function EscalationBanner({ flaggedAmount }: EscalationBannerProps) {
   if (!level) return null;
 
   const colors = level.autoEscalate
-    ? { bg: "bg-red-50", border: "border-red-200", text: "text-red-800", icon: "text-red-600" }
-    : { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800", icon: "text-amber-600" };
+    ? { bg: "bg-destructive/10", border: "border-destructive/30", text: "text-destructive", icon: "text-destructive" }
+    : { bg: "bg-warning/10", border: "border-warning/30", text: "text-warning-text", icon: "text-warning" };
 
   return (
     <div className={`${colors.bg} ${colors.border} border rounded-md px-4 py-3 mb-4`}>

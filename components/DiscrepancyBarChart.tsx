@@ -1,10 +1,9 @@
 "use client";
 
-// [Spec: domains/dashboard/spec.md#Forbidden Patterns — shadcn tokens / --chart-*]
-// v2.3 theming pass: moved off raw hex + v1 tokens (var(--chart-grid),
-// var(--chart-tick), var(--bg-surface), var(--text-muted), bg-white,
-// var(--acl-primary)) onto shadcn v2 theme tokens + --chart-* so the chart
-// renders correctly in dark mode. Public API unchanged.
+// [Spec: rules/ui-standard.md#v1->v2 Migration Map — shadcn tokens / --chart-*]
+// Chart surfaces, grid, ticks and series colors are driven entirely by shadcn
+// v2 theme tokens plus the --chart-* categorical palette, so the chart renders
+// correctly in dark mode. No legacy v1 tokens remain. Public API unchanged.
 import { useState, useMemo } from "react";
 import {
   BarChart,

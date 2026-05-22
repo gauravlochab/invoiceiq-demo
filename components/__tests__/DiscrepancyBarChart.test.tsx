@@ -41,15 +41,15 @@ describe("DiscrepancyBarChart", () => {
     const quarterlyBtn = screen.getByRole("button", { name: "Quarterly" });
     const dailyBtn = screen.getByRole("button", { name: "Mar 2026" });
 
-    // Initially, Quarterly is active (has bg-white class)
-    expect(quarterlyBtn.className).toContain("bg-white");
-    expect(dailyBtn.className).not.toContain("bg-white");
+    // Initially, Quarterly is active (carries the raised bg-card surface class)
+    expect(quarterlyBtn.className).toContain("bg-card");
+    expect(dailyBtn.className).not.toContain("bg-card");
 
     // Click Mar 2026
     await user.click(dailyBtn);
 
     // Now Mar 2026 should be active
-    expect(dailyBtn.className).toContain("bg-white");
-    expect(quarterlyBtn.className).not.toContain("bg-white");
+    expect(dailyBtn.className).toContain("bg-card");
+    expect(quarterlyBtn.className).not.toContain("bg-card");
   });
 });
