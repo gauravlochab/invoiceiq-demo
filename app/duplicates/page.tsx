@@ -1,16 +1,50 @@
+// [Spec: domains/exceptions/spec.md v2.0.1 — Duplicates View] — the standalone
+// /duplicates route, migrated to the shadcn v2.0 design system. Card/Badge/
+// Dialog/Select/Textarea/Button primitives, theme tokens only, AA-safe status
+// text. Shares the DuplicatePairCard surface with the /exceptions Duplicates
+// tab. See exceptions/spec.md CHANGELOG 2026-05-22.
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { X, ChevronDown, Check } from "lucide-react";
+import { Check, AlertTriangle } from "lucide-react";
 import {
   duplicatePairs,
   DuplicatePair,
   formatCurrency,
   formatDate,
 } from "@/lib/data";
+import { useToast } from "@/components/Toast";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  CardAction,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 // ─── AI ANALYSIS COPY PER PAIR ────────────────────────────────────────────────
+// [Spec: domains/exceptions/spec.md#Data Model — aiAnalysis]
 
 const aiAnalysis: Record<string, string[]> = {
   "DUP-001": [
@@ -31,24 +65,34 @@ const aiAnalysis: Record<string, string[]> = {
 };
 
 // ─── SIMILARITY BAR ───────────────────────────────────────────────────────────
+// Token-driven meter — non-text fill (AA 3:1), always paired with the % text.
+// [Spec: domains/exceptions/spec.md#Acceptance Criteria — similarity bar]
 
 function SimilarityBar({ score }: { score: number }) {
-  const fillColor = score >= 99 ? "#DC2626" : "#B45309";
-  const textColor = fillColor;
-
+  const exact = score >= 99;
   return (
     <div className="flex items-center gap-3">
-      <span className="section-label">Similarity</span>
-      <div className="w-32 h-1.5 rounded-full overflow-hidden bg-[var(--border)]">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Similarity
+      </span>
+      <div
+        className="h-1.5 w-32 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={score}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Similarity ${score} percent`}
+      >
         <div
-          className="h-full rounded-full"
-          style={{ width: `${Math.min(score, 100)}%`, background: fillColor }}
+          className={`h-full rounded-full ${exact ? "bg-destructive" : "bg-warning"}`}
+          style={{ width: `${Math.min(score, 100)}%` }}
         />
       </div>
-      <span className="text-[13px] font-medium" style={{ color: textColor }}>
+      <span
+        className={`text-[13px] font-medium ${exact ? "text-destructive" : "text-warning-text"}`}
+      >
         {score}%
       </span>
-      <span className="text-[13px] text-[var(--border-strong)]">|</span>
     </div>
   );
 }
@@ -70,98 +114,92 @@ function DuplicatePairCard({
 }) {
   const analysis = aiAnalysis[pair.id] ?? [];
 
-  let badgeClass = "badge neutral";
-  let badgeLabel = "Open";
+  let statusBadge = <Badge variant="secondary">Open</Badge>;
   if (pair.status === "open") {
-    badgeClass = "badge critical";
-    badgeLabel = "Open";
+    statusBadge = <Badge variant="destructive">Open</Badge>;
   } else if (pair.status === "under_review") {
-    badgeClass = "badge warning";
-    badgeLabel = "Under Review";
+    statusBadge = (
+      <Badge className="border-warning bg-warning/10 text-warning-text">
+        Under Review
+      </Badge>
+    );
   } else if (pair.status === "resolved") {
-    badgeClass = "badge success";
-    badgeLabel = "Resolved";
+    statusBadge = (
+      <Badge className="border-success bg-success/10 text-success-text">
+        Resolved
+      </Badge>
+    );
   }
 
-  // Render action buttons or status badge
+  // [Spec: domains/exceptions/spec.md#Layout — Duplicate Pair Cards CardFooter]
   function renderActions() {
     if (pair.status === "resolved") {
       return (
-        <span className="text-xs font-medium text-green-700">
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-success-text">
+          <Check className="size-3.5" />
           Resolved — {formatCurrency(pair.flaggedAmount)} saved
-          <Check className="w-3.5 h-3.5 inline ml-1" />
         </span>
       );
     }
 
-    if (pairActions[pair.id]) {
+    const taken = pairActions[pair.id];
+    if (taken) {
+      const label =
+        taken === "reject"
+          ? "Rejected"
+          : taken === "override"
+            ? "Approved with Override"
+            : "Escalated to Manager";
+      const cls =
+        taken === "reject"
+          ? "border-destructive bg-destructive/10 text-destructive"
+          : taken === "override"
+            ? "border-success bg-success/10 text-success-text"
+            : "border-warning bg-warning/10 text-warning-text";
       return (
         <div
-          className={`px-3 py-2 rounded-md text-xs font-medium text-center ${
-            pairActions[pair.id] === "reject"
-              ? "bg-red-50 text-red-700 border border-red-200"
-              : pairActions[pair.id] === "override"
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                : "bg-purple-50 text-purple-700 border border-purple-200"
-          }`}
+          className={`w-full rounded-md border px-3 py-2 text-center text-xs font-medium ${cls}`}
         >
-          {pairActions[pair.id] === "reject"
-            ? "Rejected"
-            : pairActions[pair.id] === "override"
-              ? "Approved with Override"
-              : "Escalated to Manager"}
+          {label}
         </div>
       );
     }
 
     return (
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onReject}
-          className="bg-red-600 text-white px-3 py-1.5 text-xs font-medium rounded-md border-none cursor-pointer hover:bg-red-700 transition-colors"
-        >
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="destructive" size="sm" onClick={onReject}>
           Reject
-        </button>
-        <button
-          onClick={onOverride}
-          className="bg-white text-[var(--text-secondary)] px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-        >
+        </Button>
+        <Button variant="outline" size="sm" onClick={onOverride}>
           Approve with Override
-        </button>
-        <button
-          onClick={onEscalate}
-          className="bg-white text-[var(--text-secondary)] px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-        >
+        </Button>
+        <Button variant="outline" size="sm" onClick={onEscalate}>
           Escalate to Manager
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="card mb-4">
+    <Card className="mb-4 gap-0 py-0">
       {/* Card header */}
-      <div className="px-5 pt-4 pb-3 border-b border-[var(--border)] flex items-center justify-between">
-        <div className="flex items-center">
-          <span className="text-sm font-semibold text-[var(--text-primary)]">
-            {pair.vendor}
-          </span>
-          <span className="text-[11px] text-[var(--text-muted)] ml-2">
-            {pair.id}
-          </span>
+      <CardHeader className="flex items-center justify-between border-b border-border px-5 py-3">
+        <div className="flex items-center gap-2">
+          <h3 className="m-0 text-sm font-semibold">{pair.vendor}</h3>
+          <span className="text-[11px] text-muted-foreground">{pair.id}</span>
         </div>
-        <div className="flex items-center gap-2.5">
-          <span className="text-sm font-medium text-[var(--text-primary)]">
+        <CardAction className="row-span-1 row-start-1 flex items-center gap-2.5 self-center">
+          <span className="text-sm font-medium tabular-nums">
             {formatCurrency(pair.flaggedAmount)}
           </span>
-          <span className={badgeClass}>{badgeLabel}</span>
-        </div>
-      </div>
+          {statusBadge}
+        </CardAction>
+      </CardHeader>
 
       {/* Similarity score row */}
-      <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--bg-base)] flex items-center gap-3">
+      <div className="flex items-center gap-3 border-b border-border bg-muted/40 px-5 py-2">
         <SimilarityBar score={pair.similarity} />
-        <span className="text-xs text-[var(--text-secondary)]">
+        <span className="text-xs text-muted-foreground">
           {pair.amountDelta > 0
             ? `Δ ${formatCurrency(pair.amountDelta)} · ${pair.daysDelta} days apart`
             : `${pair.daysDelta} days apart · no amount delta`}
@@ -169,54 +207,62 @@ function DuplicatePairCard({
       </div>
 
       {/* Side-by-side comparison */}
-      <div className="px-5 py-4 grid grid-cols-[1fr_auto_1fr] items-start">
-        {/* Invoice A */}
+      <CardContent className="grid grid-cols-[1fr_auto_1fr] items-start px-5 py-4">
         <div>
-          <div className="section-label mb-2">Invoice A</div>
-          <div className="font-mono text-xs font-medium text-[var(--text-primary)]">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Invoice A
+          </div>
+          <div className="font-mono text-xs font-medium">
             {pair.invoice1.number}
           </div>
-          <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {formatDate(pair.invoice1.date)}
           </div>
-          <div className="text-[15px] font-semibold text-[var(--text-primary)] mt-1">
+          <div className="mt-1 text-base font-semibold tabular-nums">
             {formatCurrency(pair.invoice1.amount)}
           </div>
-          <div className="text-[11px] text-[var(--text-muted)] mt-1">
+          <div className="mt-1 text-[11px] text-muted-foreground">
             {pair.invoice1.submittedVia}
           </div>
         </div>
 
-        {/* Center divider */}
-        <div className="w-px bg-[var(--border)] self-stretch mx-8" />
+        <div className="mx-8 w-px self-stretch bg-border" />
 
-        {/* Invoice B */}
         <div>
-          <div className="section-label mb-2">Invoice B</div>
-          <div className="font-mono text-xs font-medium text-[var(--text-primary)]">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Invoice B
+          </div>
+          <div className="font-mono text-xs font-medium">
             {pair.invoice2.number}
           </div>
-          <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {formatDate(pair.invoice2.date)}
           </div>
-          <div className="text-[15px] font-semibold text-[var(--text-primary)] mt-1">
+          <div className="mt-1 text-base font-semibold tabular-nums">
             {formatCurrency(pair.invoice2.amount)}
           </div>
-          <div className="text-[11px] text-[var(--text-muted)] mt-1">
+          <div className="mt-1 text-[11px] text-muted-foreground">
             {pair.invoice2.submittedVia}
           </div>
         </div>
-      </div>
+      </CardContent>
 
       {/* AI analysis */}
       {analysis.length > 0 && (
         <div className="px-5 pb-4">
-          <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-            <div className="section-label mb-2">Analysis</div>
+          <div className="rounded-md border border-border bg-muted/40 px-4 py-3">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Analysis
+            </div>
             <div className="flex flex-col gap-1.5">
               {analysis.map((line, i) => (
-                <div key={i} className="text-xs text-[var(--text-secondary)] flex gap-2">
-                  <span className="text-[var(--text-muted)] shrink-0">&ndash;</span>
+                <div
+                  key={i}
+                  className="flex gap-2 text-xs text-muted-foreground"
+                >
+                  <span className="shrink-0" aria-hidden="true">
+                    &ndash;
+                  </span>
                   <span>{line}</span>
                 </div>
               ))}
@@ -226,14 +272,15 @@ function DuplicatePairCard({
       )}
 
       {/* Actions */}
-      <div className="px-5 pb-4">
+      <CardFooter className="border-t-0 bg-transparent px-5 pt-0 pb-4">
         {renderActions()}
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }
 
 // ─── HOW IT WORKS ─────────────────────────────────────────────────────────────
+// [Spec: domains/exceptions/spec.md#Layout — How It Works]
 
 const steps = [
   {
@@ -255,41 +302,40 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <div className="border border-[var(--border)] rounded-lg bg-white px-6 py-4 flex items-center mb-6">
+    <Card className="mb-6 flex-row items-center px-6 py-4">
       {steps.map((s, i) => (
-        <div key={s.step} className="flex items-center flex-1 min-w-0">
-          <div className="flex-1 min-w-0">
-            <div className="section-label">{s.step}</div>
-            <div className="text-[13px] font-medium text-[var(--text-primary)] mt-0.5">
-              {s.name}
+        <div key={s.step} className="flex min-w-0 flex-1 items-center">
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {s.step}
             </div>
-            <div className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-snug">
+            <div className="mt-0.5 text-[13px] font-medium">{s.name}</div>
+            <div className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
               {s.desc}
             </div>
           </div>
           {i < steps.length - 1 && (
-            <span className="text-[var(--border-strong)] text-lg mx-6 shrink-0">
+            <span
+              className="mx-6 shrink-0 text-lg text-muted-foreground"
+              aria-hidden="true"
+            >
               &rarr;
             </span>
           )}
         </div>
       ))}
-    </div>
+    </Card>
   );
 }
 
 // ─── MANAGERS LIST ────────────────────────────────────────────────────────────
 
-const managers = [
-  "David Kim",
-  "Lisa Rodriguez",
-  "Michael Chang",
-  "Jennifer Walsh",
-];
+const managers = ["David Kim", "Lisa Rodriguez", "Michael Chang", "Jennifer Walsh"];
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function DuplicatesPage() {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<{
     type: "reject" | "override" | "escalate";
@@ -299,129 +345,108 @@ export default function DuplicatesPage() {
   const [selectedManager, setSelectedManager] = useState("");
   const [pairActions, setPairActions] = useState<Record<string, string>>({});
 
+  // [Spec: domains/exceptions/spec.md#Business Rules — Loading state]
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(t);
   }, []);
 
+  function closeModal() {
+    setActiveModal(null);
+    setModalNote("");
+    setSelectedManager("");
+  }
+
+  // [Spec: domains/exceptions/spec.md#Business Rules — Duplicate pair actions]
   function handleSubmit() {
     if (!activeModal) return;
     setPairActions((prev) => ({
       ...prev,
       [activeModal.pairId]: activeModal.type,
     }));
-    setActiveModal(null);
-    setModalNote("");
-    setSelectedManager("");
+    showToast(
+      `Duplicate ${activeModal.pairId} — ${
+        activeModal.type === "reject"
+          ? "invoice rejected per analyst review"
+          : activeModal.type === "override"
+            ? "approved with documented override"
+            : "escalated for managerial review"
+      }`,
+      activeModal.type === "reject" ? "warning" : "success"
+    );
+    closeModal();
   }
 
+  const totalAtRisk = formatCurrency(
+    duplicatePairs.reduce((s, p) => s + p.flaggedAmount, 0)
+  );
+
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
-      <div className="max-w-[900px] mx-auto">
+    <main className="@container/main flex flex-1 flex-col bg-background">
+      <div className="mx-auto w-full max-w-[900px]">
         {/* Header */}
-        <div className="px-6 lg:px-8 pt-8 pb-6">
-          <div className="flex items-start justify-between mb-1">
-            <div>
-              <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight m-0">
+        <div className="px-4 pt-8 pb-6 lg:px-6">
+          <div className="mb-1 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight">
                 Duplicate Detection
               </h1>
-              <p className="text-xs text-[var(--text-secondary)] mt-1 mb-0">
-                AI scanned 1,847 invoices &middot; {duplicatePairs.length} pairs flagged &middot; {formatCurrency(duplicatePairs.reduce((s, p) => s + p.flaggedAmount, 0))} at risk
+              <p className="mt-1 text-sm text-muted-foreground">
+                AI scanned 1,847 invoices &middot; {duplicatePairs.length} pairs
+                flagged &middot; {totalAtRisk} at risk
               </p>
             </div>
-            <button className="text-xs font-medium text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] rounded-md px-3.5 py-1.5 cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
+            <Button variant="outline" size="sm">
               Export
-            </button>
+            </Button>
           </div>
-          <hr className="divider mt-5" />
+          <hr className="mt-5 border-border" />
         </div>
 
         {/* How it works + cards */}
-        <div className="px-6 lg:px-8 pb-8">
+        <section
+          aria-labelledby="pairs-heading"
+          className="px-4 pb-8 lg:px-6"
+        >
+          <h2 id="pairs-heading" className="sr-only">
+            Flagged duplicate pairs
+          </h2>
           {loading ? (
             <>
-              {/* How-it-works skeleton */}
-              <div className="border border-[var(--border)] rounded-lg bg-white px-6 py-4 flex items-center mb-6">
+              <Card className="mb-6 flex-row items-center px-6 py-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center flex-1 min-w-0">
-                    <div className="flex-1 min-w-0">
-                      <div className="h-2.5 w-12 bg-[var(--border)] rounded animate-pulse mb-2" />
-                      <div className="h-3.5 w-20 bg-[var(--border)] rounded animate-pulse mb-1.5" />
-                      <div className="h-2.5 w-full max-w-[180px] bg-[var(--border)] rounded animate-pulse" />
+                  <div key={i} className="flex min-w-0 flex-1 items-center">
+                    <div className="min-w-0 flex-1">
+                      <Skeleton className="mb-2 h-2.5 w-12" />
+                      <Skeleton className="mb-1.5 h-3.5 w-20" />
+                      <Skeleton className="h-2.5 w-40" />
                     </div>
-                    {i < 3 && (
-                      <div className="h-4 w-4 bg-[var(--border)] rounded animate-pulse mx-6 shrink-0" />
-                    )}
+                    {i < 3 && <Skeleton className="mx-6 size-4 shrink-0" />}
                   </div>
                 ))}
-              </div>
-
-              {/* Duplicate pair card skeletons */}
+              </Card>
               {[1, 2, 3].map((i) => (
-                <div key={i} className="card mb-4">
-                  {/* Card header skeleton */}
-                  <div className="px-5 pt-4 pb-3 border-b border-[var(--border)] flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-3.5 w-32 bg-[var(--border)] rounded animate-pulse" />
-                      <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse" />
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-3.5 w-20 bg-[var(--border)] rounded animate-pulse" />
-                      <div className="h-5 w-14 bg-[var(--border)] rounded-full animate-pulse" />
-                    </div>
+                <Card key={i} className="mb-4 gap-0 py-0">
+                  <div className="flex items-center justify-between border-b border-border px-5 py-3">
+                    <Skeleton className="h-3.5 w-40" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
                   </div>
-
-                  {/* Similarity bar skeleton */}
-                  <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--bg-base)] flex items-center gap-3">
-                    <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
-                    <div className="w-32 h-1.5 bg-[var(--border)] rounded-full animate-pulse" />
-                    <div className="h-3 w-10 bg-[var(--border)] rounded animate-pulse" />
+                  <div className="border-b border-border bg-muted/40 px-5 py-2">
+                    <Skeleton className="h-3 w-56" />
                   </div>
-
-                  {/* Side-by-side skeleton */}
-                  <div className="px-5 py-4 grid grid-cols-[1fr_auto_1fr] items-start">
-                    <div>
-                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse mb-3" />
-                      <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse mb-2" />
-                      <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse mb-2" />
-                      <div className="h-4 w-24 bg-[var(--border)] rounded animate-pulse mb-2" />
-                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
-                    </div>
-                    <div className="w-px bg-[var(--border)] self-stretch mx-8" />
-                    <div>
-                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse mb-3" />
-                      <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse mb-2" />
-                      <div className="h-2.5 w-20 bg-[var(--border)] rounded animate-pulse mb-2" />
-                      <div className="h-4 w-24 bg-[var(--border)] rounded animate-pulse mb-2" />
-                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse" />
-                    </div>
+                  <div className="grid grid-cols-2 gap-8 px-5 py-4">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
                   </div>
-
-                  {/* Analysis skeleton */}
                   <div className="px-5 pb-4">
-                    <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-md px-4 py-3">
-                      <div className="h-2.5 w-16 bg-[var(--border)] rounded animate-pulse mb-3" />
-                      <div className="flex flex-col gap-2">
-                        <div className="h-2.5 w-full bg-[var(--border)] rounded animate-pulse" />
-                        <div className="h-2.5 w-4/5 bg-[var(--border)] rounded animate-pulse" />
-                        <div className="h-2.5 w-3/4 bg-[var(--border)] rounded animate-pulse" />
-                      </div>
-                    </div>
+                    <Skeleton className="h-7 w-64" />
                   </div>
-
-                  {/* Actions skeleton */}
-                  <div className="px-5 pb-4 flex items-center gap-2">
-                    <div className="h-7 w-16 bg-[var(--border)] rounded-md animate-pulse" />
-                    <div className="h-7 w-36 bg-[var(--border)] rounded-md animate-pulse" />
-                    <div className="h-7 w-32 bg-[var(--border)] rounded-md animate-pulse" />
-                  </div>
-                </div>
+                </Card>
               ))}
             </>
           ) : (
             <>
               <HowItWorks />
-
               {duplicatePairs.map((pair) => (
                 <DuplicatePairCard
                   key={pair.id}
@@ -444,193 +469,157 @@ export default function DuplicatesPage() {
               ))}
             </>
           )}
-        </div>
+        </section>
       </div>
 
-      {/* ── Reject Modal ──────────────────────────────────────────────────────── */}
-      {activeModal?.type === "reject" && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={() => setActiveModal(null)}
-        >
-          <div
-            className="bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setActiveModal(null)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
-            >
-              <X size={16} />
-            </button>
-
-            <h2 className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
-              Reject Duplicate Invoice
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
+      {/* ── Reject Dialog ─────────────────────────────────────────────────── */}
+      {/* [Spec: domains/exceptions/spec.md#Layout — Action Modals] */}
+      <Dialog
+        open={activeModal?.type === "reject"}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Duplicate Invoice</DialogTitle>
+            <DialogDescription>
               This will block the duplicate invoice from processing.
-            </p>
-
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="reject-reason"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Reason for rejection
             </label>
-            <textarea
+            <Textarea
+              id="reject-reason"
               value={modalNote}
               onChange={(e) => setModalNote(e.target.value)}
               placeholder="Describe why this invoice is being rejected..."
-              className="w-full h-24 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-white"
+              className="min-h-24"
             />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setActiveModal(null)}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 text-xs font-medium rounded-md text-white bg-red-600 border-none cursor-pointer hover:bg-red-700 transition-colors"
-              >
-                Reject Invoice
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-
-      {/* ── Approve with Override Modal ────────────────────────────────────────── */}
-      {activeModal?.type === "override" && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={() => setActiveModal(null)}
-        >
-          <div
-            className="bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setActiveModal(null)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleSubmit}
+              disabled={!modalNote.trim()}
             >
-              <X size={16} />
-            </button>
+              Reject Invoice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            <h2 className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
-              Approve with Override
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
+      {/* ── Approve with Override Dialog ──────────────────────────────────── */}
+      <Dialog
+        open={activeModal?.type === "override"}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve with Override</DialogTitle>
+            <DialogDescription>
               Override the duplicate flag and approve this invoice for payment.
-            </p>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2.5 mb-4">
-              <p className="text-xs text-amber-800 m-0">
-                This action overrides the AI duplicate detection. A record of this
-                override will be logged for audit purposes.
-              </p>
-            </div>
-
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+            </DialogDescription>
+          </DialogHeader>
+          <Alert className="border-warning bg-warning/10">
+            <AlertTriangle className="text-warning-text" />
+            <AlertDescription className="text-warning-text">
+              This action overrides the AI duplicate detection. A record of this
+              override will be logged for audit purposes.
+            </AlertDescription>
+          </Alert>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="override-reason"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Justification for override
             </label>
-            <textarea
+            <Textarea
+              id="override-reason"
               value={modalNote}
               onChange={(e) => setModalNote(e.target.value)}
               placeholder="Explain why this is not a true duplicate..."
-              className="w-full h-24 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-white"
+              className="min-h-24"
             />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setActiveModal(null)}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 text-xs font-medium rounded-md text-white bg-amber-600 border-none cursor-pointer hover:bg-amber-700 transition-colors"
-              >
-                Approve
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={handleSubmit} disabled={!modalNote.trim()}>
+              Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* ── Escalate to Manager Modal ──────────────────────────────────────────── */}
-      {activeModal?.type === "escalate" && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={() => setActiveModal(null)}
-        >
-          <div
-            className="bg-white border border-[var(--border)] shadow-md rounded-lg w-full max-w-md mx-4 p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setActiveModal(null)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer bg-transparent border-none p-0"
-            >
-              <X size={16} />
-            </button>
-
-            <h2 className="text-sm font-semibold text-[var(--text-primary)] m-0 mb-1">
-              Escalate to Manager
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-0 mb-4">
+      {/* ── Escalate to Manager Dialog ────────────────────────────────────── */}
+      <Dialog
+        open={activeModal?.type === "escalate"}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Escalate to Manager</DialogTitle>
+            <DialogDescription>
               Send this duplicate pair to a manager for final review.
-            </p>
-
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="escalate-manager"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Select manager
             </label>
-            <div className="relative mb-4">
-              <select
-                value={selectedManager}
-                onChange={(e) => setSelectedManager(e.target.value)}
-                className="w-full text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-[var(--text-muted)] bg-white cursor-pointer"
-              >
-                <option value="">Choose a manager...</option>
+            <Select
+              value={selectedManager}
+              onValueChange={(v) => setSelectedManager(v as string)}
+            >
+              <SelectTrigger id="escalate-manager" className="w-full">
+                <SelectValue placeholder="Choose a manager..." />
+              </SelectTrigger>
+              <SelectContent>
                 {managers.map((m) => (
-                  <option key={m} value={m}>
+                  <SelectItem key={m} value={m}>
                     {m}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
-              />
-            </div>
-
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="escalate-note"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Note (optional)
             </label>
-            <textarea
+            <Textarea
+              id="escalate-note"
               value={modalNote}
               onChange={(e) => setModalNote(e.target.value)}
               placeholder="Add context for the manager..."
-              className="w-full h-20 text-xs text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--text-muted)] bg-white"
+              className="min-h-20"
             />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setActiveModal(null)}
-                className="px-4 py-2 text-xs font-medium rounded-md text-[var(--text-secondary)] bg-white border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 text-xs font-medium rounded-md text-white bg-blue-600 border-none cursor-pointer hover:bg-blue-700 transition-colors"
-              >
-                Escalate
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={handleSubmit} disabled={!selectedManager}>
+              Escalate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </main>
   );
 }

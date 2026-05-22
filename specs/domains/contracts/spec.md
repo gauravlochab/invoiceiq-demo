@@ -12,7 +12,7 @@ EARS notation.
 - [ ] THE SYSTEM SHALL support both light and dark mode via shadcn theme tokens
 
 **Summary strip**
-- [ ] THE SYSTEM SHALL render a 4-cell summary strip in a shadcn `Card`, separated by `divide-x divide-border`: Total Contract Value, Current Spend (Q1 2026), Unclaimed Rebates (`text-warning`), Contracts Breached (`text-destructive`)
+- [ ] THE SYSTEM SHALL render a 4-cell summary strip in a shadcn `Card`, separated by `divide-x divide-border`: Total Contract Value, Current Spend (Q1 2026), Unclaimed Rebates (`text-warning-text`), Contracts Breached (`text-destructive`)
 
 **Contract sorting and styling**
 - [ ] THE SYSTEM SHALL sort contracts by status priority: breached/expired (0) → warning (1) → compliant (2)
@@ -24,8 +24,8 @@ EARS notation.
 - [ ] IF `capType === "both"` THEN THE SYSTEM SHALL render two `Progress` bars (value + quantity), each color-coded independently
 
 **Status badges and alerts**
-- [ ] THE SYSTEM SHALL render Status badges using shadcn `Badge`: `variant="destructive"` "Breached", `bg-warning/10 text-warning border-warning` "At Risk", `bg-success/10 text-success border-success` "Compliant"
-- [ ] WHEN `rebateMissed > 0` THE SYSTEM SHALL display an inline shadcn `Alert` styled `bg-warning/10 border-warning text-warning` with "UNCLAIMED REBATE: {amount} not received — No credit memo for Q1 2026"
+- [ ] THE SYSTEM SHALL render Status badges using shadcn `Badge`: `variant="destructive"` "Breached", `bg-warning/10 text-warning-text border-warning` "At Risk", `bg-success/10 text-success-text border-success` "Compliant"
+- [ ] WHEN `rebateMissed > 0` THE SYSTEM SHALL display an inline shadcn `Alert` styled `bg-warning/10 border-warning` with `text-warning-text` body copy: "UNCLAIMED REBATE: {amount} not received — No credit memo for Q1 2026"
 - [ ] WHEN a contract status is `breached` THE SYSTEM SHALL display a breach block: shadcn `Alert variant="destructive"` containing "CONTRACT BREACHED" header, detail text, and three shadcn `Button` actions: "Pause Vendor Payments" (`variant="destructive"`), "Contact Vendor" (`variant="outline"`), "Notify CFO" (`variant="outline"`)
 
 **Cardinal Health warning actions**
@@ -67,16 +67,16 @@ Contracts are sorted by status priority (v2.0 theme tokens):
 
 ### Status Badges
 - **Breached**: shadcn `Badge variant="destructive"` with text "Breached"
-- **Warning**: shadcn `Badge` styled `bg-warning/10 text-warning border-warning` with text "At Risk"
-- **Compliant**: shadcn `Badge` styled `bg-success/10 text-success border-success` with text "Compliant"
+- **Warning**: shadcn `Badge` styled `bg-warning/10 text-warning-text border-warning` with text "At Risk"
+- **Compliant**: shadcn `Badge` styled `bg-success/10 text-success-text border-success` with text "Compliant"
 
 ### Rebate Alerts
-Shown when `rebateMissed > 0`. Displays: "UNCLAIMED REBATE: {amount} not received -- No credit memo for Q1 2026" in amber text.
+Shown when `rebateMissed > 0`. Displays: "UNCLAIMED REBATE: {amount} not received -- No credit memo for Q1 2026" in `text-warning-text` (AA-safe amber text).
 
 ### Tiered Pricing Validation
 Shown when `tieredPricing` is truthy. Hardcoded display:
 - Tier 1: <= 1,000 units/month -> $85.00/unit
-- Tier 2: > 1,000 units/month -> $72.00/unit, with amber annotation: "should apply (2,340 units in Mar)"
+- Tier 2: > 1,000 units/month -> $72.00/unit, with `text-warning-text` annotation: "should apply (2,340 units in Mar)"
 
 ### Breach Block
 Shown only for breached contracts. Contains:
@@ -138,7 +138,7 @@ Use affirmative phrasing per SpecLayer v1.1.
 - **Require explicit user acknowledgment to dismiss breach alerts** — Reason: auto-dismissal creates compliance gaps that auditors will flag.
 - **Display the qualifying volume tier alongside every rebate percentage** — Reason: rebate rates change by tier; rate without tier misleads procurement.
 - **Use shadcn `Card`, `Alert`, `Badge`, `Button`, `Progress`, `Table` primitives for contract cards, alerts, status badges, action buttons, spend bars, and renewal table** — Reason: deprecates ad-hoc `.card`, `.alert-bar`, `.badge.*`, `.data-table` utility classes.
-- **Use theme tokens (`bg-card`, `border-destructive`, `border-warning`, `text-destructive`, `text-warning`, `text-success`, `text-muted-foreground`) for all surfaces, borders, and status text** — Reason: hex tokens (`--critical`, `--warning`, `--success`, `--acl-primary`) removed in v2.0.
+- **Use theme tokens for all surfaces, borders, and status text** — surfaces/borders use `bg-card` / `border-destructive` / `border-warning` / `border-border`; status TEXT uses `text-destructive` / `text-warning-text` / `text-success-text` (AA-safe per ui-standard.md v2.0.1); the vivid `--warning` / `--success` are reserved for fills, dots, and borders only — Reason: hex tokens (`--critical`, `--warning`, `--success`, `--acl-primary`) removed in v2.0, and `text-warning` / `text-success` fail WCAG 1.4.3 as body text.
 
 ## AJ Feedback (Parkland Demo)
 - Note: Pending -- no specific feedback for this module yet.
@@ -147,3 +147,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Added 400ms loading state with skeleton placeholders (summary strip, contract cards, renewal table) -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Contract cards + summary strip + renewal table → shadcn `Card`. Spend bars → shadcn `Progress` with `bg-destructive` / `bg-warning` / `bg-primary` thresholds. Rebate alerts + breach blocks → shadcn `Alert` (warning-styled or `variant="destructive"`). Status badges → shadcn `Badge` (`variant="destructive"` for Breached, theme-styled for At Risk/Compliant). All action buttons → shadcn `Button` variants. Renewal table → shadcn `Table` primitives. Loading → `Skeleton`. All v1 hex tokens (`--critical`, `--warning`, `--success`, `--acl-primary`, `--border`) migrated to v2 theme classes. Added 14 EARS Acceptance Criteria. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0.1 reconciliation: Migrated app/contracts/page.tsx from v1 to v2.0 shadcn (Cluster 2). Status-text criteria corrected to AA-safe `text-warning-text` / `text-success-text` (ui-standard.md v2.0.1); `--warning`/`--success` kept for fills/borders. Code reconciliation: `.card`→`Card` with `border-l-4` status border, hand-rolled `.progress-track`/`.progress-fill` spend bars→shadcn `Progress` with `ProgressIndicator` color override, breach/rebate blocks→shadcn `Alert`, `.badge.*`→`Badge`, raw `<button>`→`Button`, `.data-table` renewal table→shadcn `Table` primitives, skeletons→`Skeleton`. All v1 `var(--*)` tokens, `bg-white`, `bg-red-50/border-red-200`, `text-amber-700/red-600/red-900` retired. Real `<h1>`/`<h2>` outline; `<h3>` per contract card via VendorBadge heading. Dark mode verified. -->

@@ -13,8 +13,8 @@ EARS notation.
 
 **Policy banner and summary**
 - [ ] THE SYSTEM SHALL render the Parkland AP Policy 4.3 statement in a shadcn `Alert` styled `bg-primary/5 border-primary` with policy reference "AP-POL-4.3-2026"
-- [ ] THE SYSTEM SHALL render the summary strip as a 5-cell horizontal flex row with `divide-x divide-border` separators: In Queue, Total Target (`text-destructive`), Recovered (`text-success` + percentage), Success Rate (color-coded), SLA Overdue (`text-destructive` if > 0, `text-muted-foreground` if 0)
-- [ ] THE SYSTEM SHALL color the Success Rate using `text-success` ≥ 80%, `text-warning` ≥ 50%, `text-destructive` < 50%
+- [ ] THE SYSTEM SHALL render the summary strip as a 5-cell horizontal flex row with `divide-x divide-border` separators: In Queue, Total Target (`text-destructive`), Recovered (`text-success-text` + percentage), Success Rate (color-coded), SLA Overdue (`text-destructive` if > 0, `text-muted-foreground` if 0)
+- [ ] THE SYSTEM SHALL color the Success Rate using `text-success-text` ≥ 80%, `text-warning-text` ≥ 50%, `text-destructive` < 50%
 
 **Recovery trend chart**
 - [ ] THE SYSTEM SHALL render a full-width shadcn `Card` containing a Recharts `ComposedChart` with two `Area` series — Target (dashed stroke `var(--destructive)`, tint `var(--destructive)/20%`) and Recovered (solid stroke `var(--success)`, fill `var(--success)/30%`)
@@ -27,7 +27,7 @@ EARS notation.
 - [ ] WHEN a user clicks an actionable row THE SYSTEM SHALL expand it to show the outcome recording form and status history timeline
 
 **SLA badges**
-- [ ] THE SYSTEM SHALL render SLA badges using shadcn `Badge` with theme-derived styling: `variant="destructive"` for overdue/critical, `bg-warning/10 text-warning border-warning` for warning, `bg-success/10 text-success border-success` for ok
+- [ ] THE SYSTEM SHALL render SLA badges using shadcn `Badge` with theme-derived styling: `variant="destructive"` for overdue/critical, `bg-warning/10 text-warning-text border-warning` for warning, `bg-success/10 text-success-text border-success` for ok
 - [ ] THE SYSTEM SHALL hide the SLA badge for records with status `recovered` or `closed`
 
 **Right column (320px sticky)**
@@ -52,7 +52,7 @@ Renders inside `SidebarProvider` + `SidebarInset` (per v2.0 app shell).
 
 - **Header region**: Title `text-2xl font-semibold` "Recovery Queue" with a `TrendingUp` Lucide icon, breadcrumb-style label `text-sm text-muted-foreground` ("Healthcare AP - Recovery Agent"), subtitle, and a shadcn `Button variant="outline"` "Refresh" top-right.
 - **Policy info banner**: shadcn `Alert` styled `bg-primary/5 border-primary` showing the Parkland Health Recovery Policy statement and policy reference (AP-POL-4.3-2026).
-- **Summary strip**: A 5-cell horizontal `flex` row with `divide-x divide-border` separators, displaying: In Queue (count + active count `text-muted-foreground`), Total Target (`text-destructive`), Recovered (`text-success` + percentage), Success Rate (color-coded per Acceptance Criteria), SLA Overdue (`text-destructive` if > 0). Shadcn `Skeleton` for 400ms on mount.
+- **Summary strip**: A 5-cell horizontal `flex` row with `divide-x divide-border` separators, displaying: In Queue (count + active count `text-muted-foreground`), Total Target (`text-destructive`), Recovered (`text-success-text` + percentage), Success Rate (color-coded per Acceptance Criteria), SLA Overdue (`text-destructive` if > 0). Shadcn `Skeleton` for 400ms on mount.
 - **Recovery Trend chart**: Full-width shadcn `Card` with `CardHeader` (`CardTitle` "Recovery Trend") and `CardContent` containing the Recharts `ComposedChart` per Acceptance Criteria.
 - **Two-column layout** (`grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6`):
   - **Left column**: Recovery queue card per Acceptance Criteria.
@@ -179,7 +179,7 @@ Use affirmative phrasing per SpecLayer v1.1.
 - **Append new outcomes as new entries rather than editing or deleting prior ones** — Reason: outcomes are audit events; corrections record a new outcome with a note referencing the original.
 - **Require analyst review of the recipient list before sending bulk follow-up emails** — Reason: automated emails to wrong vendors or closed cases damage relationships and create legal exposure.
 - **Use shadcn `Card`, `Alert`, `Badge`, `Button`, `Checkbox`, `Progress` primitives for the queue surface, banner, badges, buttons, selection, and progress indicators** — Reason: deprecates ad-hoc `.alert-bar`, `.card`, `.badge.*` utility classes from v1.
-- **Use theme tokens (`bg-card`, `text-foreground`, `text-destructive`, `text-warning`, `text-success`, `text-muted-foreground`) for all surfaces and status text** — Reason: hex tokens (`--critical`, `--warning`, `--success`, `--text-primary`) removed in v2.0.
+- **Use theme tokens for all surfaces and status text** — surfaces use `bg-card` / `text-foreground` / `text-muted-foreground` / `border-border`; status TEXT uses `text-destructive` / `text-warning-text` / `text-success-text` (AA-safe per ui-standard.md v2.0.1); the vivid `--warning` / `--success` are reserved for fills, dots, and borders only — Reason: hex tokens (`--critical`, `--warning`, `--success`, `--text-primary`) removed in v2.0, and `text-warning` / `text-success` fail WCAG 1.4.3 as body text.
 - **Use chart series tokens (`var(--destructive)` for Target, `var(--success)` for Recovered) for the trend chart** — Reason: status overlays use semantic tokens, not chart-1..5 palette.
 
 ## AJ Feedback (Parkland Demo)
@@ -193,3 +193,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-14: Added AJ feedback from Recording 17 — positive reaction, Parkland policy alignment needed -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Policy banner → shadcn `Alert` styled bg-primary/5. Summary strip retokenized to text-destructive / text-success / text-warning. Recovery trend chart uses var(--destructive) for Target, var(--success) for Recovered (semantic status tokens, not chart-1..5 palette). Queue card and right-column cards → shadcn `Card`. SLA badges → shadcn `Badge` with variant/styled theming. Bulk actions, refresh, outcome form → shadcn `Button` variants. Progress bars in Recovery Agent stats → shadcn `Progress`. Loading → `Skeleton`. Added 20 EARS Acceptance Criteria covering app shell, banner/summary, trend chart, queue, SLA badges, right column, outcome recording, loading, accessibility. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0.1 reconciliation: Migrated app/recovery/page.tsx from v1 to v2.0 shadcn (Cluster 2). Status-text criteria corrected to the AA-safe `text-warning-text` / `text-success-text` tokens (ui-standard.md v2.0.1 — plain `text-warning`/`text-success` fail WCAG 1.4.3 at ~2.15:1/~2.50:1); `--warning`/`--success` kept for fills/dots/borders. Code reconciliation: `.card`→`Card`, `.alert-bar`→`Alert`, `.badge.*`→`Badge`, raw `<button>`→`Button`, `<input type=checkbox>`→`Checkbox`, hand-rolled progress bars→shadcn `Progress`, skeletons→`Skeleton`, all v1 `var(--*)` tokens + `bg-white` + `text-red/amber/emerald-600` retired. Page padding `px-8`→`px-4 lg:px-6`. Real `<h1>`/`<h2>`/`<h3>` outline added; status history timeline and agent log keep `--agent-*` extension colors (preserved per ui-standard.md). Recharts trend chart re-themed onto `var(--destructive)`/`var(--success)` + `var(--border)` grid + `var(--muted-foreground)` ticks; tooltip on `bg-popover`. Dark mode verified. -->

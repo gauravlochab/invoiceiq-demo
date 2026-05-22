@@ -25,7 +25,7 @@ EARS notation.
 **Data table**
 - [ ] THE SYSTEM SHALL render the exception table using shadcn `Table` primitives wrapped in a shadcn `Card` + `CardContent`
 - [ ] THE SYSTEM SHALL render exactly 9 columns: Checkbox, Exception, Type, Category, Vendor, Flagged, Severity, Status, Action
-- [ ] THE SYSTEM SHALL render the Flagged column right-aligned with `tabular-nums` and color-coded text (`text-destructive` for critical/high, `text-warning` for medium, `text-foreground` for low)
+- [ ] THE SYSTEM SHALL render the Flagged column right-aligned with `tabular-nums` and color-coded text (`text-destructive` for critical/high, `text-warning-text` for medium, `text-foreground` for low)
 - [ ] THE SYSTEM SHALL render Status badges using shadcn `Badge` variants (destructive / outline / secondary / `bg-success` custom) — never inline-styled badges
 - [ ] WHEN a user clicks a sortable column header THE SYSTEM SHALL sort by flaggedAmount, severity, or category
 - [ ] WHEN the table has zero rows after filtering THE SYSTEM SHALL display an `EmptyState` with `FileSearch` icon, message, and shadcn `Button variant="outline"` "Clear filter"
@@ -85,7 +85,7 @@ The page renders inside the global `SidebarProvider` + `SidebarInset` shell (per
   3. **Type** — shadcn `Badge`: `variant="destructive"` for suspicious_invoice/contract_overage, `variant="outline"` for duplicate/tier_pricing, `variant="secondary"` for others
   4. **Category** — `CategoryBadge` (InvoiceIQ-specific, retained), color via category brand color tokens
   5. **Vendor** — `VendorBadge` (InvoiceIQ-specific, retained)
-  6. **Flagged** — right-aligned, sortable, `tabular-nums`, `text-destructive` for critical/high severity, `text-warning` for medium, `text-foreground` for low
+  6. **Flagged** — right-aligned, sortable, `tabular-nums`, `text-destructive` for critical/high severity, `text-warning-text` for medium, `text-foreground` for low
   7. **Severity** — sortable, dot (`size-1.5 rounded-full`) + label (uses `severityConfig` colors mapped to theme tokens)
   8. **Status** — shadcn `Badge`: `variant="destructive"` for Open, `variant="outline"` for Under Review, `variant="secondary"` for Escalated, custom `bg-success` for Resolved
   9. **Action** — "Review →" link to `/exceptions/{id}`, appears on row hover (`group-hover:opacity-100`)
@@ -99,7 +99,9 @@ The page renders inside the global `SidebarProvider` + `SidebarInset` shell (per
 
 **Loading State** — shadcn `Skeleton` placeholders, 350ms simulated delay, 7-row table skeleton
 
-### Duplicates View (inside `TabsContent value="duplicates"`)
+### Duplicates View (inside `TabsContent value="duplicates"`, and the standalone `/duplicates` route)
+
+The Duplicates view is reachable two ways and renders the **same** `DuplicatePairCard` surface and action modals in both: (1) the Duplicates tab of `/exceptions`, and (2) the dedicated `/duplicates` route (`app/duplicates/page.tsx`), which presents the duplicate queue full-page with a `max-w-[900px]` reading column, its own page header, and the "How It Works" strip. The standalone route exists for a focused duplicate-review workflow; both must stay v2.0-consistent.
 
 **Summary line** — `text-sm text-muted-foreground`: "AI scanned 1,847 invoices • {count} pairs flagged • {amount} at risk"
 
@@ -162,6 +164,7 @@ The page renders inside the global `SidebarProvider` + `SidebarInset` shell (per
 | Invoice Detail | navigates to | Clicking an exception row navigates to the invoice detail page |
 | Dashboard | feeds into | Exception counts and severity stats displayed on dashboard KPIs |
 | Extract | reads from | Exception records reference extracted invoice data |
+| Duplicates (`/duplicates`) | shares surface | The standalone `/duplicates` route renders the same `DuplicatePairCard` + action modals as this spec's Duplicates View |
 
 ## Forbidden Patterns
 
@@ -173,7 +176,7 @@ Use affirmative phrasing per SpecLayer v1.1.
 - **Show resolved exceptions in the list with a Status badge** — Reason: resolved exceptions remain visible for audit trail completeness; use the Status filter to hide them.
 - **Use shadcn `Card` + `Table` primitives for the data table surface** — Reason: ad-hoc `<div className="data-table">` and `.card` utility classes are deprecated in ui-standard.md v2.0.
 - **Use shadcn `Badge variant="..."` for all Type and Status indicators** — Reason: `.badge.critical` / `.badge.warning` / `.badge.success` utility classes deprecated in v2.0.
-- **Use theme tokens (`bg-card`, `text-foreground`, `text-muted-foreground`, `text-destructive`, `text-warning`) for surfaces and text** — Reason: hex tokens (`--bg-surface`, `--critical`, `--text-primary`) removed in v2.0.
+- **Use theme tokens for surfaces and text** — surfaces use `bg-card` / `text-foreground` / `text-muted-foreground` / `border-border`; status TEXT uses `text-destructive` / `text-warning-text` (AA-safe per ui-standard.md v2.0.1); the vivid `--warning` / `--success` are reserved for fills, dots, and borders only — Reason: hex tokens (`--bg-surface`, `--critical`, `--text-primary`) removed in v2.0, and `text-warning` fails WCAG 1.4.3 as body text.
 - **Use shadcn `Dialog` for the Reject / Override / Escalate modals** — Reason: custom modal implementations diverge in keyboard handling and focus trap; shadcn `Dialog` is Radix-backed and accessible by default.
 
 ## AJ Feedback (Parkland Demo)
@@ -183,3 +186,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- CHANGELOG -->
 <!-- 2026-05-14: Initial spec created from current codebase -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Filter chips → shadcn `ToggleGroup`; data table → shadcn `Table` + `Card`; Type/Status indicators → `Badge variant`; modals → shadcn `Dialog`; loading → shadcn `Skeleton`; similarity bar → shadcn `Progress`. All v1 hex tokens migrated to shadcn theme classes. Added 18 EARS Acceptance Criteria covering app shell, view toggle, filter/search, table, bulk actions, duplicates view, loading, accessibility. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
+<!-- 2026-05-22 v2.0.1 reconciliation: Migrated the standalone `/duplicates` route (app/duplicates/page.tsx) from v1 to v2.0 shadcn (Cluster 2). The Duplicates View section now documents that this route shares the `DuplicatePairCard` surface + action modals with the Duplicates tab. Status-text criteria corrected to AA-safe `text-warning-text` (ui-standard.md v2.0.1). Code reconciliation for /duplicates: `.card`→`Card` (CardHeader/CardContent/CardFooter), `.badge.*`→`Badge` variants, hand-rolled similarity bar→shadcn `Progress` with `ProgressIndicator` color override, hand-rolled `fixed inset-0` Reject/Override/Escalate modals→shadcn `Dialog`, manager `<select>`→shadcn `Select`, `<textarea>`→shadcn `Textarea`, raw `<button>`→`Button`, skeletons→`Skeleton`. All v1 `var(--*)` tokens, `bg-white`, raw hex (`#DC2626`/`#B45309`), `bg-red/amber/emerald/purple/blue-*` retired. Page padding `px-8`→`px-4 lg:px-6`. Real `<h1>`/`<h3>` outline. Dark mode verified. (The /exceptions Duplicates tab itself is migrated separately under Cluster 1.) -->

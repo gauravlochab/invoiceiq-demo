@@ -1,8 +1,26 @@
+// [Spec: domains/contracts/spec.md v2.0.1] — Contract Compliance, migrated to
+// the shadcn v2.0 design system. Card/Alert/Badge/Button/Table primitives,
+// theme tokens only (no v1 vars, no hardcoded surfaces, no raw hex), AA-safe status
+// text via text-warning-text / text-success-text. See spec CHANGELOG 2026-05-22.
 "use client";
 
 import { useState, useEffect } from "react";
-import { contracts, formatCurrency, formatDate, Contract } from "@/lib/data";
+import { AlertTriangle } from "lucide-react";
+import { contracts, formatCurrency, Contract } from "@/lib/data";
 import { VendorBadge } from "@/components/VendorBadge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -27,51 +45,71 @@ const STATUS_ORDER: Record<Contract["status"], number> = {
   compliant: 2,
 };
 
+// [Spec: domains/contracts/spec.md#Business Rules — Contract Sorting]
 const sortedContracts = [...contracts].sort(
   (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
 );
 
+// Spend-vs-cap fill color by threshold (theme tokens — non-text, AA 3:1 fills).
+// [Spec: domains/contracts/spec.md#Business Rules — Spend-vs-Cap Progress Bar]
+function spendFillClass(p: number): string {
+  if (p >= 100) return "bg-destructive";
+  if (p >= 70) return "bg-warning";
+  return "bg-primary";
+}
+
 // ─── SPEND BAR ────────────────────────────────────────────────────────────────
+// Token-driven meter: a muted track with a status-colored fill. The fill color
+// is a non-text element (AA 3:1) and is always paired with the % text below.
+// [Spec: domains/contracts/spec.md#Acceptance Criteria — Spend-vs-cap progress]
 
 function SpendBar({
   spend,
   cap,
   label,
+  unit,
 }: {
   spend: number;
   cap: number;
-  label?: string;
+  label: string;
+  unit?: "currency" | "units";
 }) {
   const p = pct(spend, cap);
-  const fillColor =
-    p >= 100 ? "var(--critical)" : p >= 70 ? "var(--warning)" : "var(--acl-primary)";
+  const overLimit = p >= 100;
+  const fmtVal = (v: number) =>
+    unit === "units" ? `${v.toLocaleString()} units` : formatCurrency(v);
 
   return (
     <div>
-      {label && (
-        <div className="section-label mb-1 text-[var(--text-muted)]">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
-        </div>
-      )}
-      <div className="flex items-center justify-between mb-1">
-        <span className="section-label">SPEND VS CAP</span>
-        <span className="text-xs tabular-nums text-[var(--text-secondary)]">
-          {formatCurrency(spend)}{" "}
-          <span className="text-[var(--text-muted)]">/</span>{" "}
-          {formatCurrency(cap)}
+        </span>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          <span className="text-foreground">{fmtVal(spend)}</span>{" "}
+          <span aria-hidden="true">/</span> {fmtVal(cap)}
         </span>
       </div>
-      <div className="progress-track mt-2">
+      <div
+        className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={Math.round(p)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${label}: ${p.toFixed(1)} percent of cap`}
+      >
         <div
-          className="progress-fill"
-          style={{ width: `${Math.min(p, 100)}%`, background: fillColor }}
+          className={`h-full rounded-full ${spendFillClass(p)}`}
+          style={{ width: `${Math.min(p, 100)}%` }}
         />
       </div>
-      <div className={`text-xs mt-1 ${p >= 100 ? "text-red-600" : "text-[var(--text-secondary)]"}`}>
-        {p >= 100
+      <p
+        className={`mt-1 text-xs ${overLimit ? "text-destructive" : "text-muted-foreground"}`}
+      >
+        {overLimit
           ? `${p.toFixed(1)}% of cap — ${formatCurrency(spend - cap)} over limit`
           : `${p.toFixed(1)}% of cap`}
-      </div>
+      </p>
     </div>
   );
 }
@@ -83,149 +121,116 @@ function ContractCard({ contract }: { contract: Contract }) {
   const isCardinalWarning =
     contract.vendor === "Cardinal Health" && contract.status === "warning";
 
-  const leftBorderColor =
-    isBreached
-      ? "var(--critical)"
-      : contract.status === "warning"
-      ? "var(--warning)"
-      : "var(--border)";
+  // [Spec: domains/contracts/spec.md#Business Rules — Contract Sorting]
+  const leftBorderClass = isBreached
+    ? "border-l-4 border-l-destructive"
+    : contract.status === "warning"
+      ? "border-l-4 border-l-warning"
+      : "border-l-4 border-l-border";
 
-  const statusBadgeClass =
-    isBreached
-      ? "badge critical"
-      : contract.status === "warning"
-      ? "badge warning"
-      : "badge success";
+  const statusBadge =
+    isBreached ? (
+      <Badge variant="destructive">Breached</Badge>
+    ) : contract.status === "warning" ? (
+      <Badge className="border-warning bg-warning/10 text-warning-text">
+        At Risk
+      </Badge>
+    ) : (
+      <Badge className="border-success bg-success/10 text-success-text">
+        Compliant
+      </Badge>
+    );
 
-  const statusLabel =
-    isBreached ? "Breached" : contract.status === "warning" ? "At Risk" : "Compliant";
-
-  const valuePct = pct(contract.currentSpend, contract.capValue);
   const hasQuantityCap =
     contract.capType === "both" &&
     contract.capQuantity !== undefined &&
     contract.currentQuantity !== undefined;
 
   return (
-    <div
-      className="card mb-3"
-      style={{ borderLeft: `2px solid ${leftBorderColor}` }}
-    >
+    <Card className={`mb-3 py-0 ${leftBorderClass}`}>
       {/* Card header */}
       <div className="flex items-start justify-between px-5 pt-4 pb-3">
         <div>
           <div className="mb-1">
-            <VendorBadge name={contract.vendor} size="md" />
+            {/* VendorBadge carries the contract's heading-level identity */}
+            <h3 className="m-0 text-base font-medium">
+              <VendorBadge name={contract.vendor} size="md" />
+            </h3>
           </div>
-          <div className="text-xs font-mono text-[var(--text-muted)] mt-0.5 pl-[42px]">
+          <div className="mt-0.5 pl-[42px] font-mono text-xs text-muted-foreground">
             {contract.contractNumber}
           </div>
           <div className="mt-1.5 pl-[42px]">
-            <span className="badge neutral">{contract.category}</span>
+            <Badge variant="secondary">{contract.category}</Badge>
           </div>
         </div>
         <div className="text-right">
-          <span className={statusBadgeClass}>{statusLabel}</span>
-          <div className="text-xs text-[var(--text-muted)] mt-1">
+          {statusBadge}
+          <div className="mt-1 text-xs text-muted-foreground">
             {fmtPeriod(contract.startDate, contract.endDate)}
           </div>
         </div>
       </div>
 
-      {/* Spend section */}
-      <div className="px-5 pb-3 border-b border-[var(--bg-subtle)]">
+      {/* Spend section — cap source labelled (GPO contract #) for context */}
+      <div className="border-b border-border px-5 pb-3">
         {hasQuantityCap ? (
           <div className="flex flex-col gap-4">
-            {/* Value bar */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="section-label">VALUE SPEND VS CAP</span>
-                <span className="text-xs tabular-nums text-[var(--text-secondary)]">
-                  {formatCurrency(contract.currentSpend)}{" "}
-                  <span className="text-[var(--text-muted)]">/</span>{" "}
-                  {formatCurrency(contract.capValue)}
-                </span>
-              </div>
-              <div className="progress-track mt-2">
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${Math.min(valuePct, 100)}%`,
-                    background:
-                      valuePct >= 100
-                        ? "var(--critical)"
-                        : valuePct >= 70
-                        ? "var(--warning)"
-                        : "var(--acl-primary)",
-                  }}
-                />
-              </div>
-              <div className="text-xs mt-1 text-[var(--text-secondary)]">
-                {valuePct.toFixed(1)}% of cap
-              </div>
-            </div>
-            {/* Quantity bar */}
+            <SpendBar
+              spend={contract.currentSpend}
+              cap={contract.capValue}
+              label="Value spend vs cap"
+              unit="currency"
+            />
             {contract.capQuantity !== undefined &&
-              contract.currentQuantity !== undefined && (() => {
-                const qp = pct(contract.currentQuantity, contract.capQuantity);
-                return (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="section-label">QUANTITY VS CAP</span>
-                      <span className="text-xs tabular-nums text-[var(--text-secondary)]">
-                        {contract.currentQuantity.toLocaleString()}{" "}
-                        <span className="text-[var(--text-muted)]">/</span>{" "}
-                        {contract.capQuantity.toLocaleString()} units
-                      </span>
-                    </div>
-                    <div className="progress-track mt-2">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${Math.min(qp, 100)}%`,
-                          background:
-                            qp >= 100
-                              ? "var(--critical)"
-                              : qp >= 70
-                              ? "var(--warning)"
-                              : "var(--acl-primary)",
-                        }}
-                      />
-                    </div>
-                    <div className="text-xs mt-1 text-[var(--text-secondary)]">
-                      {qp.toFixed(1)}% of cap
-                    </div>
-                  </div>
-                );
-              })()}
+              contract.currentQuantity !== undefined && (
+                <SpendBar
+                  spend={contract.currentQuantity}
+                  cap={contract.capQuantity}
+                  label="Quantity vs cap"
+                  unit="units"
+                />
+              )}
           </div>
         ) : (
-          <SpendBar spend={contract.currentSpend} cap={contract.capValue} />
+          <SpendBar
+            spend={contract.currentSpend}
+            cap={contract.capValue}
+            label="Spend vs cap"
+            unit="currency"
+          />
         )}
       </div>
 
-      {/* Rebate alert */}
+      {/* Rebate alert — AA-safe warning text */}
       {contract.rebateMissed !== undefined && contract.rebateMissed > 0 && (
-        <div className="px-5 py-2.5 border-b border-[var(--bg-subtle)] flex items-center gap-2">
-          <span className="section-label">UNCLAIMED REBATE</span>
-          <span className="text-xs text-amber-700">
-            {formatCurrency(contract.rebateMissed)} not received — No credit
-            memo for Q1 2026
-          </span>
+        <div className="border-b border-border px-5 py-2.5">
+          <Alert className="border-warning bg-warning/10">
+            <AlertTriangle className="text-warning-text" />
+            <AlertTitle className="text-warning-text">
+              Unclaimed rebate
+            </AlertTitle>
+            <AlertDescription className="text-warning-text">
+              {formatCurrency(contract.rebateMissed)} not received — No credit
+              memo for Q1 2026
+            </AlertDescription>
+          </Alert>
         </div>
       )}
 
-      {/* Tier pricing */}
+      {/* Tier pricing — qualifying volume tier shown alongside each rate */}
       {contract.tieredPricing && (
-        <div className="px-5 py-2.5 border-b border-[var(--bg-subtle)]">
-          <div className="section-label mb-1.5">TIERED PRICING</div>
+        <div className="border-b border-border px-5 py-2.5">
+          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Tiered pricing
+          </div>
           <div className="flex flex-col gap-1">
-            <div className="text-xs text-[var(--text-secondary)]">
+            <div className="text-xs text-muted-foreground">
               Tier 1: ≤ 1,000 units/month &rarr; $85.00/unit
             </div>
-            <div className="text-xs text-[var(--text-secondary)]">
+            <div className="text-xs text-muted-foreground">
               Tier 2: &gt; 1,000 units/month &rarr; $72.00/unit{" "}
-              <span className="text-amber-700">
+              <span className="text-warning-text">
                 &larr; should apply (2,340 units in Mar)
               </span>
             </div>
@@ -233,49 +238,90 @@ function ContractCard({ contract }: { contract: Contract }) {
         </div>
       )}
 
-      {/* BioMed breach block */}
+      {/* Breach block — destructive Alert + commit actions */}
       {isBreached && (
-        <div className="mx-5 mb-3 bg-red-50 border border-red-200 rounded-md px-4 py-3">
-          <div className="section-label text-red-600 mb-1">
-            CONTRACT BREACHED
-          </div>
-          <div className="text-xs text-red-900">
-            23 invoices processed after cap exceeded &middot;{" "}
-            {formatCurrency(contract.currentSpend - contract.capValue)} overspend
-            &middot; Contract expired{" "}
-            {new Date(contract.endDate).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button className="bg-red-600 text-white text-xs font-medium px-3 py-1.5 rounded-md border-none cursor-pointer hover:bg-red-700 transition-colors">
+        <div className="px-5 py-3">
+          <Alert variant="destructive" className="border-destructive">
+            <AlertTriangle />
+            <AlertTitle>Contract breached</AlertTitle>
+            <AlertDescription>
+              23 invoices processed after cap exceeded &middot;{" "}
+              {formatCurrency(contract.currentSpend - contract.capValue)}{" "}
+              overspend &middot; Contract expired{" "}
+              {new Date(contract.endDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </AlertDescription>
+          </Alert>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button variant="destructive" size="sm">
               Pause Vendor Payments
-            </button>
-            <button className="bg-white text-red-600 text-xs font-medium px-3 py-1.5 rounded-md border border-red-200 cursor-pointer hover:bg-red-50 transition-colors">
+            </Button>
+            <Button variant="outline" size="sm">
               Contact Vendor
-            </button>
-            <button className="bg-white text-[var(--text-secondary)] text-xs px-3 py-1.5 rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
+            </Button>
+            <Button variant="outline" size="sm">
               Notify CFO
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Cardinal Health warning actions */}
       {isCardinalWarning && (
-        <div className="px-5 pb-4 flex gap-2">
-          <button className="bg-white text-[var(--text-primary)] text-xs font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
+        <div className="flex flex-wrap gap-2 px-5 pt-3 pb-4">
+          <Button variant="outline" size="sm">
             Request Rebate Credit Memo
-          </button>
-          <button className="bg-white text-[var(--text-primary)] text-xs font-medium px-3 py-1.5 rounded-md border border-[var(--border-strong)] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
+          </Button>
+          <Button variant="outline" size="sm">
             Submit Pricing Correction
-          </button>
+          </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
+}
+
+// ─── RENEWAL TIMELINE ─────────────────────────────────────────────────────────
+// [Spec: domains/contracts/spec.md#Business Rules — Renewal Timeline]
+
+const renewals: {
+  vendor: string;
+  contractNumber: string;
+  expires: string;
+  status: "Expired" | "Expiring" | "Active";
+}[] = [
+  {
+    vendor: "BioMed Equipment Inc.",
+    contractNumber: "CTR-2024-BIO-009",
+    expires: "Dec 31, 2025",
+    status: "Expired",
+  },
+  {
+    vendor: "Cardinal Health",
+    contractNumber: "CTR-2025-CAR-003",
+    expires: "Mar 31, 2026",
+    status: "Expiring",
+  },
+  {
+    vendor: "Steris Corporation",
+    contractNumber: "CTR-2025-STE-007",
+    expires: "May 31, 2026",
+    status: "Active",
+  },
+];
+
+function renewalStatusBadge(status: "Expired" | "Expiring" | "Active") {
+  if (status === "Expired") return <Badge variant="destructive">Expired</Badge>;
+  if (status === "Expiring")
+    return (
+      <Badge className="border-warning bg-warning/10 text-warning-text">
+        Expiring
+      </Badge>
+    );
+  return <Badge variant="secondary">Active</Badge>;
 }
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
@@ -283,6 +329,7 @@ function ContractCard({ contract }: { contract: Contract }) {
 export default function ContractCompliancePage() {
   const [loading, setLoading] = useState(true);
 
+  // [Spec: domains/contracts/spec.md#Acceptance Criteria — Loading]
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(t);
@@ -301,119 +348,112 @@ export default function ContractCompliancePage() {
   ).length;
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-full">
+    <main className="@container/main flex flex-1 flex-col bg-background">
       {/* ── Header ── */}
-      <div className="px-6 lg:px-8 pt-8 pb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-xl font-semibold text-[var(--text-primary)]">
+      <div className="px-4 pt-8 pb-6 lg:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight">
               Contract Compliance
-            </div>
-            <div className="text-xs text-[var(--text-secondary)] mt-1">
-              {contracts.length} active contracts &middot; {atRiskCount} at risk &middot;{" "}
-              {breachedCount} breached
-            </div>
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {contracts.length} active contracts &middot; {atRiskCount} at risk
+              &middot; {breachedCount} breached
+            </p>
           </div>
-          <div className="flex gap-2 items-center">
-            <button className="text-sm text-[var(--text-primary)] bg-white border border-[var(--border)] rounded-md px-3.5 py-[7px] cursor-pointer hover:bg-[var(--bg-base)] transition-colors">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
               Download Report
-            </button>
-            <button className="text-sm text-white bg-[var(--acl-primary)] border-none rounded-md px-3.5 py-[7px] cursor-pointer font-medium hover:bg-[var(--acl-primary-hover)] transition-colors">
+            </Button>
+            <Button variant="default" size="sm">
               Add Contract
-            </button>
+            </Button>
           </div>
         </div>
-        <hr className="border-none border-t border-[var(--border)] mt-5" />
+        <hr className="mt-5 border-border" />
       </div>
 
       {/* ── Summary strip ── */}
-      <div className="px-6 lg:px-8 pb-6">
+      <section aria-labelledby="summary-heading" className="px-4 pb-6 lg:px-6">
+        <h2 id="summary-heading" className="sr-only">
+          Contract summary
+        </h2>
         {loading ? (
-          <div className="bg-white border border-[var(--border)] rounded-lg flex">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`flex-1 px-5 py-4${i < 4 ? " border-r border-[var(--border)]" : ""}`}>
-                <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse mb-3" />
-                <div className="h-7 w-20 bg-[var(--border)] rounded animate-pulse mb-2" />
-                <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <Skeleton className="h-24 w-full" />
         ) : (
-          <div className="bg-white border border-[var(--border)] rounded-lg flex">
-            {/* Cell 1 */}
-            <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
-              <div className="section-label mb-1.5">TOTAL CONTRACT VALUE</div>
-              <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
-                {formatCurrency(totalValue)}
+          <Card className="py-0">
+            <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
+              <div className="flex-1 px-5 py-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Total Contract Value
+                </div>
+                <div className="mt-1 text-xl font-semibold tabular-nums">
+                  {formatCurrency(totalValue)}
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {contracts.length} contracts
+                </div>
               </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-                {contracts.length} contracts
+              <div className="flex-1 px-5 py-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Current Spend
+                </div>
+                <div className="mt-1 text-xl font-semibold tabular-nums">
+                  {formatCurrency(totalSpend)}
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  Q1 2026
+                </div>
+              </div>
+              <div className="flex-1 px-5 py-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Unclaimed Rebates
+                </div>
+                <div className="mt-1 text-xl font-semibold tabular-nums text-warning-text">
+                  {formatCurrency(totalUnclaimed)}
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {vendorsWithRebates} vendors
+                </div>
+              </div>
+              <div className="flex-1 px-5 py-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Contracts Breached
+                </div>
+                <div className="mt-1 text-xl font-semibold tabular-nums text-destructive">
+                  {breachedCount}
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  Immediate action
+                </div>
               </div>
             </div>
-
-            {/* Cell 2 */}
-            <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
-              <div className="section-label mb-1.5">CURRENT SPEND</div>
-              <div className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
-                {formatCurrency(totalSpend)}
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-0.5">Q1 2026</div>
-            </div>
-
-            {/* Cell 3 */}
-            <div className="flex-1 px-5 py-4 border-r border-[var(--border)]">
-              <div className="section-label mb-1.5">UNCLAIMED REBATES</div>
-              <div className="text-xl font-semibold text-amber-700 tabular-nums">
-                {formatCurrency(totalUnclaimed)}
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-                {vendorsWithRebates} vendors
-              </div>
-            </div>
-
-            {/* Cell 4 */}
-            <div className="flex-1 px-5 py-4">
-              <div className="section-label mb-1.5">CONTRACTS BREACHED</div>
-              <div className="text-xl font-semibold text-red-600 tabular-nums">
-                {breachedCount}
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-0.5">Immediate action</div>
-            </div>
-          </div>
+          </Card>
         )}
-      </div>
+      </section>
 
       {/* ── Contract cards ── */}
-      <div className="px-6 lg:px-8">
+      <section aria-labelledby="contracts-heading" className="px-4 lg:px-6">
+        <h2 id="contracts-heading" className="sr-only">
+          Contract cards
+        </h2>
         {loading ? (
           <>
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="card mb-3 px-5 py-4" style={{ borderLeft: "2px solid var(--border)" }}>
-                {/* Skeleton header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-8 w-8 bg-[var(--border)] rounded-full animate-pulse" />
-                      <div className="h-4 w-32 bg-[var(--border)] rounded animate-pulse" />
-                    </div>
-                    <div className="h-3 w-24 bg-[var(--border)] rounded animate-pulse mb-2 ml-10" />
-                    <div className="h-5 w-20 bg-[var(--border)] rounded-full animate-pulse ml-10" />
+              <Card
+                key={i}
+                className="mb-3 border-l-4 border-l-border px-5 py-4"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="size-8 rounded-full" />
+                    <Skeleton className="h-4 w-32" />
                   </div>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <div className="h-5 w-16 bg-[var(--border)] rounded-full animate-pulse" />
-                    <div className="h-3 w-36 bg-[var(--border)] rounded animate-pulse" />
-                  </div>
+                  <Skeleton className="h-5 w-16 rounded-full" />
                 </div>
-                {/* Skeleton spend bar */}
-                <div className="border-t border-[var(--bg-subtle)] pt-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
-                    <div className="h-3 w-32 bg-[var(--border)] rounded animate-pulse" />
-                  </div>
-                  <div className="h-2 w-full bg-[var(--border)] rounded-full animate-pulse mt-2" />
-                  <div className="h-3 w-16 bg-[var(--border)] rounded animate-pulse mt-1.5" />
-                </div>
-              </div>
+                <Skeleton className="mt-4 h-2 w-full" />
+                <Skeleton className="mt-2 h-3 w-16" />
+              </Card>
             ))}
           </>
         ) : (
@@ -421,79 +461,58 @@ export default function ContractCompliancePage() {
             <ContractCard key={contract.id} contract={contract} />
           ))
         )}
-      </div>
+      </section>
 
       {/* ── Renewal timeline ── */}
-      <div className="px-6 lg:px-8 pt-2 pb-8">
-        <div className="section-label mb-2">UPCOMING RENEWALS</div>
+      <section aria-labelledby="renewals-heading" className="px-4 pt-2 pb-8 lg:px-6">
+        <h2
+          id="renewals-heading"
+          className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+        >
+          Upcoming renewals
+        </h2>
         {loading ? (
-          <div className="card">
-            <div className="px-5 py-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between py-3 border-b border-[var(--bg-subtle)] last:border-b-0">
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 bg-[var(--border)] rounded-full animate-pulse" />
-                    <div className="h-3 w-28 bg-[var(--border)] rounded animate-pulse" />
-                  </div>
-                  <div className="h-3 w-24 bg-[var(--border)] rounded animate-pulse" />
-                  <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse" />
-                  <div className="h-5 w-14 bg-[var(--border)] rounded-full animate-pulse" />
-                  <div className="h-3 w-12 bg-[var(--border)] rounded animate-pulse" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <Skeleton className="h-40 w-full" />
         ) : (
-          <div className="card">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>VENDOR</th>
-                  <th>CONTRACT #</th>
-                  <th>EXPIRES</th>
-                  <th>STATUS</th>
-                  <th>ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><VendorBadge name="BioMed Equipment Inc." size="sm" /></td>
-                  <td className="mono">CTR-2024-BIO-009</td>
-                  <td className="text-sm text-[var(--text-primary)]">Dec 31, 2025</td>
-                  <td><span className="badge critical">Expired</span></td>
-                  <td>
-                    <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
-                      Renew &rarr;
-                    </a>
-                  </td>
-                </tr>
-                <tr>
-                  <td><VendorBadge name="Cardinal Health" size="sm" /></td>
-                  <td className="mono">CTR-2025-CAR-003</td>
-                  <td className="text-sm text-[var(--text-primary)]">Mar 31, 2026</td>
-                  <td><span className="badge warning">Expiring</span></td>
-                  <td>
-                    <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
-                      Renew &rarr;
-                    </a>
-                  </td>
-                </tr>
-                <tr>
-                  <td><VendorBadge name="Steris Corporation" size="sm" /></td>
-                  <td className="mono">CTR-2025-STE-007</td>
-                  <td className="text-sm text-[var(--text-primary)]">May 31, 2026</td>
-                  <td><span className="badge neutral">Active</span></td>
-                  <td>
-                    <a href="#" className="text-xs text-[var(--acl-primary)] no-underline font-medium hover:underline">
-                      Renew &rarr;
-                    </a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <Card className="py-0">
+            <CardContent className="px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Contract #</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {renewals.map((r) => (
+                    <TableRow key={r.contractNumber}>
+                      <TableCell>
+                        <VendorBadge name={r.vendor} size="sm" />
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {r.contractNumber}
+                      </TableCell>
+                      <TableCell className="text-sm">{r.expires}</TableCell>
+                      <TableCell>{renewalStatusBadge(r.status)}</TableCell>
+                      <TableCell>
+                        <a
+                          href="#"
+                          className="text-xs font-medium text-primary no-underline transition-colors hover:underline"
+                        >
+                          Renew &rarr;
+                        </a>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

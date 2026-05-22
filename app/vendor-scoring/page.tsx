@@ -1,52 +1,146 @@
+// [Spec: domains/vendor-scoring/spec.md v2.0.1] — Vendor risk scorecard table,
+// migrated to the shadcn v2.0 design system. Card/Table/Badge/Button/AlertDialog
+// primitives, theme tokens only, AA-safe status text (text-warning-text /
+// text-success-text), aria-sort on sortable headers. See spec CHANGELOG 2026-05-22.
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Shield, ChevronDown, ChevronRight, AlertTriangle, Flag, XCircle, ArrowUpDown } from "lucide-react";
+import { Fragment, useState, useEffect, useMemo } from "react";
+import { ChevronDown, ChevronRight, AlertTriangle, Flag, XCircle, ArrowUpDown } from "lucide-react";
 import { vendorScores, formatCurrency, formatDate } from "@/lib/data";
 import { useToast } from "@/components/Toast";
 import { VendorBadge } from "@/components/VendorBadge";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+
+// ─── COLOR DISCIPLINE ─────────────────────────────────────────────────────────
+// [Spec: domains/vendor-scoring/spec.md#Business Rules]
+// Status TEXT uses the AA-safe *-text tokens (ui-standard.md v2.0.1).
 
 function scoreColor(score: number): string {
-  if (score < 30) return "text-red-600";
-  if (score < 60) return "text-amber-600";
-  return "text-emerald-600";
-}
-
-function ratingBadge(rating: string): string {
-  if (rating === "Critical") return "badge critical";
-  if (rating === "High Risk") return "badge warning";
-  if (rating === "Medium Risk") return "badge neutral";
-  return "badge success";
+  if (score < 30) return "text-destructive";
+  if (score < 60) return "text-warning-text";
+  return "text-success-text";
 }
 
 function discrepancyColor(pct: number): string {
-  if (pct > 15) return "text-red-600";
-  if (pct > 5) return "text-amber-600";
-  return "text-[var(--text-secondary)]";
-}
-
-function rowRiskBg(discrepancyPct: number): string {
-  if (discrepancyPct > 15) return "bg-red-50/50";
-  if (discrepancyPct > 5) return "bg-amber-50/30";
-  return "";
+  if (pct > 15) return "text-destructive";
+  if (pct > 5) return "text-warning-text";
+  return "text-muted-foreground";
 }
 
 function recoveryColor(pct: number): string {
-  if (pct >= 80) return "text-emerald-600";
-  if (pct >= 40) return "text-amber-600";
-  return "text-red-600";
+  if (pct >= 80) return "text-success-text";
+  if (pct >= 40) return "text-warning-text";
+  return "text-destructive";
 }
 
-type VendorSortKey = "score" | "discrepancyPct" | "discrepancyAmount" | "totalSpend" | "recoveryPct" | null;
+// Row tint by discrepancy — non-text fill, paired with the colored % column.
+function rowRiskClass(discrepancyPct: number): string {
+  if (discrepancyPct > 15) return "bg-destructive/5";
+  if (discrepancyPct > 5) return "bg-warning/5";
+  return "";
+}
+
+function ratingBadge(rating: string) {
+  if (rating === "Critical") return <Badge variant="destructive">{rating}</Badge>;
+  if (rating === "High Risk")
+    return (
+      <Badge className="border-warning bg-warning/10 text-warning-text">
+        {rating}
+      </Badge>
+    );
+  if (rating === "Medium Risk") return <Badge variant="secondary">{rating}</Badge>;
+  return (
+    <Badge className="border-success bg-success/10 text-success-text">
+      {rating}
+    </Badge>
+  );
+}
+
+type VendorSortKey =
+  | "score"
+  | "discrepancyPct"
+  | "discrepancyAmount"
+  | "totalSpend"
+  | "recoveryPct";
+
+// ─── SORTABLE HEADER ──────────────────────────────────────────────────────────
+// Module-level component — exposes aria-sort so assistive tech announces sort
+// state (WCAG 4.1.2). Mirrors the SortHead idiom in app/page.tsx.
+// [Spec: domains/vendor-scoring/spec.md#Acceptance Criteria — aria-sort]
+function SortHead({
+  label,
+  sortKey,
+  activeKey,
+  activeDir,
+  onSort,
+}: {
+  label: string;
+  sortKey: VendorSortKey;
+  activeKey: VendorSortKey;
+  activeDir: "asc" | "desc";
+  onSort: (key: VendorSortKey) => void;
+}) {
+  const ariaSort: "ascending" | "descending" | "none" =
+    activeKey !== sortKey
+      ? "none"
+      : activeDir === "asc"
+        ? "ascending"
+        : "descending";
+  return (
+    <TableHead aria-sort={ariaSort} className="text-right">
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className="inline-flex flex-row-reverse items-center gap-1 transition-colors hover:text-foreground"
+      >
+        {label}
+        <ArrowUpDown
+          className={`size-3 ${
+            activeKey === sortKey ? "text-primary" : "text-muted-foreground"
+          }`}
+        />
+      </button>
+    </TableHead>
+  );
+}
+
+type PendingAction = {
+  vendorId: string;
+  vendorName: string;
+  action: "Flagged" | "Penalized" | "Removed";
+} | null;
 
 export default function VendorScoringPage() {
   const { showToast } = useToast();
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
   const [flaggedVendors, setFlaggedVendors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
-  // Sort state
+  // Sort state — default Discrepancy % descending.
+  // [Spec: domains/vendor-scoring/spec.md#Business Rules — Sorting]
   const [sortKey, setSortKey] = useState<VendorSortKey>("discrepancyPct");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -54,7 +148,7 @@ export default function VendorScoringPage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  // Simulated loading
+  // [Spec: domains/vendor-scoring/spec.md#Acceptance Criteria — Loading]
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(timer);
@@ -63,7 +157,6 @@ export default function VendorScoringPage() {
   const sorted = useMemo(
     () =>
       [...vendorScores].sort((a, b) => {
-        if (!sortKey) return b.discrepancyPct - a.discrepancyPct;
         const aVal = a[sortKey];
         const bVal = b[sortKey];
         return sortDir === "desc" ? bVal - aVal : aVal - bVal;
@@ -71,22 +164,24 @@ export default function VendorScoringPage() {
     [sortKey, sortDir]
   );
 
-  // Pagination derived values
   const pageCount = Math.ceil(sorted.length / pageSize);
-  const paginatedVendors = sorted.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+  const paginatedVendors = sorted.slice(
+    pageIndex * pageSize,
+    (pageIndex + 1) * pageSize
+  );
 
   const totalDiscrepancy = sorted.reduce((s, v) => s + v.discrepancyAmount, 0);
   const highRiskCount = sorted.filter((v) => v.score < 40).length;
-  const avgScore = Math.round(sorted.reduce((s, v) => s + v.score, 0) / sorted.length);
-  const avgRecovery = Math.round(sorted.reduce((s, v) => s + v.recoveryPct, 0) / sorted.length);
-
-  const handleFlag = (vendorId: string, action: string) => {
-    setFlaggedVendors((prev) => ({ ...prev, [vendorId]: action }));
-  };
+  const avgScore = Math.round(
+    sorted.reduce((s, v) => s + v.score, 0) / sorted.length
+  );
+  const avgRecovery = Math.round(
+    sorted.reduce((s, v) => s + v.recoveryPct, 0) / sorted.length
+  );
 
   function handleSortClick(key: VendorSortKey) {
     if (sortKey === key) {
-      setSortDir(d => d === "desc" ? "asc" : "desc");
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
     } else {
       setSortKey(key);
       setSortDir("desc");
@@ -94,266 +189,428 @@ export default function VendorScoringPage() {
     setPageIndex(0);
   }
 
+  // [Spec: domains/vendor-scoring/spec.md#Business Rules — Vendor Actions]
+  function confirmPendingAction() {
+    if (!pendingAction) return;
+    const { vendorId, vendorName, action } = pendingAction;
+    setFlaggedVendors((prev) => ({ ...prev, [vendorId]: action }));
+    if (action === "Flagged") {
+      showToast(`${vendorName} flagged as high-risk`, "warning");
+    } else if (action === "Penalized") {
+      showToast(`${vendorName} recommended for penalty`, "error");
+    } else {
+      showToast(`${vendorName} removed from approved suppliers`, "error");
+    }
+    setPendingAction(null);
+  }
+
+  const actionCopy: Record<
+    NonNullable<PendingAction>["action"],
+    { title: string; description: string; cta: string; destructive: boolean }
+  > = {
+    Flagged: {
+      title: "Flag vendor as high-risk?",
+      description:
+        "This marks the vendor for procurement review. The action is recorded in the audit trail.",
+      cta: "Flag Vendor",
+      destructive: false,
+    },
+    Penalized: {
+      title: "Recommend a penalty?",
+      description:
+        "This recommends a contractual penalty for the vendor. A manager must approve before any penalty is applied.",
+      cta: "Recommend Penalty",
+      destructive: true,
+    },
+    Removed: {
+      title: "Remove vendor as supplier?",
+      description:
+        "This removes the vendor from the approved supplier list. The action is recorded in the audit trail.",
+      cta: "Remove Vendor",
+      destructive: true,
+    },
+  };
+
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen">
+    <main className="@container/main flex flex-1 flex-col bg-background">
       {/* Header */}
-      <div className="px-6 lg:px-8 pt-8 pb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight m-0">
+      <div className="px-4 pt-8 pb-6 lg:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight">
               Vendor Scoring
             </h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 m-0">
+            <p className="mt-1 text-sm text-muted-foreground">
               Risk assessment across {sorted.length} vendors · Q1 2026
             </p>
           </div>
-          <button
-            onClick={() => showToast("Vendor risk report exported as PDF", "success")}
-            className="px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border-strong)] bg-white text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              showToast("Vendor risk report exported as PDF", "success")
+            }
           >
             Export Report
-          </button>
+          </Button>
         </div>
       </div>
 
-      <hr className="border-[var(--border)] m-0" />
+      <hr className="border-border" />
 
-      {/* Summary Strip */}
-      {loading ? (
-        <div className="px-6 lg:px-8 py-6">
-          <div className="flex border border-[var(--border)] rounded-lg bg-white">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className={`flex-1 px-6 py-4 ${i < 5 ? "border-r border-[var(--border)]" : ""}`}>
-                <div className="h-3 w-20 bg-[var(--border)] rounded animate-pulse mb-3" />
-                <div className="h-7 w-14 bg-[var(--border)] rounded animate-pulse" />
+      {/* Summary strip */}
+      <section aria-labelledby="summary-heading" className="px-4 py-6 lg:px-6">
+        <h2 id="summary-heading" className="sr-only">
+          Vendor scoring summary
+        </h2>
+        {loading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <Card className="py-0">
+            <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
+              <div className="flex-1 px-6 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Vendors Scored
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                  {sorted.length}
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="px-6 lg:px-8 py-6">
-          <div className="flex border border-[var(--border)] rounded-lg bg-white">
-            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-              <p className="section-label">Vendors Scored</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)] mt-1 m-0">{sorted.length}</p>
+              <div className="flex-1 px-6 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  High Risk
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
+                  {highRiskCount}
+                </p>
+              </div>
+              <div className="flex-1 px-6 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Total Discrepancy
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-warning-text">
+                  {formatCurrency(totalDiscrepancy)}
+                </p>
+              </div>
+              <div className="flex-1 px-6 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Avg Score
+                </p>
+                <p
+                  className={`mt-1 text-2xl font-semibold tabular-nums ${scoreColor(avgScore)}`}
+                >
+                  {avgScore}/100
+                </p>
+              </div>
+              <div className="flex-1 px-6 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Avg Recovery
+                </p>
+                <p
+                  className={`mt-1 text-2xl font-semibold tabular-nums ${recoveryColor(avgRecovery)}`}
+                >
+                  {avgRecovery}%
+                </p>
+              </div>
             </div>
-            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-              <p className="section-label">High Risk</p>
-              <p className="text-2xl font-bold text-red-600 mt-1 m-0">{highRiskCount}</p>
-            </div>
-            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-              <p className="section-label">Total Discrepancy</p>
-              <p className="text-2xl font-bold text-amber-600 mt-1 m-0">{formatCurrency(totalDiscrepancy)}</p>
-            </div>
-            <div className="flex-1 px-6 py-4 border-r border-[var(--border)]">
-              <p className="section-label">Avg Score</p>
-              <p className={`text-2xl font-bold mt-1 m-0 ${scoreColor(avgScore)}`}>{avgScore}/100</p>
-            </div>
-            <div className="flex-1 px-6 py-4">
-              <p className="section-label">Avg Recovery</p>
-              <p className={`text-2xl font-bold mt-1 m-0 ${recoveryColor(avgRecovery)}`}>{avgRecovery}%</p>
-            </div>
-          </div>
-        </div>
-      )}
+          </Card>
+        )}
+      </section>
 
-      {/* Vendor Table */}
-      <div className="px-6 lg:px-8 pb-8">
-        <div className="card overflow-x-auto">
-          <table className="data-table min-w-[900px]">
-            <thead>
-              <tr>
-                <th className="w-7"></th>
-                <th>Vendor</th>
-                <th className="right">Invoices</th>
-                <th
-                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                  onClick={() => handleSortClick("totalSpend")}
-                >
-                  <span className="inline-flex items-center gap-1 justify-end">
-                    Total Spend <ArrowUpDown className="w-3 h-3" />
-                  </span>
-                </th>
-                <th
-                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                  onClick={() => handleSortClick("discrepancyAmount")}
-                >
-                  <span className="inline-flex items-center gap-1 justify-end">
-                    Discrepancy <ArrowUpDown className="w-3 h-3" />
-                  </span>
-                </th>
-                <th
-                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                  onClick={() => handleSortClick("discrepancyPct")}
-                >
-                  <span className="inline-flex items-center gap-1 justify-end">
-                    Discrepancy % <ArrowUpDown className="w-3 h-3" />
-                  </span>
-                </th>
-                <th
-                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                  onClick={() => handleSortClick("recoveryPct")}
-                >
-                  <span className="inline-flex items-center gap-1 justify-end">
-                    Recovery % <ArrowUpDown className="w-3 h-3" />
-                  </span>
-                </th>
-                <th
-                  className="right cursor-pointer hover:text-[var(--text-primary)] transition-colors select-none"
-                  onClick={() => handleSortClick("score")}
-                >
-                  <span className="inline-flex items-center gap-1 justify-end">
-                    Score <ArrowUpDown className="w-3 h-3" />
-                  </span>
-                </th>
-                <th>Rating</th>
-                <th className="min-w-[100px]">Actions</th>
-              </tr>
-            </thead>
-            {loading ? (
-              <tbody>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <tr key={i}>
-                    <td><div className="h-3.5 w-3.5 bg-[var(--border)] rounded animate-pulse mx-auto" /></td>
-                    <td><div className="h-3.5 bg-[var(--border)] rounded animate-pulse" style={{ width: `${55 + i * 7}%` }} /></td>
-                    <td className="right"><div className="h-3.5 w-8 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-16 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-14 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-10 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-10 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
-                    <td className="right"><div className="h-3.5 w-8 bg-[var(--border)] rounded animate-pulse ml-auto" /></td>
-                    <td><div className="h-5 w-20 bg-[var(--border)] rounded animate-pulse" /></td>
-                    <td><div className="h-3.5 w-24 bg-[var(--border)] rounded animate-pulse" /></td>
-                  </tr>
-                ))}
-              </tbody>
-            ) : (
-              <>
-                {paginatedVendors.map((vendor) => {
-                  const isExpanded = expandedVendor === vendor.id;
-                  const flagAction = flaggedVendors[vendor.id];
-
-                  return (
-                    <tbody key={vendor.id}>
-                      <tr
-                        className={`cursor-pointer hover:bg-[var(--bg-base)] transition-colors duration-150 ${rowRiskBg(vendor.discrepancyPct)}`}
-                        onClick={() => setExpandedVendor(isExpanded ? null : vendor.id)}
-                      >
-                        <td className="text-center">
-                          {isExpanded ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)] inline" />
-                          ) : (
-                            <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)] inline" />
-                          )}
-                        </td>
-                        <td>
-                          <span className="inline-flex items-center gap-2">
-                            <VendorBadge name={vendor.name} size="sm" />
-                            {flagAction && (
-                              <span className="badge critical">
-                                {flagAction}
+      {/* Vendor table */}
+      <section aria-labelledby="table-heading" className="px-4 pb-8 lg:px-6">
+        <h2 id="table-heading" className="sr-only">
+          Vendor risk table
+        </h2>
+        <Card className="py-0">
+          <CardContent className="px-0">
+            <Table className="min-w-[900px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-7" />
+                  <TableHead>Vendor</TableHead>
+                  <TableHead className="text-right">Invoices</TableHead>
+                  <SortHead
+                    label="Total Spend"
+                    sortKey="totalSpend"
+                    activeKey={sortKey}
+                    activeDir={sortDir}
+                    onSort={handleSortClick}
+                  />
+                  <SortHead
+                    label="Discrepancy"
+                    sortKey="discrepancyAmount"
+                    activeKey={sortKey}
+                    activeDir={sortDir}
+                    onSort={handleSortClick}
+                  />
+                  <SortHead
+                    label="Discrepancy %"
+                    sortKey="discrepancyPct"
+                    activeKey={sortKey}
+                    activeDir={sortDir}
+                    onSort={handleSortClick}
+                  />
+                  <SortHead
+                    label="Recovery %"
+                    sortKey="recoveryPct"
+                    activeKey={sortKey}
+                    activeDir={sortDir}
+                    onSort={handleSortClick}
+                  />
+                  <SortHead
+                    label="Score"
+                    sortKey="score"
+                    activeKey={sortKey}
+                    activeDir={sortDir}
+                    onSort={handleSortClick}
+                  />
+                  <TableHead>Rating</TableHead>
+                  <TableHead className="min-w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  [1, 2, 3, 4, 5].map((i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className="mx-auto size-3.5" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-3.5 w-40" />
+                      </TableCell>
+                      {[...Array(6)].map((_, j) => (
+                        <TableCell key={j} className="text-right">
+                          <Skeleton className="ml-auto h-3.5 w-12" />
+                        </TableCell>
+                      ))}
+                      <TableCell>
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-3.5 w-24" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  paginatedVendors.map((vendor) => {
+                    const isExpanded = expandedVendor === vendor.id;
+                    const flagAction = flaggedVendors[vendor.id];
+                    return (
+                      <Fragment key={vendor.id}>
+                        <TableRow
+                          className={`cursor-pointer ${rowRiskClass(vendor.discrepancyPct)}`}
+                          aria-expanded={isExpanded}
+                          onClick={() =>
+                            setExpandedVendor(isExpanded ? null : vendor.id)
+                          }
+                        >
+                          <TableCell className="text-center">
+                            {isExpanded ? (
+                              <ChevronDown className="inline size-3.5 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="inline size-3.5 text-muted-foreground" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-2">
+                              <VendorBadge name={vendor.name} size="sm" />
+                              {flagAction && (
+                                <Badge variant="destructive">{flagAction}</Badge>
+                              )}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right text-xs tabular-nums">
+                            {vendor.totalInvoices}
+                          </TableCell>
+                          <TableCell className="text-right text-xs tabular-nums">
+                            {formatCurrency(vendor.totalSpend)}
+                          </TableCell>
+                          <TableCell
+                            className={`text-right text-xs font-medium tabular-nums ${discrepancyColor(vendor.discrepancyPct)}`}
+                          >
+                            {formatCurrency(vendor.discrepancyAmount)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span
+                              className={`text-xs font-semibold tabular-nums ${discrepancyColor(vendor.discrepancyPct)}`}
+                            >
+                              {vendor.discrepancyPct.toFixed(1)}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span
+                              className={`text-xs font-semibold tabular-nums ${recoveryColor(vendor.recoveryPct)}`}
+                            >
+                              {vendor.recoveryPct}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span
+                              className={`text-sm font-bold tabular-nums ${scoreColor(vendor.score)}`}
+                            >
+                              {vendor.score}
+                            </span>
+                          </TableCell>
+                          <TableCell>{ratingBadge(vendor.rating)}</TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            {!flagAction ? (
+                              <div className="flex items-center gap-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Flag ${vendor.name} as high-risk`}
+                                  title="Flag as high-risk"
+                                  onClick={() =>
+                                    setPendingAction({
+                                      vendorId: vendor.id,
+                                      vendorName: vendor.name,
+                                      action: "Flagged",
+                                    })
+                                  }
+                                >
+                                  <Flag />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Recommend penalty for ${vendor.name}`}
+                                  title="Recommend for penalty"
+                                  onClick={() =>
+                                    setPendingAction({
+                                      vendorId: vendor.id,
+                                      vendorName: vendor.name,
+                                      action: "Penalized",
+                                    })
+                                  }
+                                >
+                                  <AlertTriangle />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  aria-label={`Remove ${vendor.name} as supplier`}
+                                  title="Remove as supplier"
+                                  onClick={() =>
+                                    setPendingAction({
+                                      vendorId: vendor.id,
+                                      vendorName: vendor.name,
+                                      action: "Removed",
+                                    })
+                                  }
+                                >
+                                  <XCircle />
+                                  Remove
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                Done
                               </span>
                             )}
-                          </span>
-                        </td>
-                        <td className="right text-xs tabular-nums">{vendor.totalInvoices}</td>
-                        <td className="right text-xs tabular-nums">{formatCurrency(vendor.totalSpend)}</td>
-                        <td className={`right text-xs tabular-nums font-medium ${discrepancyColor(vendor.discrepancyPct)}`}>
-                          {formatCurrency(vendor.discrepancyAmount)}
-                        </td>
-                        <td className="right">
-                          <span className={`text-xs tabular-nums font-semibold ${discrepancyColor(vendor.discrepancyPct)}`}>
-                            {vendor.discrepancyPct.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="right">
-                          <span className={`text-xs tabular-nums font-semibold ${recoveryColor(vendor.recoveryPct)}`}>
-                            {vendor.recoveryPct}%
-                          </span>
-                        </td>
-                        <td className="right">
-                          <span className={`text-sm font-bold tabular-nums ${scoreColor(vendor.score)}`}>
-                            {vendor.score}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={ratingBadge(vendor.rating)}>{vendor.rating}</span>
-                        </td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          {!flagAction ? (
-                            <div className="flex items-center gap-0.5">
-                              <button
-                                onClick={() => { if (confirm("Flag " + vendor.name + " as high-risk vendor?")) { handleFlag(vendor.id, "Flagged"); showToast(vendor.name + " flagged as high-risk", "warning"); } }}
-                                className="p-1.5 rounded hover:bg-amber-50 text-[var(--text-muted)] hover:text-amber-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
-                                title="Flag as high-risk"
-                              >
-                                <Flag className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => { if (confirm("Recommend penalty for " + vendor.name + "?")) { handleFlag(vendor.id, "Penalized"); showToast(vendor.name + " recommended for penalty", "error"); } }}
-                                className="p-1.5 rounded hover:bg-red-50 text-[var(--text-muted)] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
-                                title="Recommend for penalty"
-                              >
-                                <AlertTriangle className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => { if (confirm("Remove " + vendor.name + " as supplier?")) { handleFlag(vendor.id, "Removed"); showToast(vendor.name + " removed from approved suppliers", "error"); } }}
-                                className="p-1.5 rounded hover:bg-red-50 text-[var(--text-muted)] hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none flex items-center"
-                                title="Remove as supplier"
-                              >
-                                <XCircle className="w-3.5 h-3.5" />
-                                Remove
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-[var(--text-muted)]">Done</span>
-                          )}
-                        </td>
-                      </tr>
+                          </TableCell>
+                        </TableRow>
 
-                      {/* Expanded exception history */}
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={10} className="bg-[var(--bg-subtle)] px-8 py-4 border-t border-[var(--border)]">
-                            <p className="section-label mb-2">Exception History</p>
-                            <div className="space-y-2">
-                              {vendor.exceptions.map((ex) => (
-                                <div key={ex.id} className="card px-4 py-3 flex items-start gap-4">
-                                  <div className="flex-shrink-0">
-                                    <span className="font-mono text-xs text-[var(--text-muted)]">{ex.id}</span>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="badge warning">{ex.type}</span>
-                                      <span className="text-xs text-[var(--text-muted)]">{formatDate(ex.date)}</span>
+                        {/* Expanded exception history */}
+                        {isExpanded && (
+                          <TableRow className="hover:bg-transparent">
+                            <TableCell
+                              colSpan={10}
+                              className="whitespace-normal bg-muted/30 px-8 py-4"
+                            >
+                              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Exception History
+                              </h3>
+                              <div className="flex flex-col gap-2">
+                                {vendor.exceptions.map((ex) => (
+                                  <Card
+                                    key={ex.id}
+                                    size="sm"
+                                    className="flex-row items-start gap-4 px-4 py-3"
+                                  >
+                                    <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                                      {ex.id}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="mb-1 flex items-center gap-2">
+                                        <Badge variant="secondary">
+                                          {ex.type}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                          {formatDate(ex.date)}
+                                        </span>
+                                      </div>
+                                      <p className="m-0 text-xs leading-relaxed text-muted-foreground">
+                                        {ex.description}
+                                      </p>
                                     </div>
-                                    <p className="text-xs text-[var(--text-secondary)] m-0 leading-relaxed">{ex.description}</p>
-                                  </div>
-                                  <div className="flex-shrink-0">
-                                    <span className="text-xs font-medium text-red-600 tabular-nums">{formatCurrency(ex.amount)}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  );
-                })}
-              </>
-            )}
-          </table>
-          <DataTablePagination
-            pageIndex={pageIndex}
-            pageCount={pageCount}
-            pageSize={pageSize}
-            totalRows={sorted.length}
-            onPageChange={setPageIndex}
-            onPageSizeChange={(size) => { setPageSize(size); setPageIndex(0); }}
-          />
-        </div>
-      </div>
-    </div>
+                                    <span className="shrink-0 text-xs font-medium tabular-nums text-destructive">
+                                      {formatCurrency(ex.amount)}
+                                    </span>
+                                  </Card>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+            <DataTablePagination
+              pageIndex={pageIndex}
+              pageCount={pageCount}
+              pageSize={pageSize}
+              totalRows={sorted.length}
+              onPageChange={setPageIndex}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPageIndex(0);
+              }}
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Vendor action confirmation — shadcn AlertDialog (replaces browser confirm) */}
+      {/* [Spec: domains/vendor-scoring/spec.md#Business Rules — Vendor Actions] */}
+      <AlertDialog
+        open={pendingAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          {pendingAction && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {actionCopy[pendingAction.action].title}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {pendingAction.vendorName} —{" "}
+                  {actionCopy[pendingAction.action].description}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  variant={
+                    actionCopy[pendingAction.action].destructive
+                      ? "destructive"
+                      : "default"
+                  }
+                  onClick={confirmPendingAction}
+                >
+                  {actionCopy[pendingAction.action].cta}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+    </main>
   );
 }
