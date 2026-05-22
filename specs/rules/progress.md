@@ -3,6 +3,32 @@ _Append only — newest entries at top_
 
 ---
 
+## 2026-05-22 (Phase 1 — app-wide v2.0 design-system migration)
+
+**Done:**
+- App-wide migration to the shadcn v2.0 design system, in 6 file-disjoint reviewable PRs (#2–#7, all merged to `main`):
+  - Cluster 1 — core workflow: `/pipeline`, `/exceptions`, `/exceptions/[id]` (all 9 exception-type templates)
+  - Cluster 2 — financial & vendor: `/recovery`, `/contracts`, `/vendor-scoring`, `/duplicates`
+  - Cluster 3 — SOM: `/som` + 5 sub-routes (order detail, exceptions, pharmacy-scoring, manufacturers, audit-log)
+  - Cluster 4 — analysis: `/extract`, `/product-analysis`
+  - specs-viewer: the 3 internal spec-browser routes
+  - Cluster 6 — shared `components/`: 19 components migrated; orphaned `Sidebar.tsx`/`TopBar.tsx` deleted as dead code
+- `app/globals.css` — the legacy v1 design-system layer removed (875 → 308 lines): v1 `:root` color tokens + every v1 utility class (`.card`, `.badge`, `.data-table`, `.btn-*`, `.modal-*`, `.prose-spec`, …); `body`/scrollbar/focus-ring/`::selection` rewritten onto v2 tokens
+- All 10 domain specs reconciled to v2.0/v2.0.1 with dated CHANGELOG entries
+- Repo-wide lint backlog cleared to 0 errors / 0 warnings
+
+**Verify:** `npm run build` ✓ (22/22 static pages) · `npm run lint` ✓ (0 errors / 0 warnings) · `npm test` ✓ (146 passing) · `grep -rE 'bg-white|--bg-base|text-(red|amber|emerald)-[0-9]' app/` → empty
+
+**Decisions:**
+- Migration split into 6 file-disjoint clusters, each its own branch + PR, for reviewability
+- `Sidebar.tsx`/`TopBar.tsx` deleted — the v2 layout uses `AppSidebar`; an import scan confirmed zero references
+- The v1 layer was fully removed from `globals.css` per `ui-standard.md`'s own migration mandate, once every consumer was on v2 tokens
+- `scripts/**` added to ESLint ignores — Node build scripts are not app code
+
+**Spec updates:** all 10 `domains/*/spec.md` (v2.0/v2.0.1 reconciliation); `som/spec.md` gained 3 route sections
+
+---
+
 ## 2026-05-21 (dashboard v2.3 — all-in-one rebuild)
 
 **Done:**

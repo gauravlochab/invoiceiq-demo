@@ -1,28 +1,23 @@
 # Active Context
-_Last updated: 2026-05-21 by Claude_
+_Last updated: 2026-05-22 by Claude_
 
 ## Current Focus
 
-Dashboard v2.3 — all-in-one rebuild after the 2026-05-21 4-agent audit. Declutter + 4 new stakeholder features + data integrity + WCAG 2.1 AA + chart theming. Spec-first per SpecLayer.
+Phase 1 complete — InvoiceIQ Detect is fully migrated to the shadcn v2.0 design system. All 13 product routes, the internal specs-viewer, and the shared `components/` layer are on v2 theme tokens; the legacy v1 design-system layer has been removed from `globals.css`. Build, lint, and tests are green; dark mode and WCAG 2.1 AA were addressed per cluster.
 
 ## Recent Changes
 
-- `specs/domains/dashboard/spec.md` — rewritten to v2.3 "Active — supersedes v2.2": decluttered layout (hero + grouped context band + promoted table + 2-tab analysis), 4 new features, data-integrity rules, WCAG criteria, EARS ACs
-- `specs/rules/ui-standard.md` — v2.0.1: corrected the false "OKLCH tokens tuned for AA" claim (added `--warning-text`/`--success-text`) and the false "CardTitle = semantic h3" claim
-- `app/globals.css` — `--warning-text`/`--success-text` tokens; distinct-hue `--chart-1..6` categorical palette
-- `app/page.tsx` — v2.3 dashboard: Amount-at-Risk hero, calm KPI trio, merged context band, promoted exceptions table, invoice-status overview, 2-tab analysis with category + vendor-risk donuts, computed agent counts, honest Run Scan, a11y fixes
-- `components/magicui/number-ticker.tsx` — reduced-motion guard
-- `components/DiscrepancyBarChart.tsx` — re-themed onto shadcn v2 / `--chart-*`
-- `lib/data.ts` — derived `exceptionTypeBreakdown`
-- `app/exceptions/page.tsx` — pre-filtered drill-through via `?severity=`/`?status=`/`?type=`
+- 6-cluster app-wide v2.0 migration merged to `main` (PRs #2–#7) — see `progress.md` 2026-05-22
+- `app/globals.css` — v1 design-system layer removed (875 → 308 lines)
+- All 10 domain specs reconciled to v2.0/v2.0.1 with dated CHANGELOG entries
+- Repo-wide lint backlog cleared (0 errors / 0 warnings); `scripts/**` excluded from ESLint
 
 ## Open Questions
 
-- AJ's customizable / two-mode per-role dashboard remains deferred — v2.3 decluttering makes it easier to slot in later
-- Pre-existing repo-wide lint issues (15 errors in untouched files: `Sidebar.tsx`, `scripts/generate-pdfs.js`, several pages) — out of v2.3 scope, candidate for a separate cleanup pass
+- `OverrideModal` "Authorize Release" is now shadcn `Button variant="destructive"`; if a solid-red treatment is wanted for that high-stakes action, it is a small styling tweak (noted in PR #7)
+- AJ's customizable / two-mode per-role dashboard — still deferred
 
 ## Next Steps
 
-- **Immediate:** Product-owner review of the v2.3 dashboard (not committed — per task constraints)
-- **Upcoming:** Optional shared `CardTitle` Slot/`asChild` support so headings nest without a wrapper `<div>`
-- **Upcoming:** Repo-wide lint cleanup pass for the pre-existing issues
+- **Manual visual QA** — walk every route in light + dark mode before the Parkland demo
+- **Phase 2** — author the InvoiceIQ use case as SatinFlow's first `agent/domains/` worked example (gated on SatinFlow `NEXT-STEPS.md` / PR #3 decisions with Rajesh)
