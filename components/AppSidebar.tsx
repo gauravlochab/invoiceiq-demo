@@ -100,7 +100,7 @@ function NavItems({ items, pathname }: { items: NavItem[]; pathname: string }) {
             />
             {badge !== undefined && (
               <SidebarMenuBadge
-                className={critical ? "bg-destructive/15 text-destructive" : ""}
+                className={critical ? "bg-destructive/15 text-destructive-text" : ""}
               >
                 {badge}
               </SidebarMenuBadge>

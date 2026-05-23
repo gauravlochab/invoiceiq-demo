@@ -31,13 +31,13 @@ const STATUS_STYLES: Record<
     label: "Minor Variance",
   },
   significant_variance: {
-    className: "border-destructive/40 bg-destructive/10 text-destructive",
+    className: "border-destructive/40 bg-destructive/10 text-destructive-text",
     label: "Over GPO Rate",
   },
 };
 
 function varianceColor(status: GPOComparison["status"]): string {
-  if (status === "significant_variance") return "text-destructive";
+  if (status === "significant_variance") return "text-destructive-text";
   if (status === "minor_variance") return "text-warning-text";
   return "text-success-text";
 }
@@ -121,7 +121,7 @@ export function GPOComparisonSection({ exceptionId }: { exceptionId: string }) {
           <span className="text-xs text-muted-foreground">
             {gpoName} contract {contractId}
           </span>
-          <span className="text-xs font-medium text-destructive">
+          <span className="text-xs font-medium text-destructive-text">
             Potential savings: {formatCurrency(Math.round(totalSavings))} per unit cycle
           </span>
         </div>

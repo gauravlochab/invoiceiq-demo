@@ -55,7 +55,7 @@ const TASK_ICONS: Record<string, typeof MapPin> = {
 const STATUS_META: Record<TaskStatus, { label: string; text: string }> = {
   pass: { label: "Verified", text: "text-success-text" },
   warn: { label: "Review", text: "text-warning-text" },
-  fail: { label: "Failed", text: "text-destructive" },
+  fail: { label: "Failed", text: "text-destructive-text" },
   error: { label: "Error", text: "text-muted-foreground" },
 };
 
@@ -374,7 +374,7 @@ function TaskCard({
         : result.status === "warn"
           ? "bg-warning/10 text-warning-text"
           : result.status === "fail"
-            ? "bg-destructive/10 text-destructive"
+            ? "bg-destructive/10 text-destructive-text"
             : "bg-muted text-muted-foreground"
       : isRunning
         ? "bg-primary/10 text-primary"
@@ -536,7 +536,7 @@ function TaskEvidence({
                 <TableCell
                   className={`px-2.5 py-1.5 text-right font-medium tabular-nums ${
                     m.outcome === "deviation"
-                      ? "text-destructive"
+                      ? "text-destructive-text"
                       : m.outcome === "no_contract"
                         ? "text-warning-text"
                         : "text-success-text"

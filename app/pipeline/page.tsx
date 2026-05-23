@@ -145,7 +145,7 @@ const RUN_RESULTS: ("done" | "done-warn" | "done-fail")[] = [
 
 function StatusIcon({ status }: { status: FeedEvent["status"] }) {
   if (status === "pass") return <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-success" />;
-  if (status === "fail") return <AlertTriangle className="mt-0.5 size-3 shrink-0 text-destructive" />;
+  if (status === "fail") return <AlertTriangle className="mt-0.5 size-3 shrink-0 text-destructive-text" />;
   if (status === "warn") return <AlertTriangle className="mt-0.5 size-3 shrink-0 text-warning" />;
   return <FileText className="mt-0.5 size-3 shrink-0 text-muted-foreground" />;
 }

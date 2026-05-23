@@ -104,7 +104,7 @@ function SpendBar({
         />
       </div>
       <p
-        className={`mt-1 text-xs ${overLimit ? "text-destructive" : "text-muted-foreground"}`}
+        className={`mt-1 text-xs ${overLimit ? "text-destructive-text" : "text-muted-foreground"}`}
       >
         {overLimit
           ? `${p.toFixed(1)}% of cap — ${formatCurrency(spend - cap)} over limit`
@@ -420,7 +420,7 @@ export default function ContractCompliancePage() {
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Contracts Breached
                 </div>
-                <div className="mt-1 text-xl font-semibold tabular-nums text-destructive">
+                <div className="mt-1 text-xl font-semibold tabular-nums text-destructive-text">
                   {breachedCount}
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">

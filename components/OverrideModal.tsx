@@ -81,7 +81,7 @@ export function OverrideModal({
   }
 
   const ratingColor =
-    rating === "Critical" ? "text-destructive bg-destructive/10 border-destructive/40"
+    rating === "Critical" ? "text-destructive-text bg-destructive/10 border-destructive/40"
     : rating === "High Risk" ? "text-warning-text bg-warning/10 border-warning/40"
     : "text-primary bg-primary/10 border-primary/40";
 
@@ -90,7 +90,7 @@ export function OverrideModal({
       <DialogContent className="max-w-lg p-0 gap-0">
         <DialogHeader className="px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-destructive" />
+            <ShieldAlert className="w-4 h-4 text-destructive-text" />
             <DialogTitle className="text-sm font-semibold">Authorization Override Request</DialogTitle>
           </div>
           <DialogDescription className="sr-only">
@@ -117,7 +117,7 @@ export function OverrideModal({
 
           <div>
             <label className="block text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
-              Formal Justification <span className="text-destructive">*</span>
+              Formal Justification <span className="text-destructive-text">*</span>
             </label>
             <textarea
               value={justification}
@@ -133,7 +133,7 @@ export function OverrideModal({
             <p className="text-[10px] text-muted-foreground mt-1 m-0">
               {justification.trim().length}/{MIN_JUSTIFICATION} min characters
               {submitted && !justificationOk && (
-                <span className="text-destructive ml-2">— please add more detail</span>
+                <span className="text-destructive-text ml-2">— please add more detail</span>
               )}
             </p>
           </div>
@@ -141,7 +141,7 @@ export function OverrideModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
-                Approver name <span className="text-destructive">*</span>
+                Approver name <span className="text-destructive-text">*</span>
               </label>
               <input
                 type="text"

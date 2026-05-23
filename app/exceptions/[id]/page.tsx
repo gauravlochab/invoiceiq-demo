@@ -6,7 +6,7 @@
 // GenericExceptionPage, SomExceptionDetail. .card→Card, .data-table→Table,
 // .badge.*→Badge, .alert-bar→Alert, raw <button>→Button, hand-rolled
 // `fixed inset-0` modals→shadcn Dialog. AA-safe status text via
-// text-destructive / text-warning-text / text-success-text. Real h1/h2/h3
+// text-destructive-text / text-warning-text / text-success-text. Real h1/h2/h3
 // document outline. Dark mode works on every template.
 "use client";
 
@@ -167,7 +167,7 @@ function AlertBar({ children }: { children: React.ReactNode }) {
       variant="destructive"
       className="border-l-4 border-l-destructive bg-destructive/10"
     >
-      <AlertDescription className="text-destructive">{children}</AlertDescription>
+      <AlertDescription className="text-destructive-text">{children}</AlertDescription>
     </Alert>
   );
 }
@@ -353,7 +353,7 @@ function Ex003Page() {
                   >
                     <span
                       className={`leading-none ${
-                        step.ok ? "text-success-text" : "text-destructive"
+                        step.ok ? "text-success-text" : "text-destructive-text"
                       }`}
                     >
                       {step.ok ? <Check className="size-3" /> : <X className="size-3" />}
@@ -414,10 +414,10 @@ function Ex003Page() {
 
               {/* Vendor not in master note */}
               <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
-                <SectionLabel as="h3" className="mb-1.5 text-destructive">
+                <SectionLabel as="h3" className="mb-1.5 text-destructive-text">
                   Vendor Not in Approved Master
                 </SectionLabel>
-                <p className="m-0 text-xs leading-relaxed text-destructive">
+                <p className="m-0 text-xs leading-relaxed text-destructive-text">
                   MedTech Solutions LLC (EIN: 84-2917441) does not appear in Northfield Medical&apos;s
                   approved vendor registry. The invoice references IV Catheter Kits but this
                   vendor&apos;s registered business category is &apos;Management Consulting&apos;. Bank account
@@ -474,7 +474,7 @@ function Ex003Page() {
               <div
                 className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
                   actionTaken003 === "blocked"
-                    ? "border-destructive/30 bg-destructive/10 text-destructive"
+                    ? "border-destructive/30 bg-destructive/10 text-destructive-text"
                     : actionTaken003 === "reported"
                       ? "border-warning/40 bg-warning/10 text-warning-text"
                       : actionTaken003 === "verification"
@@ -659,7 +659,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
         <span className="text-xs text-muted-foreground">
           This invoice has <span className="font-semibold text-foreground">{lineItems.length}</span> line items.
           {flaggedItems.length > 0 ? (
-            <> Showing <span className="font-semibold text-destructive">{flaggedItems.length}</span> with {totalDiscrepancies} {totalDiscrepancies === 1 ? "discrepancy" : "discrepancies"}.</>
+            <> Showing <span className="font-semibold text-destructive-text">{flaggedItems.length}</span> with {totalDiscrepancies} {totalDiscrepancies === 1 ? "discrepancy" : "discrepancies"}.</>
           ) : (
             <> All items matched — no discrepancies.</>
           )}
@@ -737,11 +737,11 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                               </div>
                               <div className="flex items-baseline gap-3">
                                 <span className="w-[80px] text-[10px] text-muted-foreground">Invoice Price</span>
-                                <span className="text-xs font-medium tabular-nums text-destructive">${item.invoiceUnitPrice.toFixed(2)}/unit</span>
+                                <span className="text-xs font-medium tabular-nums text-destructive-text">${item.invoiceUnitPrice.toFixed(2)}/unit</span>
                               </div>
                               <div className="flex items-baseline gap-3">
                                 <span className="w-[80px] text-[10px] text-muted-foreground">Variance</span>
-                                <span className="text-xs font-medium tabular-nums text-destructive">
+                                <span className="text-xs font-medium tabular-nums text-destructive-text">
                                   {item.invoiceUnitPrice - item.poUnitPrice > 0 ? "+" : ""}${(item.invoiceUnitPrice - item.poUnitPrice).toFixed(2)}/unit
                                   ({((item.invoiceUnitPrice - item.poUnitPrice) / item.poUnitPrice * 100).toFixed(1)}%)
                                 </span>
@@ -1115,13 +1115,13 @@ function Ex006Page() {
               </div>
               <div>
                 <SectionLabel as="h3" className="mb-1">Invoice Total</SectionLabel>
-                <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
+                <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">
                   {formatCurrency(invTotal)}
                 </p>
               </div>
               <div>
                 <SectionLabel as="h3" className="mb-1">Variance</SectionLabel>
-                <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
+                <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">
                   +{formatCurrency(variance)}{" "}
                   <span className="text-[13px] font-normal">
                     (+{variancePct}%)
@@ -1303,7 +1303,7 @@ function Ex006Page() {
               >
                 Approve with Override
                 {allResolved && hasAnyRejection && (
-                  <span className="text-[10px] font-normal text-destructive">Blocked — disagreement exists</span>
+                  <span className="text-[10px] font-normal text-destructive-text">Blocked — disagreement exists</span>
                 )}
               </Button>
 
@@ -1631,7 +1631,7 @@ function ActionPanel({
           <div className="flex flex-col gap-2">
             <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
               actionTaken === "blocked"
-                ? "border-destructive/30 bg-destructive/10 text-destructive"
+                ? "border-destructive/30 bg-destructive/10 text-destructive-text"
                 : actionTaken === "recovery"
                   ? "border-border bg-muted text-foreground"
                   : actionTaken === "escalated"
@@ -1844,11 +1844,11 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
           </div>
           <div>
             <SectionLabel as="h3" className="mb-1">Invoice Total</SectionLabel>
-            <p className="m-0 text-lg font-semibold tabular-nums text-destructive">{formatCurrency(invTotal)}</p>
+            <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">{formatCurrency(invTotal)}</p>
           </div>
           <div>
             <SectionLabel as="h3" className="mb-1">Variance</SectionLabel>
-            <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
+            <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">
               {variance >= 0 ? "+" : ""}{formatCurrency(variance)} <span className="text-[13px] font-normal">({variance >= 0 ? "+" : ""}{variancePct}%)</span>
             </p>
           </div>
@@ -1887,7 +1887,7 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
   const similarityHigh = pair.similarity >= 99;
   const similarityWarn = pair.similarity >= 95;
   const similarityFill = similarityHigh ? "bg-destructive" : similarityWarn ? "bg-warning" : "bg-primary";
-  const similarityText = similarityHigh ? "text-destructive" : similarityWarn ? "text-warning-text" : "text-primary";
+  const similarityText = similarityHigh ? "text-destructive-text" : similarityWarn ? "text-warning-text" : "text-primary";
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
@@ -2015,7 +2015,7 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
         <div className="mb-5 border-t border-border pt-4">
           <div className="mb-2 flex items-center justify-between">
             <SectionLabel as="h3">Spend vs Cap</SectionLabel>
-            <span className="text-sm font-semibold tabular-nums text-destructive">{pct}% of cap</span>
+            <span className="text-sm font-semibold tabular-nums text-destructive-text">{pct}% of cap</span>
           </div>
           <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted">
             {/* Cap marker at 100% */}
@@ -2041,8 +2041,8 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
               <span className="text-xs font-medium tabular-nums text-foreground">- {formatCurrency(capAmount)}</span>
             </div>
             <div className="mt-2 flex items-center gap-2 border-t border-destructive/30 pt-2">
-              <span className="text-xs font-medium text-destructive">Overage</span>
-              <span className="text-sm font-bold tabular-nums text-destructive">= {formatCurrency(overage)}</span>
+              <span className="text-xs font-medium text-destructive-text">Overage</span>
+              <span className="text-sm font-bold tabular-nums text-destructive-text">= {formatCurrency(overage)}</span>
             </div>
           </div>
         </div>
@@ -2122,7 +2122,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 text-xs">
                   <span className="font-medium text-foreground">Total owed to Northfield</span>
-                  <span className="text-sm font-bold tabular-nums text-destructive">$89,430</span>
+                  <span className="text-sm font-bold tabular-nums text-destructive-text">$89,430</span>
                 </div>
               </div>
             ) : (
@@ -2149,7 +2149,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 text-xs">
                   <span className="font-medium text-foreground">Total owed to Northfield</span>
-                  <span className="text-sm font-bold tabular-nums text-destructive">$6,850</span>
+                  <span className="text-sm font-bold tabular-nums text-destructive-text">$6,850</span>
                 </div>
               </div>
             )}
@@ -2216,7 +2216,7 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* What was charged */}
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
-              <SectionLabel as="h3" className="mb-2 text-destructive">What Was Charged</SectionLabel>
+              <SectionLabel as="h3" className="mb-2 text-destructive-text">What Was Charged</SectionLabel>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">March units</span>
@@ -2227,8 +2227,8 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
                   <span className="font-medium tabular-nums text-foreground">$85.00/unit (Tier 1 only)</span>
                 </div>
                 <div className="flex justify-between border-t border-destructive/30 pt-1.5 text-xs">
-                  <span className="font-medium text-destructive">Total billed</span>
-                  <span className="font-bold tabular-nums text-destructive">$198,900</span>
+                  <span className="font-medium text-destructive-text">Total billed</span>
+                  <span className="font-bold tabular-nums text-destructive-text">$198,900</span>
                 </div>
               </div>
             </div>
@@ -2261,19 +2261,19 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Jan 2026 overcharge (2,340 units)</span>
-                <span className="font-medium tabular-nums text-destructive">$17,420</span>
+                <span className="font-medium tabular-nums text-destructive-text">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Feb 2026 overcharge (2,340 units)</span>
-                <span className="font-medium tabular-nums text-destructive">$17,420</span>
+                <span className="font-medium tabular-nums text-destructive-text">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Mar 2026 overcharge (2,340 units)</span>
-                <span className="font-medium tabular-nums text-destructive">$17,420</span>
+                <span className="font-medium tabular-nums text-destructive-text">$17,420</span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-xs">
                 <span className="font-medium text-foreground">Total overcharge (3 months)</span>
-                <span className="text-sm font-bold tabular-nums text-destructive">$52,260</span>
+                <span className="text-sm font-bold tabular-nums text-destructive-text">$52,260</span>
               </div>
             </div>
           </div>
@@ -2387,7 +2387,7 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
                 </div>
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
                   <SectionLabel as="h3" className="mb-1">Flagged Amount</SectionLabel>
-                  <p className="text-lg font-semibold text-destructive">{formatCurrency(ex.flaggedAmount)}</p>
+                  <p className="text-lg font-semibold text-destructive-text">{formatCurrency(ex.flaggedAmount)}</p>
                 </div>
                 <div className="rounded-md bg-muted px-4 py-3">
                   <SectionLabel as="h3" className="mb-1">Risk Percentage</SectionLabel>
@@ -2440,7 +2440,7 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
             <>
               <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
                 actionTaken === "blocked"
-                  ? "border-destructive/30 bg-destructive/10 text-destructive"
+                  ? "border-destructive/30 bg-destructive/10 text-destructive-text"
                   : actionTaken === "recovery"
                     ? "border-border bg-muted text-foreground"
                     : actionTaken === "escalated"

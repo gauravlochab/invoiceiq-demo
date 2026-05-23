@@ -46,7 +46,7 @@ function trendIcon(trend: "up" | "down" | "flat") {
   if (trend === "up")
     return (
       <TrendingUp
-        className="w-3.5 h-3.5 text-destructive inline"
+        className="w-3.5 h-3.5 text-destructive-text inline"
         aria-label="Worsening"
       />
     );
@@ -87,7 +87,7 @@ function ChartTooltip({ active, payload, label }: any) {
 function resolutionRateClass(rate: number): string {
   if (rate >= 40) return "text-success-text";
   if (rate >= 20) return "text-warning-text";
-  return "text-destructive";
+  return "text-destructive-text";
 }
 
 export default function ProductAnalysisPage() {
@@ -234,7 +234,7 @@ export default function ProductAnalysisPage() {
                     <AlertTriangle className="w-3.5 h-3.5" />
                     Most Flagged Category
                   </p>
-                  <p className="text-2xl font-bold text-destructive mt-1 m-0">
+                  <p className="text-2xl font-bold text-destructive-text mt-1 m-0">
                     {mostFlagged.name}
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-0.5 m-0 tabular-nums">
@@ -345,7 +345,7 @@ export default function ProductAnalysisPage() {
                         <TableCell className="text-right text-xs tabular-nums font-medium">
                           {row.exceptionCount}
                         </TableCell>
-                        <TableCell className="text-right text-xs tabular-nums font-medium text-destructive">
+                        <TableCell className="text-right text-xs tabular-nums font-medium text-destructive-text">
                           {formatCurrency(row.totalFlagged)}
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">

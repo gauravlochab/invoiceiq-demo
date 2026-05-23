@@ -38,13 +38,13 @@ import {
 // Status TEXT uses the AA-safe *-text tokens (ui-standard.md v2.0.1).
 
 function scoreColor(score: number): string {
-  if (score < 30) return "text-destructive";
+  if (score < 30) return "text-destructive-text";
   if (score < 60) return "text-warning-text";
   return "text-success-text";
 }
 
 function discrepancyColor(pct: number): string {
-  if (pct > 15) return "text-destructive";
+  if (pct > 15) return "text-destructive-text";
   if (pct > 5) return "text-warning-text";
   return "text-muted-foreground";
 }
@@ -52,7 +52,7 @@ function discrepancyColor(pct: number): string {
 function recoveryColor(pct: number): string {
   if (pct >= 80) return "text-success-text";
   if (pct >= 40) return "text-warning-text";
-  return "text-destructive";
+  return "text-destructive-text";
 }
 
 // Row tint by discrepancy — non-text fill, paired with the colored % column.
@@ -280,7 +280,7 @@ export default function VendorScoringPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   High Risk
                 </p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive-text">
                   {highRiskCount}
                 </p>
               </div>
@@ -544,7 +544,7 @@ export default function VendorScoringPage() {
                                         {ex.description}
                                       </p>
                                     </div>
-                                    <span className="shrink-0 text-xs font-medium tabular-nums text-destructive">
+                                    <span className="shrink-0 text-xs font-medium tabular-nums text-destructive-text">
                                       {formatCurrency(ex.amount)}
                                     </span>
                                   </Card>

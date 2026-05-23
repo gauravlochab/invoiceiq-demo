@@ -109,13 +109,13 @@ const topExceptions = exceptions
 // reserved for fills + dots. Color always pairs with a label or icon.
 
 function flaggedAmountClass(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "critical" || severity === "high") return "text-destructive-text";
   if (severity === "medium") return "text-warning-text";
   return "text-foreground";
 }
 
 function severityTextClass(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "critical" || severity === "high") return "text-destructive-text";
   if (severity === "medium") return "text-warning-text";
   return "text-muted-foreground";
 }
@@ -131,9 +131,9 @@ function severityDotClass(severity: Severity): string {
 function SeverityIcon({ severity }: { severity: Severity }) {
   const cls = "size-3.5 shrink-0";
   if (severity === "critical")
-    return <AlertOctagon className={`${cls} text-destructive`} aria-hidden="true" />;
+    return <AlertOctagon className={`${cls} text-destructive-text`} aria-hidden="true" />;
   if (severity === "high")
-    return <AlertTriangle className={`${cls} text-destructive`} aria-hidden="true" />;
+    return <AlertTriangle className={`${cls} text-destructive-text`} aria-hidden="true" />;
   if (severity === "medium")
     return <AlertTriangle className={`${cls} text-warning-text`} aria-hidden="true" />;
   return <Circle className={`${cls} text-muted-foreground`} aria-hidden="true" />;
@@ -555,7 +555,7 @@ export default function DashboardPage() {
                   <CardDescription>Amount at Risk</CardDescription>
                   {/* CardTitle renders a <div>; the <h3> inside puts the
                       metric in the heading outline (ui-standard.md v2.0.1). */}
-                  <CardTitle className="text-3xl font-semibold tabular-nums text-destructive @[300px]/card:text-4xl">
+                  <CardTitle className="text-3xl font-semibold tabular-nums text-destructive-text @[300px]/card:text-4xl">
                     <h3 className="font-[inherit]">
                       <NumberTicker value={metrics.amountAtRisk} prefix="$" />
                     </h3>
@@ -566,7 +566,7 @@ export default function DashboardPage() {
                   </CardAction>
                 </CardHeader>
                 <CardFooter className="text-sm">
-                  <span className="inline-flex items-center gap-1.5 font-medium text-destructive">
+                  <span className="inline-flex items-center gap-1.5 font-medium text-destructive-text">
                     <AlertOctagon className="size-3.5" aria-hidden="true" />
                     {metrics.criticalOpenCount} critical open
                   </span>

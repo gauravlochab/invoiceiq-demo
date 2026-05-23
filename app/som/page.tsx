@@ -168,7 +168,7 @@ export default function SomQueuePage() {
     {
       label: "Auto-blocked",
       value: String(blockedCount),
-      valueClass: "text-destructive",
+      valueClass: "text-destructive-text",
       subtitle: "awaiting human override",
       Icon: Lock,
     },
@@ -182,7 +182,7 @@ export default function SomQueuePage() {
     {
       label: "Blocked exposure",
       value: formatCurrency(somBlockedAmount),
-      valueClass: "text-destructive",
+      valueClass: "text-destructive-text",
       subtitle: `across ${somExceptions.length} SOM exceptions`,
       Icon: DollarSign,
     },
@@ -279,7 +279,7 @@ export default function SomQueuePage() {
                               </span>
                             )}
                             {blocked && !overrideEntry && (
-                              <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                              <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-destructive-text">
                                 <Lock className="size-2.5" />
                                 Auto-blocked
                               </span>
@@ -373,7 +373,7 @@ export default function SomQueuePage() {
 // [Spec: domains/som/spec.md#Business Rules — Score color mapping v2.0.1]
 function ScoreCell({ score, rating }: { score: number; rating: string }) {
   const color =
-    score < 30 ? "text-destructive"
+    score < 30 ? "text-destructive-text"
     : score < 60 ? "text-warning-text"
     : score < 80 ? "text-primary"
     : "text-success-text";
