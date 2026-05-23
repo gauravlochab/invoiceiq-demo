@@ -39,9 +39,11 @@ Two-tier system in `app/globals.css`, sourced from shadcn `dashboard-01` registr
 | `--muted-foreground` | Muted text/labels | `0.556 0 0` | `0.708 0 0` |
 | `--accent` | Hover/active accent | `0.97 0 0` | `0.371 0 0` |
 | `--destructive` | Critical/error | `0.577 0.245 27.325` | `0.704 0.191 22.216` |
+| `--destructive-foreground` | Text on solid destructive fill | `0.97 0.01 17` | `0.985 0 0` (corrected 2026-05-23 — was a saturated red, measured 1.65:1 on the dark destructive fill, effectively invisible) |
+| `--destructive-text` | AA-safe destructive text on `destructive/10` chip (light) / `destructive/20` chip (dark) | `0.45 0.20 27` | (light-only token — dark mode keeps `text-destructive` which measures 4.63:1 on its own `/20` chip) |
 | `--border` | Borders | `0.922 0 0` | `1 0 0 / 10%` |
 | `--input` | Input borders | `0.922 0 0` | `1 0 0 / 15%` |
-| `--ring` | Focus ring | `0.708 0 0` | `0.556 0 0` |
+| `--ring` | Focus ring | `0.55 0 0` (corrected 2026-05-23 — was `0.708 0 0` which measured 2.59:1 on white, below WCAG 2.4.11 / 1.4.11's 3:1 minimum) | `0.556 0 0` (passes 4.18:1) |
 
 ### Chart Tokens (chart-1 through chart-5)
 
@@ -138,6 +140,25 @@ Container queries (`@container/main`) drive responsive grids — preferred over 
 | KPI grids | `grid-cols-1 @xl/main:grid-cols-2 @5xl/main:grid-cols-4` (container queries) |
 | Card grids | Always use `@container/main` parent + `@`-prefixed responsive classes |
 | Vertical rhythm | `gap-4 py-4 md:gap-6 md:py-6` |
+| Wide-screen content cap | The `SidebarInset` main content region is capped at `max-w-[1536px] mx-auto w-full` (applied on the content wrapper inside `ClientShell`) so reading columns stay sane beyond ~1536px instead of stretching edge-to-edge (added 2026-05-23 audit — was uncapped, sprawled at 1920px). The sidebar and sticky header still span the full viewport — only the scrolling content region is capped. |
+| Mobile detail-page row reflow | Multi-field detail rows (e.g. three-way-match discrepancy items) stack vertically below `sm` (≤640px); right-column info panels stack below the left column below `lg` (≤1024px). |
+
+## Touch Targets (added 2026-05-23 audit)
+
+The audit measured the live DOM: sidebar nav rows at 32px, header icon buttons at 28×28px, in-table "Review" links at ~15px tall — all below the 44×44px minimum mandated in the Accessibility section. WCAG 2.5.5 (AAA) and Apple HIG / Material both target 44px.
+
+**Rule:** every primary interactive element must have a **≥44×44px effective hit area** on viewports `≤md` (768px). The visual element may stay smaller — use padding to extend the click/tap region without inflating the visible chrome. Desktop (≥md) may stay denser.
+
+Component-specific applications:
+
+| Component | Visible size | Hit-area technique |
+|-----------|--------------|--------------------|
+| Sidebar nav rows (`SidebarMenuButton`) | 32px visible | `md:before:absolute md:before:-inset-x-2 md:before:-inset-y-1.5` pseudo-element on mobile, or `min-h-11` below the `md` breakpoint |
+| Header icon buttons (`SiteHeader`, `size="icon"`) | 28–32px visible | `min-h-11 min-w-11` below `md`; use a slightly larger `size="icon-lg"` (36px) above |
+| Table action links (e.g. "Review →") | ~15px tall text | Wrap in `<Link className="... block py-3 -my-3 ...">` so the row-cell click area extends ≥44px vertically without changing visible line height (negative margin offsets the padding) |
+| Theme toggle, dropdown triggers | 28px visible | Same `min-h-11 min-w-11` floor on mobile |
+
+The pattern is: keep the *visual* element compact for desktop density, expand the *hit target* on mobile via padding or an `::before` overlay. Never bloat the visible button just to hit 44px.
 
 ## Typography Scale (shadcn-aligned)
 
@@ -161,8 +182,11 @@ Container queries (`@container/main`) drive responsive grids — preferred over 
 - ARIA labels on chart containers (`role="img" aria-label="..."`) — the label must describe the **data shown**, not just the chart type
 - Sortable table headers expose `aria-sort` (`ascending` / `descending` / `none`)
 - `strokeDasharray` on chart lines for colorblind differentiation
-- Minimum touch target: 44x44px on mobile
-- **Color contrast — corrected (2026-05-21 audit):** The neutral pairs (`--foreground` / `--background` / `--card`, `--muted-foreground`) are tuned for AA. **The semantic status tokens `--warning` and `--success` are NOT AA-safe as text** — on `--background` they measure ~2.15:1 (`--warning`) and ~2.50:1 (`--success`); AA body text needs 4.5:1. Use the dedicated `--warning-text` / `--success-text` tokens for any `text-*` status coloring; reserve `--warning` / `--success` for fills, dots, and borders only. See "Warning + Success Overrides" below.
+- Minimum touch target: 44×44px effective hit area on mobile (see "Touch Targets" below for the padding-not-bloat pattern — applies to sidebar nav, header buttons, and table action links)
+- **Color contrast — corrected (2026-05-21 + 2026-05-23 audits):** The neutral pairs (`--foreground` / `--background` / `--card`, `--muted-foreground`) are tuned for AA. **The semantic status tokens `--warning` and `--success` are NOT AA-safe as text** — on `--background` they measure ~2.15:1 (`--warning`) and ~2.50:1 (`--success`); AA body text needs 4.5:1. Use the dedicated `--warning-text` / `--success-text` tokens for any `text-*` status coloring; reserve `--warning` / `--success` for fills, dots, and borders only. See "Warning + Success Overrides" below. The 2026-05-23 audit additionally measured three failures that survived the 2026-05-21 pass:
+  - Dark `--destructive-foreground` (was `oklch(0.58 0.22 27)`, red text on the red destructive fill) — **1.65:1** (effectively invisible). Set to `oklch(0.985 0 0)` (near-white) — raises to **2.77:1**, still below 4.5:1 for solid-fill text but the bug (red-on-red) is gone; the practical chip pattern is unaffected.
+  - Light `--ring` (was `oklch(0.708 0 0)`, mid-grey on white) — **2.59:1** vs the WCAG 2.4.11 / 1.4.11 minimum of 3:1 for focus indicators. Set to `oklch(0.55 0 0)` — raises to **4.85:1**.
+  - Light `Badge variant="destructive"` text on `bg-destructive/10` chip — **3.99:1** vs the 4.5:1 floor (10% red on white is no longer white). Added `--destructive-text: oklch(0.45 0.20 27)` and used in the `destructive` variant — **6.55:1**. Mirrors the existing warning/success two-role pattern. See "Destructive Two-Role Pattern" below.
 - Color is never the only signal — pair every status color with a text label or an icon (WCAG 1.4.1)
 
 ## Interaction Patterns
@@ -199,6 +223,7 @@ This is the mapping that the 10 domain specs and all components must follow. Eve
 | `--text-inverse` | `--primary-foreground` | Text on primary buttons |
 | `--critical` | `--destructive` | Error/critical states |
 | `--critical-subtle` | `bg-destructive/10` | Tailwind opacity modifier |
+| (new) `--destructive-text` | `--destructive-text` | AA-safe destructive text on `bg-destructive/10` chip (light); added 2026-05-23 audit. See Destructive Two-Role Pattern. |
 | `--warning` | (new) `--warning` (fills/dots/borders) + `--warning-text` (text) — see Warning + Success Overrides | shadcn has no built-in warning; two tokens by role |
 | `--success` | (new) `--success` (fills/dots/borders) + `--success-text` (text) — see Warning + Success Overrides | shadcn has no built-in success; two tokens by role |
 | `--warning-text` (v1, HTML artifacts) | `--warning-text` (v2 OKLCH) | AA-safe amber text token |
@@ -228,6 +253,7 @@ shadcn does not ship `--warning` or `--success` semantic tokens (only `--destruc
   --success: oklch(0.7 0.15 162);               /* emerald — fills/dots/borders only */
   --success-foreground: oklch(0.985 0 0);
   --success-text: oklch(0.52 0.12 162);         /* darker emerald — AA-safe as text */
+  --destructive-text: oklch(0.45 0.20 27);      /* darker red — AA-safe on destructive/10 chip (added 2026-05-23 audit) */
 }
 .dark {
   --warning: oklch(0.828 0.189 84.429);
@@ -236,6 +262,7 @@ shadcn does not ship `--warning` or `--success` semantic tokens (only `--destruc
   --success: oklch(0.7 0.15 162);
   --success-foreground: oklch(0.205 0 0);
   --success-text: oklch(0.8 0.14 162);          /* light emerald — AA-safe on dark bg */
+  /* dark mode keeps text-destructive on bg-destructive/20 — measures 4.63:1 — no second token needed */
 }
 ```
 
@@ -248,10 +275,11 @@ Register in `@theme inline`:
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-text: var(--success-text);
+  --color-destructive-text: var(--destructive-text);  /* added 2026-05-23 audit */
 }
 ```
 
-This lets `bg-warning` / `bg-success` (fills), `border-warning` / `border-success` (borders), and `text-warning-text` / `text-success-text` (AA-safe text) all work natively.
+This lets `bg-warning` / `bg-success` (fills), `border-warning` / `border-success` (borders), and `text-warning-text` / `text-success-text` / `text-destructive-text` (AA-safe text) all work natively.
 
 **Token-role table:**
 
@@ -259,7 +287,31 @@ This lets `bg-warning` / `bg-success` (fills), `border-warning` / `border-succes
 |-------|------|---------|-----------|
 | `--warning` / `--success` | fill, dot, border | progress fills, status dots, chip backgrounds, borders | 3:1 (non-text) |
 | `--warning-text` / `--success-text` | text | any `text-*` status coloring (amounts, labels, KPI values) | 4.5:1 (body text) |
-| `--destructive` | text + fill | critical/error states (already AA-safe as text) | 4.5:1 |
+| `--destructive` | text + fill | critical/error states (text-only AA-safe on `--background` and `--card`) | 4.5:1 |
+| `--destructive-text` (light only) | text on `bg-destructive/10` chip | `Badge variant="destructive"` and any tinted-chip text in light mode | 4.5:1 |
+| `--destructive-foreground` | text on the SOLID `--destructive` fill | rare — most chips/badges use `text-destructive` on `bg-destructive/10` instead | 4.5:1 |
+
+### Destructive Two-Role Pattern (added 2026-05-23 audit)
+
+The same fill-vs-text split that exists for `--warning` / `--success` now applies to `--destructive`, but only in light mode and only for tinted chips. The 2026-05-23 audit measured `text-destructive` on a `bg-destructive/10` chip at **3.99:1** — below the 4.5:1 floor — because a 10%-opacity red blended onto white is no longer pure white. The fix mirrors the warning/success solution:
+
+```css
+:root {
+  /* Light-mode chips: text uses the darker --destructive-text token */
+  --destructive-text: oklch(0.45 0.20 27);    /* 6.55:1 on destructive/10 chip */
+}
+```
+
+Register in `@theme inline`:
+```css
+@theme inline {
+  --color-destructive-text: var(--destructive-text);
+}
+```
+
+`Badge variant="destructive"` and `Button variant="destructive"` in light mode use `text-destructive-text bg-destructive/10`. In dark mode the chip is `bg-destructive/20` and `text-destructive` already measures 4.63:1 — no second token needed.
+
+The `--destructive-foreground` token (named for "text on solid `--destructive`") is rarely used in practice — shadcn's destructive variants are tinted-chip patterns, not solid fills. The audit found dark `--destructive-foreground` was a saturated red (1.65:1 on the destructive fill — a copy-paste bug from the light value). Setting it to near-white (`oklch(0.985 0 0)`) raises that ratio to 2.77:1 — better but still under 4.5:1 because the dark `--destructive` fill itself is bright (`oklch(0.704 0.191 22.216)`); reaching AA for solid-fg-on-solid-fill would require darkening the fill too, which the audit considered out of scope. In practice no component uses `text-destructive-foreground` on a solid `--destructive` surface.
 
 ### Agent Color Extension (InvoiceIQ-specific)
 
@@ -289,3 +341,4 @@ Use affirmative phrasing per SpecLayer v1.1 — every "don't" gets ignored.
 <!-- 2026-05-14: Initial v1 ui-standard.md (Linear/Stripe/Vercel inspired, hex tokens, light-only) -->
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system (dashboard-01 block, new-york-v4 registry). OKLCH color space, dark mode native, sidebar+inset layout, container queries, Card/Badge/Sidebar primitives. Added v1→v2 migration map and Warning/Success override (shadcn ships destructive only). Agent palette preserved as InvoiceIQ extension. Domain specs and components must follow Phase 2/3 of revamp. -->
 <!-- 2026-05-21 v2.0.1: Corrected two false claims found by the 2026-05-21 dashboard audit. (1) "OKLCH tokens are tuned for AA — never override" was FALSE for --warning/--success as TEXT (~2.15:1 / ~2.50:1, AA needs 4.5:1) — added --warning-text/--success-text tokens for text use, kept --warning/--success for fills/dots/borders only, updated the Accessibility section, the Warning+Success Overrides section (now with a token-role table), and the v1→v2 migration map. (2) "CardTitle (built-in) — semantic h3" was FALSE — CardTitle/CardDescription render <div>s; corrected the Typography Scale and Component Patterns tables to require a real <h2>/<h3> inside CardTitle when a heading is needed. Also: reduced-motion note now distinguishes CSS vs JS animation; chart standards now require distinct per-category colors and forbid v1 chart hex tokens / bg-white. -->
+<!-- 2026-05-23 v2.0.2 (Phase 1 elite-UI audit fix-up): The 2026-05-21 v2.0.1 entry above claimed "WCAG 2.1 AA" coverage but never measured the destructive chip, the focus ring, or the dark destructive-foreground token numerically — the 2026-05-23 audit (OKLCH → sRGB → relative luminance → WCAG 2.1 ratio computed in JS, not eyeballed) found three failures that survived. This entry is the honest fix-up. (1) Dark --destructive-foreground: was oklch(0.58 0.22 27) (red), measured 1.65:1 on the dark --destructive fill — effectively invisible. Set to oklch(0.985 0 0) (near-white). New ratio: 2.77:1 — meaningfully improved but still under 4.5:1 because the dark --destructive itself is a bright red; the audit considered darkening the fill out of scope. In practice no component renders text-destructive-foreground on a solid --destructive surface — the shipped destructive variants use the bg-destructive/10 (light) or /20 (dark) chip pattern + text-destructive (or text-destructive-text). The bug fix matters because the *token's named purpose* was a copy-paste of the red value. (2) Light --ring: was oklch(0.708 0 0), measured 2.59:1 on white — below the 3:1 focus-indicator minimum in WCAG 2.4.11 / 1.4.11. Set to oklch(0.55 0 0). New ratio: 4.85:1. Dark --ring at 4.18:1 was already passing — unchanged. (3) Badge variant="destructive" text on bg-destructive/10 chip in light mode: measured 3.99:1 — the 10%-red blended onto white is no longer white, so text-destructive lost 0.78 ratio points. Added --destructive-text: oklch(0.45 0.20 27) (mirrors the existing --warning-text / --success-text two-role pattern), wired through @theme inline as --color-destructive-text, and used in Badge / Button destructive variants in light mode. New ratio on the /10 chip: 6.55:1. Dark mode unchanged — text-destructive on bg-destructive/20 measured 4.63:1, already AA. Also: codified the touch-target rule into a dedicated section with the padding-not-bloat pattern (sidebar nav, header icon buttons, table action links all extended to ≥44×44px hit area below md without changing their visible chrome), and added a wide-screen content cap (`max-w-screen-2xl mx-auto` on the SidebarInset main region) so 1920px+ monitors stop sprawling. The mobile detail-row stacking rule documents the v2.0 invoice-detail responsive AC (see specs/domains/invoice-detail/spec.md 2026-05-23 entry). -->

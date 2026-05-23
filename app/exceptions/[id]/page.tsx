@@ -299,7 +299,7 @@ function Ex003Page() {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">EX-003</span>
           <Badge variant="destructive">Suspicious Invoice</Badge>
           <Badge variant="outline">Escalated</Badge>
@@ -714,9 +714,13 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                   const state = lineItemStates?.[item.itemCode] ?? "pending";
                   return (
                     <div key={`${groupKey}-${item.itemCode}`} className={`px-5 py-4 ${rowBgClass(item.flags)}`}>
-                      <div className="flex items-start justify-between gap-4">
+                      {/* [Spec: domains/invoice-detail/spec.md#Responsive-mobile]
+                          Mobile (<sm): stack Col 1 / Col 2 / Col 3 vertically — the
+                          desktop horizontal row collapsed to overlapping unreadable
+                          text at 375px (2026-05-23 audit P0). sm+: original 3-column row. */}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         {/* Col 1: Item identification */}
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 sm:flex-1">
                           <span className="block font-mono text-[11px] text-muted-foreground">{item.itemCode}</span>
                           <span className="mt-0.5 block text-xs font-medium text-foreground">
                             {item.invoiceDescription || item.description}
@@ -724,7 +728,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                         </div>
 
                         {/* Col 2+3: Discrepancy detail */}
-                        <div className="min-w-[280px] flex-1">
+                        <div className="sm:min-w-[280px] sm:flex-1">
                           {groupKey === "price" && (
                             <div className="space-y-1">
                               <div className="flex items-baseline gap-3">
@@ -810,23 +814,25 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                           )}
                         </div>
 
-                        {/* Action buttons (EX-006 only) */}
+                        {/* Action buttons (EX-006 only) — full width on mobile, fixed
+                            150px column on sm+ */}
                         {showActions && (
-                          <div className="flex w-[150px] shrink-0 items-start justify-end">
+                          <div className="flex w-full items-start justify-start sm:w-[150px] sm:shrink-0 sm:justify-end">
                             {state === "pending" ? (
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onAccept?.(item.itemCode)}
-                                  className="border-success bg-success/10 text-success-text hover:bg-success/20"
+                                  className="min-h-11 border-success bg-success/10 text-success-text hover:bg-success/20 sm:min-h-0 sm:h-7"
                                 >
                                   <Check className="size-3" /> Agree
                                 </Button>
                                 <Button
                                   variant="destructive"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onReject?.(item.itemCode)}
+                                  className="min-h-11 sm:min-h-0 sm:h-7"
                                 >
                                   <X className="size-3" /> Disagree
                                 </Button>
@@ -838,9 +844,9 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 </Badge>
                                 <Button
                                   variant="ghost"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onUndo?.(item.itemCode)}
-                                  className="text-[10px] text-muted-foreground"
+                                  className="min-h-11 text-[10px] text-muted-foreground sm:min-h-0 sm:h-7"
                                   title="Change decision"
                                 >
                                   undo
@@ -853,9 +859,9 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 </Badge>
                                 <Button
                                   variant="ghost"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onUndo?.(item.itemCode)}
-                                  className="text-[10px] text-muted-foreground"
+                                  className="min-h-11 text-[10px] text-muted-foreground sm:min-h-0 sm:h-7"
                                   title="Change decision"
                                 >
                                   undo
@@ -1058,7 +1064,7 @@ function Ex006Page() {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">EX-006</span>
           <TypeBadge>Match Exception</TypeBadge>
           <Badge className="border-warning bg-warning/10 text-warning-text">Under Review</Badge>
@@ -1100,7 +1106,7 @@ function Ex006Page() {
 
           <Card className="mt-3 gap-0 py-0">
             {/* Totals summary */}
-            <div className="flex gap-10 px-6 py-4">
+            <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:gap-10">
               <div>
                 <SectionLabel as="h3" className="mb-1">PO Total</SectionLabel>
                 <p className="m-0 text-lg font-semibold tabular-nums text-foreground">
@@ -1766,7 +1772,7 @@ function PageShell({
       </div>
 
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
           <SeverityBadge severity={ex.severity}>{typeLabels[ex.type] || ex.type}</SeverityBadge>
           <StatusBadge status={ex.status} />
@@ -1831,7 +1837,7 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
 
       <Card className="mt-3 gap-0 py-0">
         {/* Totals */}
-        <div className="flex gap-10 px-6 py-4">
+        <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:gap-10">
           <div>
             <SectionLabel as="h3" className="mb-1">PO Total</SectionLabel>
             <p className="m-0 text-lg font-semibold tabular-nums text-foreground">{formatCurrency(poTotal)}</p>
@@ -1887,8 +1893,8 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
       <SectionLabel className="mb-2">Duplicate Invoice Comparison</SectionLabel>
       <Card className="gap-0 py-0">
-        {/* Side-by-side comparison */}
-        <div className="grid grid-cols-2 divide-x divide-border">
+        {/* Side-by-side comparison — stacks on mobile (sm:grid-cols-2) */}
+        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           {/* Invoice A */}
           <div className="p-5">
             <div className="mb-3 flex items-center gap-2">
@@ -1937,7 +1943,7 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div className={`h-full rounded-full transition-all ${similarityFill}`} style={{ width: `${pair.similarity}%` }} />
           </div>
-          <div className="mt-3 flex gap-6">
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:gap-6">
             <div>
               <span className="text-[11px] text-muted-foreground">Amount delta</span>
               <p className="m-0 mt-0.5 text-xs font-medium text-foreground">{formatCurrency(pair.amountDelta)} ({((pair.amountDelta / inv1.amount) * 100).toFixed(2)}%)</p>
@@ -1990,7 +1996,7 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
         {/* Contract summary */}
         <div className="mb-5">
           <h3 className="mb-3 text-sm font-medium text-foreground">Contract Summary</h3>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
               { label: "Period", value: `${new Date(contract.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${new Date(contract.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` },
@@ -2080,7 +2086,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
         {/* Contract terms */}
         <div className="mb-5">
           <h3 className="mb-3 text-sm font-medium text-foreground">Contract Terms</h3>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
               { label: "Vendor", value: contract.vendor },
@@ -2207,7 +2213,7 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
         {/* Actual calculation */}
         <div className="mb-5 border-t border-border pt-4">
           <h3 className="mb-3 text-sm font-medium text-foreground">March Invoice Calculation</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* What was charged */}
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
               <SectionLabel as="h3" className="mb-2 text-destructive">What Was Charged</SectionLabel>
@@ -2331,7 +2337,7 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
           <SeverityBadge severity={ex.severity}>{typeLabels[ex.type] || ex.type}</SeverityBadge>
           <StatusBadge status={ex.status} />
@@ -2606,7 +2612,7 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">
             SOM · Drug Distributor

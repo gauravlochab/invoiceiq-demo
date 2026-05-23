@@ -84,9 +84,13 @@ function NavItems({ items, pathname }: { items: NavItem[]; pathname: string }) {
         const active = isActive(pathname, href);
         return (
           <SidebarMenuItem key={href}>
+            {/* [Spec: rules/ui-standard.md#Touch Targets] — sidebar nav rows
+                were 32px visible (audit P1 4.4). max-md:min-h-11 extends the
+                hit area to 44px on viewports ≤md without bloating desktop. */}
             <SidebarMenuButton
               isActive={active}
               tooltip={label}
+              className="max-md:min-h-11"
               render={
                 <Link href={href} aria-current={active ? "page" : undefined}>
                   <Icon />

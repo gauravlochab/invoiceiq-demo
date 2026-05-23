@@ -900,9 +900,10 @@ function ExceptionsPageInner() {
 
                             {/* ACTION */}
                             <TableCell>
+                              {/* [Spec: rules/ui-standard.md#Touch Targets] — extend hit area */}
                               <Link
                                 href={`/exceptions/${ex.id}`}
-                                className="whitespace-nowrap text-xs text-muted-foreground no-underline transition-colors hover:underline group-hover:text-primary"
+                                className="inline-flex items-center whitespace-nowrap -my-3 -mx-2 px-2 py-3 text-xs text-muted-foreground no-underline transition-colors hover:underline group-hover:text-primary"
                               >
                                 Review &rarr;
                               </Link>

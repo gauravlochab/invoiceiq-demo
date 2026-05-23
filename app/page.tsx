@@ -778,9 +778,12 @@ export default function DashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
+                      {/* [Spec: rules/ui-standard.md#Touch Targets]
+                          py/px + negative -my/-mx extend the hit area to ≥44×44px
+                          without changing the visible row height (mobile) */}
                       <Link
                         href={`/exceptions/${ex.id}`}
-                        className="text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
+                        className="inline-flex items-center -my-3 -mx-2 px-2 py-3 text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
                       >
                         Review →
                       </Link>
