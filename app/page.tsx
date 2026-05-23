@@ -500,7 +500,7 @@ export default function DashboardPage() {
     <main className="@container/main flex flex-1 flex-col">
       {/* ── Header strip ───────────────────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Page header] */}
-      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-6 pb-2 lg:px-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-10 pb-6 lg:px-6">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">
             Invoice Intelligence
@@ -531,7 +531,7 @@ export default function DashboardPage() {
 
       {/* ── Hero band: Amount at Risk + calm KPI trio ──────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Hero band] */}
-      <section aria-labelledby="hero-heading" className="px-4 py-6 lg:px-6">
+      <section aria-labelledby="hero-heading" className="px-4 py-8 lg:px-6">
         <h2 id="hero-heading" className="sr-only">
           Key metrics
         </h2>
@@ -611,7 +611,7 @@ export default function DashboardPage() {
 
       {/* ── Context band: Pipeline + Contracts & GPO ───────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Context band] */}
-      <section aria-labelledby="context-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="context-heading" className="px-4 pb-10 lg:px-6">
         <h2 id="context-heading" className="sr-only">
           Pipeline and contract context
         </h2>
@@ -680,7 +680,7 @@ export default function DashboardPage() {
 
       {/* ── Work table: recent exceptions (promoted out of tabs) ───────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Exceptions work table] */}
-      <section aria-labelledby="work-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="work-heading" className="px-4 pb-10 lg:px-6">
         {loading ? (
           <Skeleton className="h-80 w-full" />
         ) : (
@@ -798,7 +798,7 @@ export default function DashboardPage() {
 
       {/* ── Invoice-status overview ────────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Invoice-status overview] */}
-      <section aria-labelledby="status-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="status-heading" className="px-4 pb-10 lg:px-6">
         {loading ? (
           <Skeleton className="h-24 w-full" />
         ) : (
@@ -856,7 +856,7 @@ export default function DashboardPage() {
 
       {/* ── Analysis section: 2 tabs ───────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Analysis section] */}
-      <section aria-labelledby="analysis-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="analysis-heading" className="px-4 pb-10 lg:px-6">
         <h2 id="analysis-heading" className="sr-only">
           Trend and category analysis
         </h2>

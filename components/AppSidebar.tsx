@@ -118,24 +118,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
-        <div className="flex items-center gap-2.5 px-2 py-2">
-          {/* Light theme: navy bulb; Dark theme: white bulb */}
+        <div className="flex items-center gap-3 px-2 py-3">
+          {/* Light theme: navy bulb; Dark theme: white bulb. Sized at 36px for
+              brand presence (audit 2026-05-23 feedback: logo was visually lost
+              at 28px). */}
           <Image
             src="/branding/acl-icon-clean.svg"
             alt="Agile C-Level"
-            width={28}
-            height={28}
-            className="h-7 w-auto shrink-0 dark:hidden"
+            width={36}
+            height={36}
+            className="h-9 w-auto shrink-0 dark:hidden"
           />
           <Image
             src="/branding/acl-icon-white.svg"
             alt="Agile C-Level"
-            width={28}
-            height={28}
-            className="hidden h-7 w-auto shrink-0 dark:block"
+            width={36}
+            height={36}
+            className="hidden h-9 w-auto shrink-0 dark:block"
           />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="block text-sm font-semibold tracking-tight">Agile C-Level</span>
+            <span className="block text-[15px] font-semibold tracking-tight leading-tight">
+              Agile C-Level
+            </span>
             <p className="m-0 mt-0.5 text-[11px] font-medium tracking-wide text-muted-foreground">
               InvoiceIQ Detect
             </p>
