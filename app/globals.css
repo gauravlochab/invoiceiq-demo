@@ -31,6 +31,7 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-text: var(--success-text);
+  --color-destructive-text: var(--destructive-text);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -193,10 +194,17 @@ input, select, textarea {
   --success: oklch(0.7 0.15 162);
   --success-foreground: oklch(0.985 0 0);
   --success-text: oklch(0.52 0.12 162);
+  /* --destructive-text: AA-safe destructive text on bg-destructive/10 chip.
+     Measured 6.55:1 vs 3.99:1 for text-destructive on the same chip.
+     Added 2026-05-23 audit — see ui-standard.md "Destructive Two-Role Pattern". */
+  --destructive-text: oklch(0.45 0.20 27);
 
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* --ring: was oklch(0.708 0 0) — measured 2.59:1 on white, below the
+     WCAG 2.4.11 / 1.4.11 3:1 floor for focus indicators. Darkened to 0.55
+     (4.85:1) per 2026-05-23 audit. */
+  --ring: oklch(0.55 0 0);
 
   /* Chart palette — light.
      --chart-1/--chart-2 keep the blue scale for sequential series (spend trend).
@@ -235,8 +243,15 @@ input, select, textarea {
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.371 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.58 0.22 27);
+  /* --destructive: was oklch(0.704 0.191 22.216) — too bright; with white
+     --destructive-foreground that pair measured only 2.77:1 (below 4.5:1).
+     Darkened to 0.5 per 2026-05-23 v2 audit so white-on-destructive hits
+     6.40:1. See ui-standard.md "Destructive Two-Role Pattern". */
+  --destructive: oklch(0.5 0.2 22.216);
+  /* --destructive-foreground: near-white. 2026-05-23 v1 set this to oklch(0.985 0 0)
+     to fix a red-on-red bug; v2 then darkened --destructive so this pair now hits
+     6.40:1 (AA). */
+  --destructive-foreground: oklch(0.985 0 0);
 
   --warning: oklch(0.828 0.189 84.429);
   --warning-foreground: oklch(0.205 0 0);
@@ -244,6 +259,12 @@ input, select, textarea {
   --success: oklch(0.7 0.15 162);
   --success-foreground: oklch(0.205 0 0);
   --success-text: oklch(0.8 0.14 162);
+  /* --destructive-text: dark-mode AA-safe destructive text. Mirrors the light
+     --destructive-text token added 2026-05-23 v1. On dark --background measures
+     8.69:1; on bg-destructive/20 chip measures ~7.96:1 (well above 4.5:1).
+     Lets the destructive variant use text-destructive-text symmetrically in
+     both themes instead of the dark:text-destructive override. */
+  --destructive-text: oklch(0.78 0.16 22);
 
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);

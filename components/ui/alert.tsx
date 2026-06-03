@@ -10,7 +10,11 @@ const alertVariants = cva(
       variant: {
         default: "bg-card text-card-foreground",
         destructive:
-          "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+          // Two-role pattern (2026-05-23 v2 audit): text-destructive-text is AA
+          // in both modes on bg-card. The prior text-destructive measured
+          // 4.76:1 in light but only 2.68:1 in dark after --destructive was
+          // darkened. See ui-standard.md "Destructive Two-Role Pattern".
+          "bg-card text-destructive-text *:data-[slot=alert-description]:text-destructive-text/90 *:[svg]:text-current",
       },
     },
     defaultVariants: {

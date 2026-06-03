@@ -63,7 +63,7 @@ export function SiteHeader({ onSearchClick }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-(--header-height) shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur-sm transition-[width,height] ease-linear">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
+        <SidebarTrigger className="-ml-1 max-md:min-h-11 max-md:min-w-11" />
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
 
         <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
@@ -91,11 +91,15 @@ export function SiteHeader({ onSearchClick }: SiteHeaderProps) {
           </ol>
         </nav>
 
+        {/* [Spec: rules/ui-standard.md#Touch Targets] — header buttons were
+            ~28×28px visible (audit P1 4.4). max-md:min-h-11 max-md:min-w-11
+            extends the hit area to 44×44px on viewports ≤md without bloating
+            desktop density. */}
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground max-md:min-h-11 max-md:min-w-11"
             onClick={onSearchClick}
             aria-label="Open command palette"
           >
@@ -113,7 +117,7 @@ export function SiteHeader({ onSearchClick }: SiteHeaderProps) {
             variant="ghost"
             size="icon"
             aria-label={`Notifications (${unreadCount} unread)`}
-            className="relative"
+            className="relative max-md:min-h-11 max-md:min-w-11"
           >
             <Bell className="size-4" />
             {unreadCount > 0 && (

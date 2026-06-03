@@ -109,13 +109,13 @@ const topExceptions = exceptions
 // reserved for fills + dots. Color always pairs with a label or icon.
 
 function flaggedAmountClass(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "critical" || severity === "high") return "text-destructive-text";
   if (severity === "medium") return "text-warning-text";
   return "text-foreground";
 }
 
 function severityTextClass(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "critical" || severity === "high") return "text-destructive-text";
   if (severity === "medium") return "text-warning-text";
   return "text-muted-foreground";
 }
@@ -131,9 +131,9 @@ function severityDotClass(severity: Severity): string {
 function SeverityIcon({ severity }: { severity: Severity }) {
   const cls = "size-3.5 shrink-0";
   if (severity === "critical")
-    return <AlertOctagon className={`${cls} text-destructive`} aria-hidden="true" />;
+    return <AlertOctagon className={`${cls} text-destructive-text`} aria-hidden="true" />;
   if (severity === "high")
-    return <AlertTriangle className={`${cls} text-destructive`} aria-hidden="true" />;
+    return <AlertTriangle className={`${cls} text-destructive-text`} aria-hidden="true" />;
   if (severity === "medium")
     return <AlertTriangle className={`${cls} text-warning-text`} aria-hidden="true" />;
   return <Circle className={`${cls} text-muted-foreground`} aria-hidden="true" />;
@@ -500,7 +500,7 @@ export default function DashboardPage() {
     <main className="@container/main flex flex-1 flex-col">
       {/* ── Header strip ───────────────────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Page header] */}
-      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-6 pb-2 lg:px-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-10 pb-6 lg:px-6">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">
             Invoice Intelligence
@@ -531,7 +531,7 @@ export default function DashboardPage() {
 
       {/* ── Hero band: Amount at Risk + calm KPI trio ──────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Hero band] */}
-      <section aria-labelledby="hero-heading" className="px-4 py-6 lg:px-6">
+      <section aria-labelledby="hero-heading" className="px-4 py-8 lg:px-6">
         <h2 id="hero-heading" className="sr-only">
           Key metrics
         </h2>
@@ -555,7 +555,7 @@ export default function DashboardPage() {
                   <CardDescription>Amount at Risk</CardDescription>
                   {/* CardTitle renders a <div>; the <h3> inside puts the
                       metric in the heading outline (ui-standard.md v2.0.1). */}
-                  <CardTitle className="text-3xl font-semibold tabular-nums text-destructive @[300px]/card:text-4xl">
+                  <CardTitle className="text-3xl font-semibold tabular-nums text-destructive-text @[300px]/card:text-4xl">
                     <h3 className="font-[inherit]">
                       <NumberTicker value={metrics.amountAtRisk} prefix="$" />
                     </h3>
@@ -566,7 +566,7 @@ export default function DashboardPage() {
                   </CardAction>
                 </CardHeader>
                 <CardFooter className="text-sm">
-                  <span className="inline-flex items-center gap-1.5 font-medium text-destructive">
+                  <span className="inline-flex items-center gap-1.5 font-medium text-destructive-text">
                     <AlertOctagon className="size-3.5" aria-hidden="true" />
                     {metrics.criticalOpenCount} critical open
                   </span>
@@ -611,7 +611,7 @@ export default function DashboardPage() {
 
       {/* ── Context band: Pipeline + Contracts & GPO ───────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Context band] */}
-      <section aria-labelledby="context-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="context-heading" className="px-4 pb-10 lg:px-6">
         <h2 id="context-heading" className="sr-only">
           Pipeline and contract context
         </h2>
@@ -680,7 +680,7 @@ export default function DashboardPage() {
 
       {/* ── Work table: recent exceptions (promoted out of tabs) ───────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Exceptions work table] */}
-      <section aria-labelledby="work-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="work-heading" className="px-4 pb-10 lg:px-6">
         {loading ? (
           <Skeleton className="h-80 w-full" />
         ) : (
@@ -778,9 +778,12 @@ export default function DashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
+                      {/* [Spec: rules/ui-standard.md#Touch Targets]
+                          py/px + negative -my/-mx extend the hit area to ≥44×44px
+                          without changing the visible row height (mobile) */}
                       <Link
                         href={`/exceptions/${ex.id}`}
-                        className="text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
+                        className="inline-flex items-center -my-3 -mx-2 px-2 py-3 text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
                       >
                         Review →
                       </Link>
@@ -795,7 +798,7 @@ export default function DashboardPage() {
 
       {/* ── Invoice-status overview ────────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Invoice-status overview] */}
-      <section aria-labelledby="status-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="status-heading" className="px-4 pb-10 lg:px-6">
         {loading ? (
           <Skeleton className="h-24 w-full" />
         ) : (
@@ -853,7 +856,7 @@ export default function DashboardPage() {
 
       {/* ── Analysis section: 2 tabs ───────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Analysis section] */}
-      <section aria-labelledby="analysis-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="analysis-heading" className="px-4 pb-10 lg:px-6">
         <h2 id="analysis-heading" className="sr-only">
           Trend and category analysis
         </h2>

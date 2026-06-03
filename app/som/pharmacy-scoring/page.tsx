@@ -41,7 +41,7 @@ import {
 
 // [Spec: domains/som/spec.md#Business Rules — Score color mapping v2.0.1]
 function scoreColor(score: number): string {
-  if (score < 30) return "text-destructive";
+  if (score < 30) return "text-destructive-text";
   if (score < 60) return "text-warning-text";
   if (score < 80) return "text-primary";
   return "text-success-text";
@@ -71,7 +71,7 @@ function rowRiskBg(score: number): string {
 }
 
 function flaggedColor(pct: number): string {
-  if (pct > 25) return "text-destructive";
+  if (pct > 25) return "text-destructive-text";
   if (pct > 5) return "text-warning-text";
   return "text-muted-foreground";
 }
@@ -137,7 +137,7 @@ export default function PharmacyScoringPage() {
   // [Spec: domains/som/spec.md#Page 4 Layout — Summary Strip]
   const summary: { label: string; value: string; valueClass: string }[] = [
     { label: "Pharmacies Scored", value: String(sorted.length), valueClass: "text-foreground" },
-    { label: "High / Critical Risk", value: String(highRiskCount), valueClass: "text-destructive" },
+    { label: "High / Critical Risk", value: String(highRiskCount), valueClass: "text-destructive-text" },
     { label: "Total Flagged $", value: formatCurrency(totalFlagged), valueClass: "text-warning-text" },
     { label: "Avg Risk Score", value: `${avgScore}/100`, valueClass: scoreColor(avgScore) },
   ];
@@ -359,7 +359,7 @@ function ExpandablePharmacyRow({
           {action ? (
             <span
               className={`text-xs font-medium ${
-                action === "flag" ? "text-warning-text" : "text-destructive"
+                action === "flag" ? "text-warning-text" : "text-destructive-text"
               }`}
             >
               {action === "flag" ? "Flagged" : action === "penalize" ? "Penalised" : "Removed"}
@@ -470,7 +470,7 @@ function ExpandablePharmacyRow({
                                   year: "numeric",
                                 })}
                               </TableCell>
-                              <TableCell className="text-right text-[11px] font-medium tabular-nums text-destructive">
+                              <TableCell className="text-right text-[11px] font-medium tabular-nums text-destructive-text">
                                 {formatCurrency(ex.amount)}
                               </TableCell>
                               <TableCell className="text-right">

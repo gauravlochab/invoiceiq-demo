@@ -89,7 +89,7 @@ function SimilarityBar({ score }: { score: number }) {
         />
       </div>
       <span
-        className={`text-[13px] font-medium ${exact ? "text-destructive" : "text-warning-text"}`}
+        className={`text-[13px] font-medium ${exact ? "text-destructive-text" : "text-warning-text"}`}
       >
         {score}%
       </span>
@@ -152,7 +152,7 @@ function DuplicatePairCard({
             : "Escalated to Manager";
       const cls =
         taken === "reject"
-          ? "border-destructive bg-destructive/10 text-destructive"
+          ? "border-destructive bg-destructive/10 text-destructive-text"
           : taken === "override"
             ? "border-success bg-success/10 text-success-text"
             : "border-warning bg-warning/10 text-warning-text";

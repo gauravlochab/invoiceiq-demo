@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 
 // [Spec: domains/som/spec.md#Page 6 Business Rules — Rating colors]
 function severityColor(rating: string): string {
-  if (rating === "Critical") return "text-destructive";
+  if (rating === "Critical") return "text-destructive-text";
   if (rating === "High Risk") return "text-warning-text";
   return "text-primary";
 }
@@ -68,7 +68,7 @@ export default function AuditLogPage() {
   // [Spec: domains/som/spec.md#Page 6 Layout — Summary Strip]
   const summary: { label: string; value: number; valueClass: string }[] = [
     { label: "Total overrides", value: totalReleased, valueClass: "text-foreground" },
-    { label: "Released at Critical", value: totalAtCritical, valueClass: "text-destructive" },
+    { label: "Released at Critical", value: totalAtCritical, valueClass: "text-destructive-text" },
     { label: "Unique pharmacies", value: uniquePharmacies, valueClass: "text-foreground" },
     { label: "Unique approvers", value: uniqueApprovers, valueClass: "text-foreground" },
   ];

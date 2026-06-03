@@ -48,6 +48,12 @@ EARS notation.
 - [ ] THE SYSTEM SHALL render a single document-outline heading hierarchy per template — `<h1>` for the exception title, `<h2>` for each major region (Three-Way Match Analysis, Exception Details, Documents, Actions), `<h3>` for sub-regions and dialog titles
 - [ ] IF `prefers-reduced-motion` is set THEN THE SYSTEM SHALL disable all expand/collapse and entrance animations (CSS transitions are disabled by the `globals.css` reduced-motion block)
 
+**Responsive — mobile (added 2026-05-23 Phase 1 elite-UI audit)**
+- [ ] WHEN viewport width is ≤ 640px THE SYSTEM SHALL render every three-way-match discrepancy item as a single vertically-stacked column — item identifier (code + description), then the PO/Invoice/Variance label-over-value pairs, then the Agree/Disagree action area — never the desktop 3-column horizontal layout (which collides into unreadable overlapping text at 375px)
+- [ ] WHEN viewport width is ≤ 1024px THE SYSTEM SHALL render the right-column info panel (Exception Details / Documents / Actions / Audit Trail) below the left-column main content, not beside it — the existing `lg:grid-cols-[1fr_280px]` already does this and must not regress
+- [ ] WHILE on a viewport ≤ 640px THE SYSTEM SHALL keep every action target (Agree / Disagree / Block / Approve / Escalate / undo) at a ≥44×44px effective hit area per `specs/rules/ui-standard.md` "Touch Targets"
+- [ ] THE SYSTEM SHALL apply this responsive rule to every detail template: `Ex003Page`, `Ex006Page`, `MatchExceptionDetail`, `DuplicateDetail`, `ContractOverageDetail`, `MissingRebateDetail`, `TierPricingDetail`, `GenericExceptionPage`, `SomExceptionDetail`
+
 ## Template Routing
 
 The page uses `useParams()` to read the exception ID, then routes to a specific template function based on the exception type and ID:
@@ -102,13 +108,14 @@ This is the `DiscrepancyView` component -- the revamped core of the product. It 
   - **Group header**: expandable button with ChevronDown/Right icon, type label (e.g., "Price Mismatch"), item count, type badge
   - **Expanded items**: each item shows:
     - Col 1 (flex-1): Item code (mono 11px), description
-    - Col 2 (min-w 280px): Expected vs Actual values specific to the discrepancy type:
+    - Col 2 (min-w 280px on `sm`+): Expected vs Actual values specific to the discrepancy type:
       - **Price**: PO Price vs Invoice Price vs Variance (amount + percentage)
       - **Qty**: PO Qty vs Packing Slip Qty vs Invoice Qty vs Variance
       - **Description**: PO description vs Invoice description (quoted)
       - **Unit**: PO Unit vs Invoice Unit
     - "Also flagged:" row if the item has additional flags beyond the current group
-    - Col 3 (w-140px): Agree/Disagree action buttons (EX-006 only)
+    - Col 3 (w-140px on `sm`+): Agree/Disagree action buttons (EX-006 only)
+  - **Mobile (≤ 640px)**: the row is `flex-col` instead of horizontal — Col 1, Col 2, and Col 3 stack vertically with consistent `gap-3` spacing; no `min-w` constraints (added 2026-05-23 audit; the prior horizontal layout collided into unreadable overlapping text at 375px)
 
 #### Agree/Disagree Actions (EX-006 only)
 - **Pending**: shadcn `Button variant="default"` "Agree" (Check icon) + `Button variant="destructive"` "Disagree" (X icon)
@@ -283,3 +290,4 @@ Use affirmative phrasing per SpecLayer v1.1.
 <!-- 2026-05-18 v2.0: Adopted shadcn/ui design system per ui-standard.md v2.0. App shell wraps in SidebarProvider+SidebarInset. Alert bar → shadcn `Alert variant="destructive"`. Discrepancy groups → collapsible shadcn `Card`. Agree/Disagree → shadcn `Button` (default/destructive/ghost variants) + `Badge` for resolved states. All modals (LegalDisclaimer, Override, Recovery, Escalation) → shadcn `Dialog`. Row backgrounds → `bg-destructive/5` and `bg-warning/5` (Tailwind opacity on v2 tokens). Invoice status stepper retokenized to semantic theme colors (success/primary/muted). Added 23 EARS Acceptance Criteria covering app shell, template routing, three-way match, agree/disagree actions, action panel, status stepper, compliance/safety. Forbidden Patterns rewritten in affirmative form per SpecLayer v1.1. -->
 <!-- 2026-05-22 v2.0 (cluster 1): Reconciled spec with v2.0 reality before migrating app/exceptions/[id]/page.tsx. (1) App shell criterion corrected — the page renders a `<main>` content region; the SidebarProvider/SidebarInset/AppSidebar shell is supplied by app/layout.tsx, not the page. (2) Added page-padding rule (`px-4 lg:px-6`, replaces v1 `px-8`/`mx-8`). (3) Added AA-safe status-text criterion (`text-destructive`/`text-warning-text`/`text-success-text` — never `text-red-400`/`text-amber-600`/`text-emerald-600`) per audit DI-3. (4) Added document-outline heading criterion (`<h1>`/`<h2>`/`<h3>`). (5) Dark-mode criterion now enumerates all 9 templates. (6) Documented audit DI-1 (EX-006 three non-reconciling amounts) as a known data-integrity issue out of scope for the token migration — fixing it touches `lib/data.ts`. Code migration: all v1 `var(--*)` tokens → shadcn theme tokens; `.card`→`Card`, `.data-table`→`Table`, `.badge.*`→`Badge`, raw `<button>`→`Button`, `.alert-bar`→`Alert`, hand-rolled `fixed inset-0` modals → shadcn `Dialog`; ChevronDown collapsible headers → `Button variant="ghost"`. -->
 <!-- DI-1 (open, data-integrity pass): EX-006 alert bar / escalation banner / recovery modal assert $4,600, override modal asserts $27,750, on-page three-way match computes +$200 — three figures, no on-screen bridge. Fix requires correcting lib/data.ts mock figures. -->
+<!-- 2026-05-23 Phase 1 elite-UI audit: Mobile detail-page responsive rules — the 2026-05-23 audit found that at 375px the EX-006 three-way-match discrepancy rows (DiscrepancyView component) collide into overlapping unreadable text because the row uses `flex items-start justify-between` with a `min-w-[280px]` middle column and a `w-[150px]` action column — at 375px these widths exceed the viewport. Added 4 new Acceptance Criteria under "Responsive — mobile" covering: (1) discrepancy items stack vertically below `sm` (640px), (2) right info panel below left main below `lg` (1024px — the existing grid already does this; criterion documents the contract), (3) ≥44×44px hit area per `ui-standard.md` "Touch Targets", (4) the rule applies to all 9 templates (Ex003Page, Ex006Page, MatchExceptionDetail, DuplicateDetail, ContractOverageDetail, MissingRebateDetail, TierPricingDetail, GenericExceptionPage, SomExceptionDetail). Code change: the inner row container in DiscrepancyView changed from `flex items-start justify-between gap-4` → `flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4` and the inner column min/max widths drop to `sm:min-w-[280px]` and `sm:w-[150px]`. No data model or template-routing change. -->

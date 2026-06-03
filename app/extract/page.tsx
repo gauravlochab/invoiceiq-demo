@@ -1004,7 +1004,7 @@ export default function ExtractPage() {
               {!loading && !extracted && extractError && (
                 <div className="flex items-center justify-center h-full px-6">
                   <div className="text-center">
-                    <div className="text-xs text-destructive mb-1 font-medium">Extraction failed</div>
+                    <div className="text-xs text-destructive-text mb-1 font-medium">Extraction failed</div>
                     <div className="text-xs text-muted-foreground">{extractError}</div>
                   </div>
                 </div>

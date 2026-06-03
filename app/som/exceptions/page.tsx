@@ -131,7 +131,7 @@ function severityDotClass(severity: Severity): string {
 
 // Flagged-amount text — AA-safe status tokens (ui-standard.md v2.0.1).
 function flaggedColorClass(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "critical" || severity === "high") return "text-destructive-text";
   if (severity === "medium") return "text-warning-text";
   return "text-muted-foreground";
 }
@@ -207,8 +207,8 @@ export default function SomExceptionsPage() {
   const summary: { label: string; value: string; valueClass: string }[] = [
     { label: "Total exceptions", value: String(somExceptions.length), valueClass: "text-foreground" },
     { label: "Open / Under Review", value: String(openCount), valueClass: "text-warning-text" },
-    { label: "Critical", value: String(criticalCount), valueClass: "text-destructive" },
-    { label: "Total flagged $", value: formatCurrency(totalFlagged), valueClass: "text-destructive" },
+    { label: "Critical", value: String(criticalCount), valueClass: "text-destructive-text" },
+    { label: "Total flagged $", value: formatCurrency(totalFlagged), valueClass: "text-destructive-text" },
   ];
 
   return (
@@ -378,9 +378,11 @@ export default function SomExceptionsPage() {
                         {formatDate(ex.detectedAt)}
                       </TableCell>
                       <TableCell className="text-right">
+                        {/* [Spec: rules/ui-standard.md#Touch Targets] — padding+negative-margin
+                            extends hit area to ≥44×44px without changing visible row height */}
                         <Link
                           href={`/exceptions/${ex.id}`}
-                          className="text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
+                          className="inline-flex items-center -my-3 -mx-2 px-2 py-3 text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
                         >
                           Review →
                         </Link>

@@ -129,7 +129,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                   <span className="font-mono text-xs text-muted-foreground w-[52px] flex-shrink-0">{ex.id}</span>
                   <span className="flex-1 truncate">{ex.vendor}</span>
                   <span className="text-[10px] text-muted-foreground mr-2">{ex.type}</span>
-                  <span className="text-xs font-medium text-destructive tabular-nums">{formatCurrency(ex.amount)}</span>
+                  <span className="text-xs font-medium text-destructive-text tabular-nums">{formatCurrency(ex.amount)}</span>
                 </Command.Item>
               ))}
             </Command.Group>

@@ -108,7 +108,7 @@ const PHASE_STYLE: Record<RecoveryPhase, { chip: string; dot: string }> = {
   under_review:     { chip: "bg-warning/10 text-warning-text", dot: "bg-warning" },
   credit_pending:   { chip: "bg-primary/10 text-primary",     dot: "bg-primary" },
   resolved:         { chip: "bg-success/10 text-success-text", dot: "bg-success" },
-  escalated:        { chip: "bg-destructive/10 text-destructive", dot: "bg-destructive" },
+  escalated:        { chip: "bg-destructive/10 text-destructive-text", dot: "bg-destructive" },
 };
 
 function phaseFromHistoryLabel(label: string): RecoveryPhase {
@@ -320,7 +320,7 @@ export default function RecoveryPage() {
       ? "text-success-text"
       : successRate >= 50
         ? "text-warning-text"
-        : "text-destructive";
+        : "text-destructive-text";
 
   function handleSelectAll(checked: boolean) {
     setSelectedIds(prev => {
@@ -456,7 +456,7 @@ export default function RecoveryPage() {
               </div>
               <div className="flex-1 px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total Target</p>
-                <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-destructive">{formatCurrency(totalTarget)}</p>
+                <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-destructive-text">{formatCurrency(totalTarget)}</p>
               </div>
               <div className="flex-1 px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Recovered</p>
@@ -474,7 +474,7 @@ export default function RecoveryPage() {
               </div>
               <div className="flex-1 px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">SLA Overdue</p>
-                <p className={`m-0 mt-1 text-2xl font-bold tabular-nums ${overdueCount > 0 ? "text-destructive" : "text-success-text"}`}>
+                <p className={`m-0 mt-1 text-2xl font-bold tabular-nums ${overdueCount > 0 ? "text-destructive-text" : "text-success-text"}`}>
                   {overdueCount}
                 </p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
@@ -655,7 +655,7 @@ export default function RecoveryPage() {
             <div className="mt-3 border-t border-border pt-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground">Escalation trigger</span>
-                <span className="text-[10px] font-semibold text-destructive">10 business days</span>
+                <span className="text-[10px] font-semibold text-destructive-text">10 business days</span>
               </div>
               <p className="m-0 mt-1 text-[9px] text-muted-foreground">
                 No vendor response after initial contact
@@ -837,7 +837,7 @@ function RecoveryRow({
 
         {/* Amount */}
         <div className="shrink-0 text-right">
-          <p className="m-0 text-xs font-semibold tabular-nums text-destructive">
+          <p className="m-0 text-xs font-semibold tabular-nums text-destructive-text">
             {formatCurrency(r.targetAmount)}
           </p>
           <p className="m-0 text-[10px] text-muted-foreground">target</p>
@@ -911,7 +911,7 @@ function RecoveryRow({
               />
             </div>
             {touched && amount <= 0 && outcome !== "Vendor Unresponsive" && outcome !== "Vendor Filed Dispute" && outcome !== "Closed — Write Off" && (
-              <p className="m-0 text-[11px] text-destructive">Enter recovered amount or choose a write-off outcome.</p>
+              <p className="m-0 text-[11px] text-destructive-text">Enter recovered amount or choose a write-off outcome.</p>
             )}
             <div className="flex gap-2">
               <Button

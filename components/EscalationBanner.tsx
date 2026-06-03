@@ -12,7 +12,7 @@ export function EscalationBanner({ flaggedAmount }: EscalationBannerProps) {
   if (!level) return null;
 
   const colors = level.autoEscalate
-    ? { bg: "bg-destructive/10", border: "border-destructive/30", text: "text-destructive", icon: "text-destructive" }
+    ? { bg: "bg-destructive/10", border: "border-destructive/30", text: "text-destructive-text", icon: "text-destructive-text" }
     : { bg: "bg-warning/10", border: "border-warning/30", text: "text-warning-text", icon: "text-warning" };
 
   return (

@@ -179,7 +179,7 @@ function severityDotClass(severity: Severity): string {
 // Flagged-amount text — AA-safe *-text tokens.
 // [Spec: domains/exceptions/spec.md#Acceptance Criteria — Data table]
 function flaggedAmountClass(severity: Severity): string {
-  if (severity === "critical" || severity === "high") return "text-destructive";
+  if (severity === "critical" || severity === "high") return "text-destructive-text";
   if (severity === "medium") return "text-warning-text";
   return "text-foreground";
 }
@@ -218,7 +218,7 @@ function SimilarityBar({ score }: { score: number }) {
           <ProgressIndicator className={high ? "bg-destructive" : "bg-warning"} />
         </ProgressTrack>
       </Progress>
-      <span className={`text-[13px] font-medium ${high ? "text-destructive" : "text-warning-text"}`}>
+      <span className={`text-[13px] font-medium ${high ? "text-destructive-text" : "text-warning-text"}`}>
         {score}%
       </span>
       <span className="text-[13px] text-border">|</span>
@@ -254,7 +254,7 @@ function DuplicatePairCard({
       const action = pairActions[pair.id];
       const cls =
         action === "reject"
-          ? "border-destructive bg-destructive/10 text-destructive"
+          ? "border-destructive bg-destructive/10 text-destructive-text"
           : action === "override"
             ? "border-success bg-success/10 text-success-text"
             : "border-border bg-muted text-foreground";
@@ -900,9 +900,10 @@ function ExceptionsPageInner() {
 
                             {/* ACTION */}
                             <TableCell>
+                              {/* [Spec: rules/ui-standard.md#Touch Targets] — extend hit area */}
                               <Link
                                 href={`/exceptions/${ex.id}`}
-                                className="whitespace-nowrap text-xs text-muted-foreground no-underline transition-colors hover:underline group-hover:text-primary"
+                                className="inline-flex items-center whitespace-nowrap -my-3 -mx-2 px-2 py-3 text-xs text-muted-foreground no-underline transition-colors hover:underline group-hover:text-primary"
                               >
                                 Review &rarr;
                               </Link>

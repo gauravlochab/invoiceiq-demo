@@ -15,17 +15,19 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" aria-label="Toggle theme" disabled>
+      <Button variant="ghost" size="icon" aria-label="Toggle theme" disabled className="max-md:min-h-11 max-md:min-w-11">
         <Sun className="size-4" />
       </Button>
     );
   }
 
   return (
+    // [Spec: rules/ui-standard.md#Touch Targets] — extend hit area on mobile
     <Button
       variant="ghost"
       size="icon"
       aria-label="Toggle theme"
+      className="max-md:min-h-11 max-md:min-w-11"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
       {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}

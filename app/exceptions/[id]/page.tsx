@@ -6,7 +6,7 @@
 // GenericExceptionPage, SomExceptionDetail. .card→Card, .data-table→Table,
 // .badge.*→Badge, .alert-bar→Alert, raw <button>→Button, hand-rolled
 // `fixed inset-0` modals→shadcn Dialog. AA-safe status text via
-// text-destructive / text-warning-text / text-success-text. Real h1/h2/h3
+// text-destructive-text / text-warning-text / text-success-text. Real h1/h2/h3
 // document outline. Dark mode works on every template.
 "use client";
 
@@ -167,7 +167,7 @@ function AlertBar({ children }: { children: React.ReactNode }) {
       variant="destructive"
       className="border-l-4 border-l-destructive bg-destructive/10"
     >
-      <AlertDescription className="text-destructive">{children}</AlertDescription>
+      <AlertDescription className="text-destructive-text">{children}</AlertDescription>
     </Alert>
   );
 }
@@ -299,7 +299,7 @@ function Ex003Page() {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">EX-003</span>
           <Badge variant="destructive">Suspicious Invoice</Badge>
           <Badge variant="outline">Escalated</Badge>
@@ -353,7 +353,7 @@ function Ex003Page() {
                   >
                     <span
                       className={`leading-none ${
-                        step.ok ? "text-success-text" : "text-destructive"
+                        step.ok ? "text-success-text" : "text-destructive-text"
                       }`}
                     >
                       {step.ok ? <Check className="size-3" /> : <X className="size-3" />}
@@ -414,10 +414,10 @@ function Ex003Page() {
 
               {/* Vendor not in master note */}
               <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
-                <SectionLabel as="h3" className="mb-1.5 text-destructive">
+                <SectionLabel as="h3" className="mb-1.5 text-destructive-text">
                   Vendor Not in Approved Master
                 </SectionLabel>
-                <p className="m-0 text-xs leading-relaxed text-destructive">
+                <p className="m-0 text-xs leading-relaxed text-destructive-text">
                   MedTech Solutions LLC (EIN: 84-2917441) does not appear in Northfield Medical&apos;s
                   approved vendor registry. The invoice references IV Catheter Kits but this
                   vendor&apos;s registered business category is &apos;Management Consulting&apos;. Bank account
@@ -474,7 +474,7 @@ function Ex003Page() {
               <div
                 className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
                   actionTaken003 === "blocked"
-                    ? "border-destructive/30 bg-destructive/10 text-destructive"
+                    ? "border-destructive/30 bg-destructive/10 text-destructive-text"
                     : actionTaken003 === "reported"
                       ? "border-warning/40 bg-warning/10 text-warning-text"
                       : actionTaken003 === "verification"
@@ -659,7 +659,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
         <span className="text-xs text-muted-foreground">
           This invoice has <span className="font-semibold text-foreground">{lineItems.length}</span> line items.
           {flaggedItems.length > 0 ? (
-            <> Showing <span className="font-semibold text-destructive">{flaggedItems.length}</span> with {totalDiscrepancies} {totalDiscrepancies === 1 ? "discrepancy" : "discrepancies"}.</>
+            <> Showing <span className="font-semibold text-destructive-text">{flaggedItems.length}</span> with {totalDiscrepancies} {totalDiscrepancies === 1 ? "discrepancy" : "discrepancies"}.</>
           ) : (
             <> All items matched — no discrepancies.</>
           )}
@@ -714,9 +714,13 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                   const state = lineItemStates?.[item.itemCode] ?? "pending";
                   return (
                     <div key={`${groupKey}-${item.itemCode}`} className={`px-5 py-4 ${rowBgClass(item.flags)}`}>
-                      <div className="flex items-start justify-between gap-4">
+                      {/* [Spec: domains/invoice-detail/spec.md#Responsive-mobile]
+                          Mobile (<sm): stack Col 1 / Col 2 / Col 3 vertically — the
+                          desktop horizontal row collapsed to overlapping unreadable
+                          text at 375px (2026-05-23 audit P0). sm+: original 3-column row. */}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         {/* Col 1: Item identification */}
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 sm:flex-1">
                           <span className="block font-mono text-[11px] text-muted-foreground">{item.itemCode}</span>
                           <span className="mt-0.5 block text-xs font-medium text-foreground">
                             {item.invoiceDescription || item.description}
@@ -724,7 +728,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                         </div>
 
                         {/* Col 2+3: Discrepancy detail */}
-                        <div className="min-w-[280px] flex-1">
+                        <div className="sm:min-w-[280px] sm:flex-1">
                           {groupKey === "price" && (
                             <div className="space-y-1">
                               <div className="flex items-baseline gap-3">
@@ -733,11 +737,11 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                               </div>
                               <div className="flex items-baseline gap-3">
                                 <span className="w-[80px] text-[10px] text-muted-foreground">Invoice Price</span>
-                                <span className="text-xs font-medium tabular-nums text-destructive">${item.invoiceUnitPrice.toFixed(2)}/unit</span>
+                                <span className="text-xs font-medium tabular-nums text-destructive-text">${item.invoiceUnitPrice.toFixed(2)}/unit</span>
                               </div>
                               <div className="flex items-baseline gap-3">
                                 <span className="w-[80px] text-[10px] text-muted-foreground">Variance</span>
-                                <span className="text-xs font-medium tabular-nums text-destructive">
+                                <span className="text-xs font-medium tabular-nums text-destructive-text">
                                   {item.invoiceUnitPrice - item.poUnitPrice > 0 ? "+" : ""}${(item.invoiceUnitPrice - item.poUnitPrice).toFixed(2)}/unit
                                   ({((item.invoiceUnitPrice - item.poUnitPrice) / item.poUnitPrice * 100).toFixed(1)}%)
                                 </span>
@@ -810,23 +814,25 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                           )}
                         </div>
 
-                        {/* Action buttons (EX-006 only) */}
+                        {/* Action buttons (EX-006 only) — full width on mobile, fixed
+                            150px column on sm+ */}
                         {showActions && (
-                          <div className="flex w-[150px] shrink-0 items-start justify-end">
+                          <div className="flex w-full items-start justify-start sm:w-[150px] sm:shrink-0 sm:justify-end">
                             {state === "pending" ? (
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onAccept?.(item.itemCode)}
-                                  className="border-success bg-success/10 text-success-text hover:bg-success/20"
+                                  className="min-h-11 border-success bg-success/10 text-success-text hover:bg-success/20 sm:min-h-0 sm:h-7"
                                 >
                                   <Check className="size-3" /> Agree
                                 </Button>
                                 <Button
                                   variant="destructive"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onReject?.(item.itemCode)}
+                                  className="min-h-11 sm:min-h-0 sm:h-7"
                                 >
                                   <X className="size-3" /> Disagree
                                 </Button>
@@ -838,9 +844,9 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 </Badge>
                                 <Button
                                   variant="ghost"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onUndo?.(item.itemCode)}
-                                  className="text-[10px] text-muted-foreground"
+                                  className="min-h-11 text-[10px] text-muted-foreground sm:min-h-0 sm:h-7"
                                   title="Change decision"
                                 >
                                   undo
@@ -853,9 +859,9 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 </Badge>
                                 <Button
                                   variant="ghost"
-                                  size="xs"
+                                  size="sm"
                                   onClick={() => onUndo?.(item.itemCode)}
-                                  className="text-[10px] text-muted-foreground"
+                                  className="min-h-11 text-[10px] text-muted-foreground sm:min-h-0 sm:h-7"
                                   title="Change decision"
                                 >
                                   undo
@@ -1058,7 +1064,7 @@ function Ex006Page() {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">EX-006</span>
           <TypeBadge>Match Exception</TypeBadge>
           <Badge className="border-warning bg-warning/10 text-warning-text">Under Review</Badge>
@@ -1100,7 +1106,7 @@ function Ex006Page() {
 
           <Card className="mt-3 gap-0 py-0">
             {/* Totals summary */}
-            <div className="flex gap-10 px-6 py-4">
+            <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:gap-10">
               <div>
                 <SectionLabel as="h3" className="mb-1">PO Total</SectionLabel>
                 <p className="m-0 text-lg font-semibold tabular-nums text-foreground">
@@ -1109,13 +1115,13 @@ function Ex006Page() {
               </div>
               <div>
                 <SectionLabel as="h3" className="mb-1">Invoice Total</SectionLabel>
-                <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
+                <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">
                   {formatCurrency(invTotal)}
                 </p>
               </div>
               <div>
                 <SectionLabel as="h3" className="mb-1">Variance</SectionLabel>
-                <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
+                <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">
                   +{formatCurrency(variance)}{" "}
                   <span className="text-[13px] font-normal">
                     (+{variancePct}%)
@@ -1297,7 +1303,7 @@ function Ex006Page() {
               >
                 Approve with Override
                 {allResolved && hasAnyRejection && (
-                  <span className="text-[10px] font-normal text-destructive">Blocked — disagreement exists</span>
+                  <span className="text-[10px] font-normal text-destructive-text">Blocked — disagreement exists</span>
                 )}
               </Button>
 
@@ -1625,7 +1631,7 @@ function ActionPanel({
           <div className="flex flex-col gap-2">
             <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
               actionTaken === "blocked"
-                ? "border-destructive/30 bg-destructive/10 text-destructive"
+                ? "border-destructive/30 bg-destructive/10 text-destructive-text"
                 : actionTaken === "recovery"
                   ? "border-border bg-muted text-foreground"
                   : actionTaken === "escalated"
@@ -1766,7 +1772,7 @@ function PageShell({
       </div>
 
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
           <SeverityBadge severity={ex.severity}>{typeLabels[ex.type] || ex.type}</SeverityBadge>
           <StatusBadge status={ex.status} />
@@ -1831,18 +1837,18 @@ function MatchExceptionDetail({ exception: ex }: { exception: Exception }) {
 
       <Card className="mt-3 gap-0 py-0">
         {/* Totals */}
-        <div className="flex gap-10 px-6 py-4">
+        <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:gap-10">
           <div>
             <SectionLabel as="h3" className="mb-1">PO Total</SectionLabel>
             <p className="m-0 text-lg font-semibold tabular-nums text-foreground">{formatCurrency(poTotal)}</p>
           </div>
           <div>
             <SectionLabel as="h3" className="mb-1">Invoice Total</SectionLabel>
-            <p className="m-0 text-lg font-semibold tabular-nums text-destructive">{formatCurrency(invTotal)}</p>
+            <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">{formatCurrency(invTotal)}</p>
           </div>
           <div>
             <SectionLabel as="h3" className="mb-1">Variance</SectionLabel>
-            <p className="m-0 text-lg font-semibold tabular-nums text-destructive">
+            <p className="m-0 text-lg font-semibold tabular-nums text-destructive-text">
               {variance >= 0 ? "+" : ""}{formatCurrency(variance)} <span className="text-[13px] font-normal">({variance >= 0 ? "+" : ""}{variancePct}%)</span>
             </p>
           </div>
@@ -1881,14 +1887,14 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
   const similarityHigh = pair.similarity >= 99;
   const similarityWarn = pair.similarity >= 95;
   const similarityFill = similarityHigh ? "bg-destructive" : similarityWarn ? "bg-warning" : "bg-primary";
-  const similarityText = similarityHigh ? "text-destructive" : similarityWarn ? "text-warning-text" : "text-primary";
+  const similarityText = similarityHigh ? "text-destructive-text" : similarityWarn ? "text-warning-text" : "text-primary";
 
   return (
     <PageShell ex={ex} rightPanel={<ActionPanel ex={ex} actionTaken={actionTaken} setActionTaken={setActionTaken} />}>
       <SectionLabel className="mb-2">Duplicate Invoice Comparison</SectionLabel>
       <Card className="gap-0 py-0">
-        {/* Side-by-side comparison */}
-        <div className="grid grid-cols-2 divide-x divide-border">
+        {/* Side-by-side comparison — stacks on mobile (sm:grid-cols-2) */}
+        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           {/* Invoice A */}
           <div className="p-5">
             <div className="mb-3 flex items-center gap-2">
@@ -1937,7 +1943,7 @@ function DuplicateDetail({ exception: ex }: { exception: Exception }) {
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div className={`h-full rounded-full transition-all ${similarityFill}`} style={{ width: `${pair.similarity}%` }} />
           </div>
-          <div className="mt-3 flex gap-6">
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:gap-6">
             <div>
               <span className="text-[11px] text-muted-foreground">Amount delta</span>
               <p className="m-0 mt-0.5 text-xs font-medium text-foreground">{formatCurrency(pair.amountDelta)} ({((pair.amountDelta / inv1.amount) * 100).toFixed(2)}%)</p>
@@ -1990,7 +1996,7 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
         {/* Contract summary */}
         <div className="mb-5">
           <h3 className="mb-3 text-sm font-medium text-foreground">Contract Summary</h3>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
               { label: "Period", value: `${new Date(contract.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${new Date(contract.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` },
@@ -2009,7 +2015,7 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
         <div className="mb-5 border-t border-border pt-4">
           <div className="mb-2 flex items-center justify-between">
             <SectionLabel as="h3">Spend vs Cap</SectionLabel>
-            <span className="text-sm font-semibold tabular-nums text-destructive">{pct}% of cap</span>
+            <span className="text-sm font-semibold tabular-nums text-destructive-text">{pct}% of cap</span>
           </div>
           <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted">
             {/* Cap marker at 100% */}
@@ -2035,8 +2041,8 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
               <span className="text-xs font-medium tabular-nums text-foreground">- {formatCurrency(capAmount)}</span>
             </div>
             <div className="mt-2 flex items-center gap-2 border-t border-destructive/30 pt-2">
-              <span className="text-xs font-medium text-destructive">Overage</span>
-              <span className="text-sm font-bold tabular-nums text-destructive">= {formatCurrency(overage)}</span>
+              <span className="text-xs font-medium text-destructive-text">Overage</span>
+              <span className="text-sm font-bold tabular-nums text-destructive-text">= {formatCurrency(overage)}</span>
             </div>
           </div>
         </div>
@@ -2080,7 +2086,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
         {/* Contract terms */}
         <div className="mb-5">
           <h3 className="mb-3 text-sm font-medium text-foreground">Contract Terms</h3>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
             {[
               { label: "Contract #", value: contract.contractNumber },
               { label: "Vendor", value: contract.vendor },
@@ -2116,7 +2122,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 text-xs">
                   <span className="font-medium text-foreground">Total owed to Northfield</span>
-                  <span className="text-sm font-bold tabular-nums text-destructive">$89,430</span>
+                  <span className="text-sm font-bold tabular-nums text-destructive-text">$89,430</span>
                 </div>
               </div>
             ) : (
@@ -2143,7 +2149,7 @@ function MissingRebateDetail({ exception: ex }: { exception: Exception }) {
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 text-xs">
                   <span className="font-medium text-foreground">Total owed to Northfield</span>
-                  <span className="text-sm font-bold tabular-nums text-destructive">$6,850</span>
+                  <span className="text-sm font-bold tabular-nums text-destructive-text">$6,850</span>
                 </div>
               </div>
             )}
@@ -2207,10 +2213,10 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
         {/* Actual calculation */}
         <div className="mb-5 border-t border-border pt-4">
           <h3 className="mb-3 text-sm font-medium text-foreground">March Invoice Calculation</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* What was charged */}
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
-              <SectionLabel as="h3" className="mb-2 text-destructive">What Was Charged</SectionLabel>
+              <SectionLabel as="h3" className="mb-2 text-destructive-text">What Was Charged</SectionLabel>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">March units</span>
@@ -2221,8 +2227,8 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
                   <span className="font-medium tabular-nums text-foreground">$85.00/unit (Tier 1 only)</span>
                 </div>
                 <div className="flex justify-between border-t border-destructive/30 pt-1.5 text-xs">
-                  <span className="font-medium text-destructive">Total billed</span>
-                  <span className="font-bold tabular-nums text-destructive">$198,900</span>
+                  <span className="font-medium text-destructive-text">Total billed</span>
+                  <span className="font-bold tabular-nums text-destructive-text">$198,900</span>
                 </div>
               </div>
             </div>
@@ -2255,19 +2261,19 @@ function TierPricingDetail({ exception: ex }: { exception: Exception }) {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Jan 2026 overcharge (2,340 units)</span>
-                <span className="font-medium tabular-nums text-destructive">$17,420</span>
+                <span className="font-medium tabular-nums text-destructive-text">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Feb 2026 overcharge (2,340 units)</span>
-                <span className="font-medium tabular-nums text-destructive">$17,420</span>
+                <span className="font-medium tabular-nums text-destructive-text">$17,420</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Mar 2026 overcharge (2,340 units)</span>
-                <span className="font-medium tabular-nums text-destructive">$17,420</span>
+                <span className="font-medium tabular-nums text-destructive-text">$17,420</span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-xs">
                 <span className="font-medium text-foreground">Total overcharge (3 months)</span>
-                <span className="text-sm font-bold tabular-nums text-destructive">$52,260</span>
+                <span className="text-sm font-bold tabular-nums text-destructive-text">$52,260</span>
               </div>
             </div>
           </div>
@@ -2331,7 +2337,7 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
           <SeverityBadge severity={ex.severity}>{typeLabels[ex.type] || ex.type}</SeverityBadge>
           <StatusBadge status={ex.status} />
@@ -2381,7 +2387,7 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
                 </div>
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3">
                   <SectionLabel as="h3" className="mb-1">Flagged Amount</SectionLabel>
-                  <p className="text-lg font-semibold text-destructive">{formatCurrency(ex.flaggedAmount)}</p>
+                  <p className="text-lg font-semibold text-destructive-text">{formatCurrency(ex.flaggedAmount)}</p>
                 </div>
                 <div className="rounded-md bg-muted px-4 py-3">
                   <SectionLabel as="h3" className="mb-1">Risk Percentage</SectionLabel>
@@ -2434,7 +2440,7 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
             <>
               <div className={`rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
                 actionTaken === "blocked"
-                  ? "border-destructive/30 bg-destructive/10 text-destructive"
+                  ? "border-destructive/30 bg-destructive/10 text-destructive-text"
                   : actionTaken === "recovery"
                     ? "border-border bg-muted text-foreground"
                     : actionTaken === "escalated"
@@ -2606,7 +2612,7 @@ function SomExceptionDetail({ exception: ex }: { exception: Exception }) {
 
       {/* Header */}
       <div className="px-4 pt-3 pb-6 lg:px-6">
-        <div className="mb-1.5 flex items-center gap-2">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-muted-foreground">{ex.id}</span>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">
             SOM · Drug Distributor

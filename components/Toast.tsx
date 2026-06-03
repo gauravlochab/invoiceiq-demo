@@ -34,14 +34,14 @@ const styleMap = {
   success: "bg-success/10 border-success/30 text-success-text",
   info: "bg-primary/10 border-primary/30 text-foreground",
   warning: "bg-warning/10 border-warning/30 text-warning-text",
-  error: "bg-destructive/10 border-destructive/30 text-destructive",
+  error: "bg-destructive/10 border-destructive/30 text-destructive-text",
 };
 
 const iconColorMap = {
   success: "text-success",
   info: "text-primary",
   warning: "text-warning",
-  error: "text-destructive",
+  error: "text-destructive-text",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {

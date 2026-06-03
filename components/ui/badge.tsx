@@ -13,7 +13,12 @@ const badgeVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:
-          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+          // Symmetric two-role pattern (2026-05-23 v2 audit):
+          // light: text-destructive-text on bg-destructive/10 chip — 6.55:1.
+          // dark:  text-destructive-text on bg-destructive/20 chip — ~7.96:1.
+          // Both modes now share the same `text-destructive-text` token because
+          // dark mode gained its own `--destructive-text` (lighter red).
+          "bg-destructive/10 text-destructive-text focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:
