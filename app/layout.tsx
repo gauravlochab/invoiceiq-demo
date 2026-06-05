@@ -1,6 +1,6 @@
 // [Spec: rules/ui-standard.md#Layout Architecture] — v2.0 shell: ThemeProvider + SidebarProvider + AppSidebar + SidebarInset
 import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SiteHeaderShell } from "@/components/SiteHeaderShell";
@@ -10,6 +10,7 @@ import { ToastProvider } from "@/components/Toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", weight: ["400", "500", "600", "700"] });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistMono.variable} h-full`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${geistMono.variable} h-full`} suppressHydrationWarning>
       <body className="h-full bg-background text-foreground antialiased">
         <ThemeProvider
           attribute="class"

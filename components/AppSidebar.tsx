@@ -145,7 +145,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </p>
           </div>
         </div>
-        <div className="mx-2 rounded bg-muted/50 px-2 py-1 text-center text-[10px] text-muted-foreground group-data-[collapsible=icon]:hidden">
+        <div className="mx-2 rounded bg-muted px-2 py-1 text-center text-[10px] text-muted-foreground group-data-[collapsible=icon]:hidden">
           Parkland Health
         </div>
       </SidebarHeader>

@@ -8,6 +8,8 @@ import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { contracts, formatCurrency, Contract } from "@/lib/data";
 import { VendorBadge } from "@/components/VendorBadge";
+import { useToast } from "@/components/Toast";
+import { LegalDisclaimerDialog } from "@/components/LegalDisclaimerDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -116,7 +118,7 @@ function SpendBar({
 
 // ─── CONTRACT CARD ────────────────────────────────────────────────────────────
 
-function ContractCard({ contract }: { contract: Contract }) {
+function ContractCard({ contract, onAction }: { contract: Contract; onAction: (action: string, label: string, contract: Contract) => void }) {
   const isBreached = contract.status === "breached";
   const isCardinalWarning =
     contract.vendor === "Cardinal Health" && contract.status === "warning";
@@ -256,13 +258,13 @@ function ContractCard({ contract }: { contract: Contract }) {
             </AlertDescription>
           </Alert>
           <div className="mt-2 flex flex-wrap gap-2">
-            <Button variant="destructive" size="sm">
+            <Button variant="destructive" size="sm" onClick={() => onAction("block", "Pause Vendor Payments", contract)}>
               Pause Vendor Payments
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => onAction("contact", "Contact Vendor", contract)}>
               Contact Vendor
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => onAction("escalate", "Notify CFO", contract)}>
               Notify CFO
             </Button>
           </div>
@@ -272,10 +274,10 @@ function ContractCard({ contract }: { contract: Contract }) {
       {/* Cardinal Health warning actions */}
       {isCardinalWarning && (
         <div className="flex flex-wrap gap-2 px-5 pt-3 pb-4">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => onAction("recover", "Request Rebate Credit Memo", contract)}>
             Request Rebate Credit Memo
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => onAction("recover", "Submit Pricing Correction", contract)}>
             Submit Pricing Correction
           </Button>
         </div>
@@ -328,12 +330,61 @@ function renewalStatusBadge(status: "Expired" | "Expiring" | "Active") {
 
 export default function ContractCompliancePage() {
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
+
+  // [Spec: rules/audit-trail.md] — Legal disclaimer state for commit-the-org actions
+  const [disclaimerAction, setDisclaimerAction] = useState<{
+    action: string;
+    label: string;
+    contract?: Contract;
+    renewal?: typeof renewals[number];
+  } | null>(null);
 
   // [Spec: domains/contracts/spec.md#Acceptance Criteria — Loading]
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(t);
   }, []);
+
+  // Action handler for contract card buttons
+  // [Spec: rules/boundaries.md — Legal disclaimer required before committing the org]
+  function handleContractAction(action: string, label: string, contract: Contract) {
+    if (action === "contact") {
+      // Informational — no legal disclaimer needed
+      showToast(`Vendor notification dispatched to ${contract.vendor}`, "info");
+      return;
+    }
+    // All other actions commit the org → require disclaimer
+    setDisclaimerAction({ action, label, contract });
+  }
+
+  function handleRenewalAction(renewal: typeof renewals[number]) {
+    setDisclaimerAction({ action: "approve", label: `Renew ${renewal.contractNumber}`, renewal });
+  }
+
+  function handleDisclaimerConfirm() {
+    if (!disclaimerAction) return;
+    const { action, contract, renewal } = disclaimerAction;
+
+    if (renewal) {
+      showToast(`Contract renewal initiated for ${renewal.vendor} (${renewal.contractNumber})`, "success");
+    } else if (contract) {
+      switch (action) {
+        case "block":
+          showToast(`Payment authorization suspended for ${contract.vendor} — vendor notified`, "warning");
+          break;
+        case "escalate":
+          showToast(`CFO notification dispatched — ${contract.vendor} contract breach escalated for executive review`, "info");
+          break;
+        case "recover":
+          showToast(`Recovery process initiated for ${contract.vendor} — credit memo request dispatched`, "success");
+          break;
+        default:
+          showToast(`Action completed for ${contract.vendor}`, "info");
+      }
+    }
+    setDisclaimerAction(null);
+  }
 
   const totalValue = contracts.reduce((s, c) => s + c.capValue, 0);
   const totalSpend = contracts.reduce((s, c) => s + c.currentSpend, 0);
@@ -362,10 +413,10 @@ export default function ContractCompliancePage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => showToast("Contract compliance report exported as PDF", "success")}>
               Download Report
             </Button>
-            <Button variant="default" size="sm">
+            <Button variant="default" size="sm" onClick={() => showToast("Contract creation workflow initiated — complete the vendor and pricing form to continue", "info")}>
               Add Contract
             </Button>
           </div>
@@ -458,7 +509,7 @@ export default function ContractCompliancePage() {
           </>
         ) : (
           sortedContracts.map((contract) => (
-            <ContractCard key={contract.id} contract={contract} />
+            <ContractCard key={contract.id} contract={contract} onAction={handleContractAction} />
           ))
         )}
       </section>
@@ -498,12 +549,13 @@ export default function ContractCompliancePage() {
                       <TableCell className="text-sm">{r.expires}</TableCell>
                       <TableCell>{renewalStatusBadge(r.status)}</TableCell>
                       <TableCell>
-                        <a
-                          href="#"
-                          className="text-xs font-medium text-primary no-underline transition-colors hover:underline"
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-primary no-underline transition-colors hover:underline bg-transparent border-none cursor-pointer p-0"
+                          onClick={() => handleRenewalAction(r)}
                         >
                           Renew &rarr;
-                        </a>
+                        </button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -513,6 +565,15 @@ export default function ContractCompliancePage() {
           </Card>
         )}
       </section>
+
+      {/* [Spec: rules/boundaries.md — Legal disclaimer before committing the org] */}
+      <LegalDisclaimerDialog
+        open={disclaimerAction !== null}
+        onConfirm={handleDisclaimerConfirm}
+        onCancel={() => setDisclaimerAction(null)}
+        action={disclaimerAction?.action ?? "approve"}
+        invoiceNumber={disclaimerAction?.contract?.contractNumber ?? disclaimerAction?.renewal?.contractNumber}
+      />
     </main>
   );
 }

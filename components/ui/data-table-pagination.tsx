@@ -44,6 +44,7 @@ export function DataTablePagination({
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            aria-label="Rows per page"
             className="text-xs border border-input rounded-md px-2 py-1 bg-card text-foreground cursor-pointer focus:outline-none focus:border-ring"
           >
             {[10, 25, 50, 100].map((size) => (

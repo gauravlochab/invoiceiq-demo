@@ -39,6 +39,7 @@ import WorkflowStepper from "@/components/WorkflowStepper";
 import AuditTrail from "@/components/AuditTrail";
 import { getAuditTrail, getWorkflowSteps } from "@/lib/audit-trail";
 import { GPOComparisonSection } from "@/components/GPOComparisonSection";
+import { getAgentSubtleColor } from "@/lib/agent-colors";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -431,7 +432,7 @@ function Ex003Page() {
         {/* RIGHT panel */}
         <Card className="gap-0 p-5">
           {/* Exception details */}
-          <SectionLabel as="h3" className="mb-0">
+          <SectionLabel as="h2" className="mb-0">
             Exception Details
           </SectionLabel>
 
@@ -1341,7 +1342,7 @@ function Ex006Page() {
                       <div className="min-w-0 flex-1">
                         <div className="mb-0.5 flex items-center gap-1.5">
                           <span className="rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
-                            style={{ backgroundColor: e.color + "22", color: e.color }}>
+                            style={{ backgroundColor: getAgentSubtleColor(e.color), color: e.color }}>
                             {e.agent}
                           </span>
                           <span className="text-[9px] text-muted-foreground">{e.time}</span>
@@ -1728,7 +1729,7 @@ function ActionPanel({
                       <div className="mb-0.5 flex items-center gap-1.5">
                         <span
                           className="rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
-                          style={{ backgroundColor: e.color + "22", color: e.color }}
+                          style={{ backgroundColor: getAgentSubtleColor(e.color), color: e.color }}
                         >
                           {e.agent}
                         </span>
@@ -1778,6 +1779,9 @@ function PageShell({
           <StatusBadge status={ex.status} />
           {ex.category && <CategoryBadge category={ex.category} />}
         </div>
+        <h1 className="m-0 mb-1.5 text-[22px] font-semibold leading-tight tracking-tight text-foreground sr-only">
+          {ex.vendor} — Exception {ex.id}
+        </h1>
         <div className="mb-1.5">
           <VendorBadge name={ex.vendor} size="lg" />
         </div>
@@ -2019,7 +2023,7 @@ function ContractOverageDetail({ exception: ex }: { exception: Exception }) {
           </div>
           <div className="relative h-4 w-full overflow-hidden rounded-full bg-muted">
             {/* Cap marker at 100% */}
-            <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-muted-foreground" style={{ left: `${(100 / parseFloat(pct)) * 100}%` }} />
+            <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-muted-foreground" style={{ left: '66.67%' }} />
             <div className="h-full rounded-full bg-destructive transition-all" style={{ width: `${Math.min((barWidth / 150) * 100, 100)}%` }} />
           </div>
           <div className="mt-1 flex justify-between">
@@ -2343,6 +2347,9 @@ function GenericExceptionPage({ exceptionId }: { exceptionId: string }) {
           <StatusBadge status={ex.status} />
           {ex.category && <CategoryBadge category={ex.category} />}
         </div>
+        <h1 className="m-0 mb-1.5 text-[22px] font-semibold leading-tight tracking-tight text-foreground sr-only">
+          {ex.vendor} — Exception {ex.id}
+        </h1>
         <div className="mb-1.5">
           <VendorBadge name={ex.vendor} size="lg" />
         </div>
