@@ -285,7 +285,7 @@ function DuplicatePairCard({
   }
 
   return (
-    <Card className="mb-4 gap-0 py-0">
+    <Card className="card-elevated mb-4 gap-0 py-0">
       {/* Card header */}
       <div className="flex items-center justify-between border-b border-border px-5 pb-3 pt-4">
         <div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <Card className="mb-6 flex-row items-center gap-0 px-6 py-4">
+    <Card className="card-elevated mb-6 flex-row items-center gap-0 px-6 py-4">
       {steps.map((s, i) => (
         <div key={s.step} className="flex min-w-0 flex-1 items-center">
           <div className="min-w-0 flex-1">
@@ -587,10 +587,16 @@ function ExceptionsPageInner() {
     <main className="min-h-screen bg-background">
       {/* Page header */}
       {/* [Spec: domains/exceptions/spec.md#Layout — Header] */}
-      <div className="px-4 pt-8 lg:px-6">
+      <div className="px-4 pt-10 pb-2 lg:px-6">
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="m-0 text-2xl font-semibold leading-tight text-foreground">
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="inline-block h-0.5 w-6 rounded-full" style={{ background: 'var(--agent-validation)' }} />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Healthcare AP · Validation Agent
+              </span>
+            </div>
+            <h1 className="m-0 text-2xl font-semibold leading-tight text-foreground" style={{ letterSpacing: '-0.03em' }}>
               Exceptions
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -651,6 +657,30 @@ function ExceptionsPageInner() {
       </div>
 
       <hr className="mt-4 border-border" />
+
+      {/* Summary KPI cards */}
+      <div className="animate-stagger-in grid grid-cols-2 gap-3 px-4 py-5 sm:grid-cols-4 lg:px-6">
+        <Card className="card-elevated gap-0 px-4 py-3">
+          <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Open</p>
+          <p className="m-0 mt-1 text-xl font-bold tabular-nums text-destructive-text">{counts.open}</p>
+          <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">require review</p>
+        </Card>
+        <Card className="card-elevated gap-0 px-4 py-3">
+          <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Critical</p>
+          <p className="m-0 mt-1 text-xl font-bold tabular-nums text-destructive-text">{counts.critical}</p>
+          <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">highest severity</p>
+        </Card>
+        <Card className="card-elevated gap-0 px-4 py-3">
+          <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Duplicates</p>
+          <p className="m-0 mt-1 text-xl font-bold tabular-nums text-warning-text">{counts.duplicate}</p>
+          <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">{duplicateAtRisk} at risk</p>
+        </Card>
+        <Card className="card-elevated gap-0 px-4 py-3">
+          <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total</p>
+          <p className="m-0 mt-1 text-xl font-bold tabular-nums">{counts.all}</p>
+          <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">all exceptions</p>
+        </Card>
+      </div>
 
       {/* View toggle tabs */}
       {/* [Spec: domains/exceptions/spec.md#Layout — View Toggle] */}
@@ -726,8 +756,8 @@ function ExceptionsPageInner() {
 
           {/* Table search bar */}
           {/* [Spec: domains/exceptions/spec.md#Layout — Search Bar] */}
-          <div className="px-4 pb-3 lg:px-6">
-            <div className="relative w-72">
+          <div className="px-4 pb-4 lg:px-6">
+            <div className="relative w-80">
               <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
@@ -744,8 +774,8 @@ function ExceptionsPageInner() {
 
           {/* Table */}
           {/* [Spec: domains/exceptions/spec.md#Layout — Data Table] */}
-          <div className="px-4 pb-8 lg:px-6">
-            <Card className="py-0">
+          <div className="px-4 pb-10 lg:px-6">
+            <Card className="card-elevated py-0">
               <CardContent className="px-0">
                 <Table>
                   <TableHeader>
@@ -832,7 +862,7 @@ function ExceptionsPageInner() {
                     ) : (
                       <>
                         {paginatedExceptions.map((ex) => (
-                          <TableRow key={ex.id} className="group">
+                          <TableRow key={ex.id} className="group transition-colors hover:bg-accent/50">
                             {/* CHECKBOX */}
                             <TableCell className="w-8">
                               <Checkbox
@@ -885,9 +915,9 @@ function ExceptionsPageInner() {
                             <TableCell>
                               <span className="inline-flex items-center gap-1.5">
                                 <span
-                                  className={`size-1.5 shrink-0 rounded-full ${severityDotClass(ex.severity)}`}
+                                  className={`size-2 shrink-0 rounded-full ${severityDotClass(ex.severity)} ${ex.severity === "critical" ? "dot-pulse" : ""}`}
                                 />
-                                <span className="text-xs text-foreground">
+                                <span className={`text-xs ${ex.severity === "critical" ? "font-semibold text-destructive-text" : ex.severity === "high" ? "font-medium text-foreground" : "text-foreground"}`}>
                                   {severityConfig[ex.severity].label}
                                 </span>
                               </span>
@@ -903,7 +933,7 @@ function ExceptionsPageInner() {
                               {/* [Spec: rules/ui-standard.md#Touch Targets] — extend hit area */}
                               <Link
                                 href={`/exceptions/${ex.id}`}
-                                className="inline-flex items-center whitespace-nowrap -my-3 -mx-2 px-2 py-3 text-xs text-muted-foreground no-underline transition-colors hover:underline group-hover:text-primary"
+                                className="inline-flex items-center whitespace-nowrap -my-3 -mx-2 px-2 py-3 text-xs text-muted-foreground no-underline transition-all hover:underline group-hover:text-primary group-hover:translate-x-0.5"
                               >
                                 Review &rarr;
                               </Link>

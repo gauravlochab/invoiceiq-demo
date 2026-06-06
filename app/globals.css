@@ -85,16 +85,45 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Staggered card/section entrance — add to parent container */
+.animate-stagger-in > * {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-stagger-in > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger-in > *:nth-child(2) { animation-delay: 60ms; }
+.animate-stagger-in > *:nth-child(3) { animation-delay: 120ms; }
+.animate-stagger-in > *:nth-child(4) { animation-delay: 180ms; }
+.animate-stagger-in > *:nth-child(5) { animation-delay: 240ms; }
+.animate-stagger-in > *:nth-child(6) { animation-delay: 300ms; }
+.animate-stagger-in > *:nth-child(7) { animation-delay: 360ms; }
+.animate-stagger-in > *:nth-child(8) { animation-delay: 420ms; }
+
 /* ─── WORLD-CLASS MICRO-INTERACTIONS ───────────────────────────────────────── */
 
 /* Smooth page transitions */
-main { animation: fadeUp 0.2s ease-out; }
+main { animation: fadeUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Focus rings — accessibility + premium feel */
+/* Premium card depth system — hover elevation */
+.card-elevated {
+  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+}
+.card-elevated:hover {
+  box-shadow: 0 4px 12px 0 rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.04);
+  transform: translateY(-1px);
+}
+.dark .card-elevated:hover {
+  border-color: rgba(255,255,255,0.15);
+}
+
+/* Focus rings — accessibility + premium feel with smooth transition */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -103,6 +132,7 @@ textarea:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
+  transition: outline-offset 0.15s ease;
 }
 
 /* Smooth dropdown animation */
@@ -121,10 +151,14 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Selection color */
+/* Selection color — agent-blue tint, not full primary (more premium) */
 ::selection {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: oklch(0.555 0.16 250 / 30%);
+  color: var(--foreground);
+}
+.dark ::selection {
+  background: oklch(0.7 0.16 250 / 35%);
+  color: var(--foreground);
 }
 
 /* Input transitions */
@@ -134,24 +168,49 @@ input, select, textarea {
 
 /* Status dot pulse for active items */
 @keyframes dotPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.3); }
+}
+.dot-pulse {
+  animation: dotPulse 2s ease-in-out infinite;
 }
 
-/* Scrollbar styling — thin, subtle */
+/* Shimmer skeleton gradient */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* ─── SCROLLBAR STYLING — ultra-thin, auto-fade ──────────────────────── */
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: oklch(0.7 0 0 / 25%);
+  border-radius: 100px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: oklch(0.5 0 0 / 40%);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.5 0 0 / 30%);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0 0 / 50%);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.7 0 0 / 25%) transparent;
+}
+.dark * {
+  scrollbar-color: oklch(0.5 0 0 / 30%) transparent;
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -315,6 +374,55 @@ input, select, textarea {
 /* ─── SPEC VIEWER PROSE ─────────────────────────────────────────────────── */
 /* The v1 `.prose-spec` utility was removed — the specs-viewer now styles
    markdown inline with shadcn theme tokens. See app/specs-viewer/components.tsx. */
+
+/* ─── SIDEBAR PREMIUM STYLING ──────────────────────────────────────────── */
+
+/* Smooth hover transition for all sidebar menu buttons */
+[data-sidebar="menu-button"] {
+  transition: background-color 0.15s ease,
+              color 0.15s ease,
+              border-color 0.15s ease;
+}
+
+/* Active nav item — left accent bar + colored icon (Linear/Figma pattern) */
+[data-sidebar="menu-button"][data-active="true"] {
+  position: relative;
+  border-left: 2.5px solid var(--sidebar-primary);
+  background: var(--sidebar-accent);
+  font-weight: 500;
+}
+[data-sidebar="menu-button"][data-active="true"] svg {
+  color: var(--sidebar-primary);
+}
+
+/* Sidebar group labels — refined uppercase tracking */
+[data-sidebar="group-label"] {
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+[data-sidebar="group"]:hover [data-sidebar="group-label"] {
+  opacity: 0.85;
+}
+
+/* Subtle separator between sidebar groups */
+[data-sidebar="group"] + [data-sidebar="group"] {
+  border-top: 1px solid var(--sidebar-border);
+  margin-top: 2px;
+  padding-top: 2px;
+}
+
+/* ─── DARK MODE CARD SURFACE DIFFERENTIATION ─────────────────────────────── */
+
+.dark .card-elevated {
+  background: linear-gradient(
+    145deg,
+    oklch(0.22 0 0) 0%,
+    oklch(0.205 0 0) 100%
+  );
+}
 
 /* ─── REDUCED MOTION ────────────────────────────────────────────────────── */
 

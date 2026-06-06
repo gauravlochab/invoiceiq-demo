@@ -122,22 +122,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {/* Light theme: navy bulb; Dark theme: white bulb. Sized at 36px for
               brand presence (audit 2026-05-23 feedback: logo was visually lost
               at 28px). */}
-          <Image
-            src="/branding/acl-icon-clean.svg"
-            alt="Agile C-Level"
-            width={36}
-            height={36}
-            className="h-9 w-auto shrink-0 dark:hidden"
-          />
-          <Image
-            src="/branding/acl-icon-white.svg"
-            alt="Agile C-Level"
-            width={36}
-            height={36}
-            className="hidden h-9 w-auto shrink-0 dark:block"
-          />
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-accent to-transparent transition-transform duration-200 hover:scale-105">
+            <Image
+              src="/branding/acl-icon-clean.svg"
+              alt="Agile C-Level"
+              width={28}
+              height={28}
+              className="h-7 w-auto dark:hidden"
+            />
+            <Image
+              src="/branding/acl-icon-white.svg"
+              alt="Agile C-Level"
+              width={28}
+              height={28}
+              className="hidden h-7 w-auto dark:block"
+            />
+          </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="block text-[15px] font-semibold tracking-tight leading-tight">
+            <span className="block text-[15px] font-semibold leading-tight" style={{ letterSpacing: '-0.02em' }}>
               Agile C-Level
             </span>
             <p className="m-0 mt-0.5 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -145,7 +147,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </p>
           </div>
         </div>
-        <div className="mx-2 rounded bg-muted px-2 py-1 text-center text-[10px] text-muted-foreground group-data-[collapsible=icon]:hidden">
+        <div className="mx-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-1.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">
           Parkland Health
         </div>
       </SidebarHeader>
@@ -174,13 +176,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <span className="text-[11px] font-medium">RJ</span>
+        <div className="flex items-center gap-2.5 rounded-md px-2 py-2.5 transition-colors hover:bg-sidebar-accent">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+            <span className="text-[11px] font-semibold">RJ</span>
           </div>
-          <span className="truncate text-xs text-foreground group-data-[collapsible=icon]:hidden">
-            Rajesh Jaluka
-          </span>
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <span className="block truncate text-xs font-medium text-foreground">
+              Rajesh Jaluka
+            </span>
+            <span className="block truncate text-[10px] text-muted-foreground">
+              Administrator
+            </span>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -10,17 +10,16 @@ interface SparklineProps {
 
 export function Sparkline({
   data,
-  width = 64,
-  height = 24,
+  width = 100,
+  height = 32,
   color = "var(--primary)",
-  fillOpacity = 0.1,
 }: SparklineProps) {
   if (!data.length) return null;
 
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const padding = 1;
+  const padding = 2;
 
   const points = data.map((v, i) => {
     const x = padding + (i / (data.length - 1)) * (width - padding * 2);
@@ -31,6 +30,13 @@ export function Sparkline({
   const linePath = `M${points.join(" L")}`;
   const areaPath = `${linePath} L${width - padding},${height} L${padding},${height} Z`;
 
+  // Extract last point for the endpoint dot
+  const lastPoint = points[points.length - 1];
+  const [lastX, lastY] = lastPoint ? lastPoint.split(",").map(Number) : [0, 0];
+
+  // Unique gradient ID based on color to avoid collisions
+  const gradId = `spark-grad-${color.replace(/[^a-z0-9]/gi, "")}`;
+
   return (
     <svg
       width={width}
@@ -39,7 +45,15 @@ export function Sparkline({
       className="flex-shrink-0"
       aria-hidden="true"
     >
-      <path d={areaPath} fill={color} opacity={fillOpacity} />
+      <defs>
+        <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      {/* Gradient fill area */}
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      {/* Stroke line */}
       <path
         d={linePath}
         fill="none"
@@ -48,6 +62,8 @@ export function Sparkline({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* Endpoint dot — current value indicator */}
+      <circle cx={lastX} cy={lastY} r={2.5} fill={color} />
     </svg>
   );
 }

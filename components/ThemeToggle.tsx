@@ -27,10 +27,14 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       aria-label="Toggle theme"
-      className="max-md:min-h-11 max-md:min-w-11"
+      className="transition-colors duration-150 max-md:min-h-11 max-md:min-w-11"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
-      {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {theme === "dark" ? (
+        <Sun className="size-4 transition-transform duration-200 hover:rotate-45" />
+      ) : (
+        <Moon className="size-4 transition-transform duration-200 hover:-rotate-12" />
+      )}
     </Button>
   );
 }

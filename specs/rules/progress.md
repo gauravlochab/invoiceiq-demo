@@ -3,6 +3,29 @@ _Append only — newest entries at top_
 
 ---
 
+## 2026-06-06 (Deep Audit Fix — all findings closed)
+
+**Done:**
+- 86-agent deep audit workflow executed (6 phases, 38 screenshots, 12 findings, 11 confirmed)
+- All 7 actionable audit findings closed in single commit `09c6932` on `shared-shadcn-ui`:
+  - F2 (critical): Agent color pill CSS bug — created `lib/agent-colors.ts` with `getAgentSubtleColor()` mapping
+  - F5: Wired all 8 dead buttons on /contracts with LegalDisclaimerDialog + showToast
+  - F7: Removed dead deps (@tremor/react, @anthropic-ai/sdk), moved puppeteer to devDeps, migrated Inter to next/font, deleted 5 orphan files (3.5MB savings). `--legacy-peer-deps` no longer required.
+  - F9: Fixed cap-marker math (dynamic formula → fixed 66.67%)
+  - F3: Added sr-only h1 to PageShell + GenericExceptionPage; fixed Ex003Page h3→h2
+  - F4: Added aria-label to pagination select
+  - F10: Fixed Parkland pill contrast (bg-muted/50 → bg-muted)
+- Deep audit HTML report delivered: `cnui-audit/cnui-deep-audit-2026-06-04.html`
+- 38 Playwright screenshots stored in `cnui-audit/shots/`
+
+**Verify:** `npm run build` ✓ (22 routes) · `npm test` ✓ (153/153 passing, +7 new) · All buttons interactive · No render-blocking font import
+
+**Decisions:**
+- F8 (three-pane agent shell) held — contested finding, Rajesh should review before structural change
+- npm install no longer needs --legacy-peer-deps (removed the @tremor/react peer conflict)
+
+---
+
 ## 2026-05-22 (Phase 1 — app-wide v2.0 design-system migration)
 
 **Done:**

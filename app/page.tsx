@@ -216,7 +216,7 @@ function SpendTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2.5 text-xs text-popover-foreground shadow-md">
+    <div className="rounded-lg border border-border/50 bg-popover/85 px-3 py-2.5 text-xs text-popover-foreground shadow-lg shadow-black/[0.08] backdrop-blur-xl dark:border-white/10 dark:shadow-black/25">
       <p className="mb-1.5 text-[11px] text-muted-foreground">{label}</p>
       {payload.map((p) => (
         <p key={p.dataKey} className="mb-0.5 flex items-center gap-2">
@@ -243,7 +243,7 @@ function DonutTooltip({
   if (!active || !payload?.length) return null;
   const p = payload[0];
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
+    <div className="rounded-lg border border-border/50 bg-popover/85 px-3 py-2 text-xs text-popover-foreground shadow-lg shadow-black/[0.08] backdrop-blur-xl dark:border-white/10 dark:shadow-black/25">
       <p className="flex items-center gap-2">
         <span
           className="size-2 shrink-0 rounded-full"
@@ -502,7 +502,13 @@ export default function DashboardPage() {
       {/* [Spec: domains/dashboard/spec.md#Layout — Page header] */}
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 pt-10 pb-6 lg:px-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="inline-block h-0.5 w-6 rounded-full" style={{ background: 'var(--agent-invoice)' }} />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Healthcare AP · Command Center
+            </span>
+          </div>
+          <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.03em' }}>
             Invoice Intelligence
           </h1>
           {/* Subtitle no longer restates the invoice count (audit P9/R1). */}
@@ -531,7 +537,7 @@ export default function DashboardPage() {
 
       {/* ── Hero band: Amount at Risk + calm KPI trio ──────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Hero band] */}
-      <section aria-labelledby="hero-heading" className="px-4 py-8 lg:px-6">
+      <section aria-labelledby="hero-heading" className="px-4 py-10 lg:px-6">
         <h2 id="hero-heading" className="sr-only">
           Key metrics
         </h2>
@@ -543,26 +549,26 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 @3xl/main:grid-cols-[1.6fr_1fr_1fr_1fr]">
+          <div className="animate-stagger-in grid grid-cols-1 gap-4 @3xl/main:grid-cols-[1.6fr_1fr_1fr_1fr]">
             {/* Hero — Amount at Risk */}
             <Link
               href="/exceptions?severity=critical"
               className="no-underline"
               aria-label={`Amount at Risk: ${formatCurrency(metrics.amountAtRisk)}. ${metrics.criticalOpenCount} critical exceptions open — go to triage.`}
             >
-              <Card className="@container/card h-full transition-colors hover:bg-accent/40">
+              <Card className="card-elevated @container/card h-full border-l-4 border-destructive bg-gradient-to-br from-destructive/5 via-transparent to-transparent">
                 <CardHeader>
                   <CardDescription>Amount at Risk</CardDescription>
                   {/* CardTitle renders a <div>; the <h3> inside puts the
                       metric in the heading outline (ui-standard.md v2.0.1). */}
-                  <CardTitle className="text-3xl font-semibold tabular-nums text-destructive-text @[300px]/card:text-4xl">
+                  <CardTitle className="text-4xl font-semibold tabular-nums text-destructive-text @[300px]/card:text-5xl" style={{ letterSpacing: '-0.04em' }}>
                     <h3 className="font-[inherit]">
                       <NumberTicker value={metrics.amountAtRisk} prefix="$" />
                     </h3>
                   </CardTitle>
                   <CardAction>
                     {/* The ONLY sparkline on the page (audit P4). */}
-                    <Sparkline data={riskSparkline} color="var(--destructive)" />
+                    <Sparkline data={riskSparkline} color="var(--destructive)" width={120} height={40} />
                   </CardAction>
                 </CardHeader>
                 <CardFooter className="text-sm">
@@ -586,10 +592,10 @@ export default function DashboardPage() {
                 className="no-underline"
                 aria-label={`${card.label}: ${card.prefix}${card.value}${card.suffix ?? ""}`}
               >
-                <Card className="@container/card h-full transition-colors hover:bg-accent/40">
+                <Card className="card-elevated @container/card h-full">
                   <CardHeader>
                     <CardDescription>{card.label}</CardDescription>
-                    <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                    <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl" style={{ letterSpacing: '-0.03em' }}>
                       <h3 className="font-[inherit]">
                         <NumberTicker
                           value={card.value}
@@ -611,7 +617,7 @@ export default function DashboardPage() {
 
       {/* ── Context band: Pipeline + Contracts & GPO ───────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Context band] */}
-      <section aria-labelledby="context-heading" className="px-4 pb-10 lg:px-6">
+      <section aria-labelledby="context-heading" className="px-4 pb-14 lg:px-6">
         <h2 id="context-heading" className="sr-only">
           Pipeline and contract context
         </h2>
@@ -680,11 +686,11 @@ export default function DashboardPage() {
 
       {/* ── Work table: recent exceptions (promoted out of tabs) ───────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Exceptions work table] */}
-      <section aria-labelledby="work-heading" className="px-4 pb-10 lg:px-6">
+      <section aria-labelledby="work-heading" className="px-4 pb-14 lg:px-6">
         {loading ? (
           <Skeleton className="h-80 w-full" />
         ) : (
-          <Card className="py-0">
+          <Card className="card-elevated py-0">
             <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
               <h2 id="work-heading" className="text-sm font-semibold">
                 Recent Exceptions
@@ -738,7 +744,7 @@ export default function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {sortedExceptions.map((ex: Exception) => (
-                  <TableRow key={ex.id} className="group">
+                  <TableRow key={ex.id} className="group transition-colors hover:bg-accent/50">
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {ex.id}
                     </TableCell>
@@ -783,7 +789,7 @@ export default function DashboardPage() {
                           without changing the visible row height (mobile) */}
                       <Link
                         href={`/exceptions/${ex.id}`}
-                        className="inline-flex items-center -my-3 -mx-2 px-2 py-3 text-xs font-medium text-muted-foreground no-underline transition-colors hover:text-primary hover:underline group-hover:text-primary"
+                        className="inline-flex items-center -my-3 -mx-2 px-2 py-3 text-xs font-medium text-muted-foreground no-underline transition-all hover:text-primary hover:underline group-hover:text-primary group-hover:translate-x-0.5"
                       >
                         Review →
                       </Link>
@@ -798,7 +804,7 @@ export default function DashboardPage() {
 
       {/* ── Invoice-status overview ────────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Invoice-status overview] */}
-      <section aria-labelledby="status-heading" className="px-4 pb-10 lg:px-6">
+      <section aria-labelledby="status-heading" className="px-4 pb-14 lg:px-6">
         {loading ? (
           <Skeleton className="h-24 w-full" />
         ) : (
@@ -856,7 +862,7 @@ export default function DashboardPage() {
 
       {/* ── Analysis section: 2 tabs ───────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Analysis section] */}
-      <section aria-labelledby="analysis-heading" className="px-4 pb-10 lg:px-6">
+      <section aria-labelledby="analysis-heading" className="px-4 pb-14 lg:px-6">
         <h2 id="analysis-heading" className="sr-only">
           Trend and category analysis
         </h2>
@@ -909,10 +915,17 @@ export default function DashboardPage() {
                           data={spendTrend}
                           margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
                         >
+                          <defs>
+                            <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.25} />
+                              <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
                           <CartesianGrid
                             horizontal
                             vertical={false}
                             stroke="var(--border)"
+                            strokeOpacity={0.6}
                           />
                           <YAxis
                             tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
@@ -935,9 +948,8 @@ export default function DashboardPage() {
                             type="monotone"
                             dataKey="spend"
                             stroke="var(--chart-1)"
-                            strokeWidth={1.5}
-                            fill="var(--chart-1)"
-                            fillOpacity={0.12}
+                            strokeWidth={2}
+                            fill="url(#spendGradient)"
                             dot={false}
                           />
                           <Bar
@@ -1038,7 +1050,7 @@ export default function DashboardPage() {
 
                 {/* Vendor risk distribution — donut, click-through (handoff H5) */}
                 <Link href="/vendor-scoring" className="no-underline">
-                  <Card className="h-full transition-colors hover:bg-accent/40">
+                  <Card className="card-elevated h-full">
                     <CardHeader>
                       <CardTitle>
                         <h3 className="font-[inherit]">Vendor Risk Distribution</h3>

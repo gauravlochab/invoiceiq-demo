@@ -251,7 +251,7 @@ function RecoveryTrendTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-popover-foreground shadow-md">
+    <div className="rounded-lg border border-border/50 bg-popover/85 px-3 py-2.5 text-popover-foreground shadow-lg shadow-black/[0.08] backdrop-blur-xl dark:border-white/10 dark:shadow-black/25">
       <p className="m-0 mb-1 text-[11px] font-semibold">{label}</p>
       {payload.map((p) => (
         <p
@@ -405,7 +405,7 @@ export default function RecoveryPage() {
                 Healthcare AP · Recovery Agent
               </span>
             </div>
-            <h1 className="m-0 text-2xl font-semibold tracking-tight">
+            <h1 className="m-0 text-2xl font-semibold" style={{ letterSpacing: '-0.03em' }}>
               Recovery Queue
             </h1>
             <p className="m-0 mt-1 text-sm text-muted-foreground">
@@ -447,34 +447,34 @@ export default function RecoveryPage() {
         {loading ? (
           <Skeleton className="h-24 w-full" />
         ) : (
-          <Card className="py-0">
-            <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
+          <Card className="card-elevated py-0">
+            <div className="animate-stagger-in flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
               <div className="flex-1 px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">In Queue</p>
-                <p className="m-0 mt-1 text-2xl font-bold tabular-nums">{records.length}</p>
+                <p className="m-0 mt-1 text-2xl font-bold tabular-nums" style={{ letterSpacing: '-0.04em' }}>{records.length}</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">{pendingCount} active</p>
               </div>
-              <div className="flex-1 px-6 py-4">
+              <div className="flex-1 bg-gradient-to-br from-destructive/5 to-transparent px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total Target</p>
-                <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-destructive-text">{formatCurrency(totalTarget)}</p>
+                <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-destructive-text" style={{ letterSpacing: '-0.04em' }}>{formatCurrency(totalTarget)}</p>
               </div>
-              <div className="flex-1 px-6 py-4">
+              <div className="flex-1 bg-gradient-to-br from-success/5 to-transparent px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Recovered</p>
-                <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-success-text">{formatCurrency(totalRecovered)}</p>
+                <p className="m-0 mt-1 text-2xl font-bold tabular-nums text-success-text" style={{ letterSpacing: '-0.04em' }}>{formatCurrency(totalRecovered)}</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
                   {totalTarget > 0 ? Math.round((totalRecovered / totalTarget) * 100) : 0}% of target
                 </p>
               </div>
               <div className="flex-1 px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Success Rate</p>
-                <p className={`m-0 mt-1 text-2xl font-bold tabular-nums ${successRateClass}`}>
+                <p className={`m-0 mt-1 text-2xl font-bold tabular-nums ${successRateClass}`} style={{ letterSpacing: '-0.04em' }}>
                   {successRate}%
                 </p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">last 12 months</p>
               </div>
               <div className="flex-1 px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">SLA Overdue</p>
-                <p className={`m-0 mt-1 text-2xl font-bold tabular-nums ${overdueCount > 0 ? "text-destructive-text" : "text-success-text"}`}>
+                <p className={`m-0 mt-1 text-2xl font-bold tabular-nums ${overdueCount > 0 ? "text-destructive-text" : "text-success-text"}`} style={{ letterSpacing: '-0.04em' }}>
                   {overdueCount}
                 </p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
@@ -487,11 +487,11 @@ export default function RecoveryPage() {
       </section>
 
       {/* Recovery Trend */}
-      <section aria-labelledby="trend-heading" className="px-4 pb-6 lg:px-6">
+      <section aria-labelledby="trend-heading" className="px-4 pb-8 lg:px-6">
         {loading ? (
           <Skeleton className="h-72 w-full" />
         ) : (
-          <Card className="p-5">
+          <Card className="card-elevated p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 id="trend-heading" className="m-0 text-sm font-medium">Recovery Trend</h2>
@@ -514,11 +514,21 @@ export default function RecoveryPage() {
             <div role="img" aria-label="Recovery trend chart showing monthly target versus recovered amounts over the last 12 months">
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={recoveryTrendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="recoveryTargetGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--destructive)" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="var(--destructive)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="recoveryRecoveredGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--success)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="0" horizontal vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                   <Tooltip content={<RecoveryTrendTooltip />} cursor={{ stroke: "var(--border)", strokeWidth: 1 }} />
-                  <Area type="monotone" dataKey="target" stroke="var(--destructive)" strokeWidth={1} strokeDasharray="5 3" fill="var(--destructive)" fillOpacity={0.2} dot={false} />
-                  <Area type="monotone" dataKey="recovered" stroke="var(--success)" strokeWidth={1.5} fill="var(--success)" fillOpacity={0.3} dot={false} />
+                  <Area type="monotone" dataKey="target" stroke="var(--destructive)" strokeWidth={1.5} strokeDasharray="5 3" fill="url(#recoveryTargetGrad)" dot={false} />
+                  <Area type="monotone" dataKey="recovered" stroke="var(--success)" strokeWidth={2} fill="url(#recoveryRecoveredGrad)" dot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -531,7 +541,7 @@ export default function RecoveryPage() {
         <h2 id="queue-heading" className="sr-only">Recovery queue and intelligence</h2>
 
         {/* LEFT — Recovery Queue */}
-        <Card className="gap-0 overflow-hidden py-0">
+        <Card className="card-elevated gap-0 overflow-hidden py-0">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <div className="flex items-center gap-3">
               {activeRecordIds.length > 0 && (
@@ -599,7 +609,7 @@ export default function RecoveryPage() {
         <div className="flex flex-col gap-4 lg:sticky lg:top-4">
 
           {/* Recovery score breakdown */}
-          <Card className="p-5">
+          <Card className="card-elevated p-5">
             <div className="mb-3 flex items-center gap-2">
               <Bot className="size-4 text-primary" />
               <h3 className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -633,7 +643,7 @@ export default function RecoveryPage() {
           </Card>
 
           {/* SLA Summary */}
-          <Card className="p-5">
+          <Card className="card-elevated p-5">
             <div className="mb-3 flex items-center gap-2">
               <Timer className="size-4 text-warning-text" />
               <h3 className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -664,10 +674,13 @@ export default function RecoveryPage() {
           </Card>
 
           {/* Agent activity log */}
-          <Card className="p-5">
-            <h3 className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Agent activity log
-            </h3>
+          <Card className="card-elevated p-5">
+            <div className="flex items-center gap-2">
+              <span className="dot-pulse size-1.5 rounded-full bg-success" />
+              <h3 className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Agent activity log
+              </h3>
+            </div>
             <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">All 5 agents · last 2 hours</p>
             <div className="mt-3 flex flex-col gap-0">
               {AGENT_LOG.map((entry, i) => (
@@ -698,7 +711,7 @@ export default function RecoveryPage() {
             href="/vendor-scoring"
             className="group no-underline"
           >
-            <Card className="flex-row items-center justify-between p-4 transition-colors hover:bg-accent/40">
+            <Card className="card-elevated flex-row items-center justify-between p-4 transition-colors hover:bg-accent/40">
               <div>
                 <p className="m-0 text-xs font-semibold">Vendor Recovery Scores</p>
                 <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">Recovery % reflected in vendor risk scoring</p>
@@ -746,7 +759,7 @@ function RecoveryRow({
   return (
     <div>
       <div
-        className={`flex items-start gap-3 px-5 py-4 transition-colors ${canRecord ? "cursor-pointer hover:bg-muted/40" : ""}`}
+        className={`flex items-start gap-3 px-5 py-4 transition-colors ${canRecord ? "cursor-pointer hover:bg-accent/50" : "hover:bg-accent/30"}`}
         onClick={canRecord ? onToggle : undefined}
       >
         {/* Checkbox (actionable rows) or status icon (non-actionable) */}
@@ -851,9 +864,9 @@ function RecoveryRow({
           )}
           {r.recoveredAmount != null && r.targetAmount > 0 && (
             <div className="mt-1.5">
-              <div className="ml-auto h-1 w-16 overflow-hidden rounded-full bg-muted">
+              <div className="ml-auto h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-success"
+                  className="h-full rounded-full bg-success transition-all duration-500"
                   style={{ width: `${recoveredPct}%` }}
                 />
               </div>

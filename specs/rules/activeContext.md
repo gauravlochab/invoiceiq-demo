@@ -1,23 +1,37 @@
 # Active Context
-_Last updated: 2026-05-22 by Claude_
+_Last updated: 2026-06-06 by Claude_
 
 ## Current Focus
 
-Phase 1 complete — InvoiceIQ Detect is fully migrated to the shadcn v2.0 design system. All 13 product routes, the internal specs-viewer, and the shared `components/` layer are on v2 theme tokens; the legacy v1 design-system layer has been removed from `globals.css`. Build, lint, and tests are green; dark mode and WCAG 2.1 AA were addressed per cluster.
+Deep audit complete + all findings fixed on `shared-shadcn-ui` branch. 86-agent audit (2026-06-04) identified 12 findings; 11 confirmed via adversarial verification. All 7 actionable findings closed in commit `09c6932`. 153/153 tests passing. Now entering **Phase 2: UI/UX elevation** — research-backed visual upgrade from basic shadcn to high-end enterprise dashboard.
 
-## Recent Changes
+## Recent Changes (2026-06-06)
 
-- 6-cluster app-wide v2.0 migration merged to `main` (PRs #2–#7) — see `progress.md` 2026-05-22
-- `app/globals.css` — v1 design-system layer removed (875 → 308 lines)
-- All 10 domain specs reconciled to v2.0/v2.0.1 with dated CHANGELOG entries
-- Repo-wide lint backlog cleared (0 errors / 0 warnings); `scripts/**` excluded from ESLint
+- **Audit fix commit** `09c6932` on `shared-shadcn-ui`:
+  - F2: Agent color pill bug fixed via `getAgentSubtleColor()` utility + `--agent-*-subtle` tokens
+  - F5: All 8 dead buttons on /contracts wired with LegalDisclaimerDialog + toast
+  - F7: Removed @tremor/react + @anthropic-ai/sdk (dead deps), moved puppeteer to devDeps, migrated Inter to next/font, deleted 3.5MB orphan files. npm install now works without --legacy-peer-deps.
+  - F9: Cap marker math fixed (anchored at 66.67%)
+  - F3: Added sr-only h1 to PageShell + GenericExceptionPage, fixed Ex003Page h3→h2
+  - F4: aria-label added to pagination select
+  - F10: Parkland pill contrast fixed (bg-muted/50 → bg-muted)
+- **Deep audit report** delivered as `cnui-audit/cnui-deep-audit-2026-06-04.html` (134KB)
+- **38 Playwright screenshots** captured in `cnui-audit/shots/` (19 routes × light+dark)
+- Audit scripts committed to `scripts/`
+
+## Prior Changes (2026-05-22 — Phase 1)
+
+- 6-cluster shadcn v2.0 migration (PRs #2–#7)
+- globals.css v1 layer removed (875 → 308 lines)
+- All 10 domain specs reconciled
 
 ## Open Questions
 
-- `OverrideModal` "Authorize Release" is now shadcn `Button variant="destructive"`; if a solid-red treatment is wanted for that high-stakes action, it is a small styling tweak (noted in PR #7)
 - AJ's customizable / two-mode per-role dashboard — still deferred
+- Three-pane agent shell (F8) — contested finding, hold for Rajesh review
+- Phase 2 SatinFlow worked example — gated on PR #3 decisions with Rajesh
 
 ## Next Steps
 
-- **Manual visual QA** — walk every route in light + dark mode before the Parkland demo
-- **Phase 2** — author the InvoiceIQ use case as SatinFlow's first `agent/domains/` worked example (gated on SatinFlow `NEXT-STEPS.md` / PR #3 decisions with Rajesh)
+- **Phase 2: UI/UX elevation** — research best-in-class enterprise dashboards (Linear, Vercel, Raycast, Retool) and elevate InvoiceIQ from basic shadcn to world-class
+- **Phase 3: Three-pane agent shell** — TanStack-virtualized exceptions + nuqs URL state + Cmd+K palette (XL effort, after Rajesh review)

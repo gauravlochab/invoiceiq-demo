@@ -211,16 +211,16 @@ export default function PipelinePage() {
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       {/* [Spec: domains/pipeline/spec.md#Layout — Header region] */}
-      <div className="px-4 pt-8 pb-5 lg:px-6">
+      <div className="px-4 pt-10 pb-5 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="mb-2 flex items-center gap-1.5">
-              <Workflow className="size-3.5 text-primary" />
+            <div className="mb-2 flex items-center gap-2">
+              <span className="inline-block h-0.5 w-6 rounded-full" style={{ background: 'var(--agent-invoice)' }} />
               <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Healthcare AP · Multi-Agent Pipeline
               </span>
             </div>
-            <h1 className="m-0 text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="m-0 text-2xl font-semibold text-foreground" style={{ letterSpacing: '-0.03em' }}>
               Multi-Agent Pipeline
             </h1>
             <p className="m-0 mt-1 text-sm text-muted-foreground">
@@ -332,7 +332,7 @@ export default function PipelinePage() {
           {/* ── Agent cards with connecting flow ──────────────────────────── */}
           {/* [Spec: domains/pipeline/spec.md#Layout — Agent cards row] */}
           <div className="px-4 py-6 lg:px-6">
-            <div className="flex items-stretch gap-0">
+            <div className="animate-stagger-in flex items-stretch gap-0">
               {AGENTS.map((agent, i) => {
                 const AgentIcon = agent.Icon;
                 const state = stepStates[i];
@@ -354,7 +354,7 @@ export default function PipelinePage() {
 
                 const card = (
                   <Card
-                    className={`h-full gap-3 p-4 transition-all duration-300 ${surfaceClass}`}
+                    className={`card-elevated h-full gap-3 p-4 transition-all duration-300 ${surfaceClass}`}
                     style={{
                       minHeight: 172,
                       // running: per-agent accent border (decorative)
@@ -436,7 +436,7 @@ export default function PipelinePage() {
                       )}
                       {!isActive && !isDone && (
                         <Badge variant="outline" className="text-muted-foreground">
-                          <span className="size-1.5 rounded-full bg-success" />
+                          <span className="dot-pulse size-1.5 rounded-full bg-success" />
                           Active
                         </Badge>
                       )}
@@ -500,8 +500,8 @@ export default function PipelinePage() {
 
           {/* ── Activity Feed ─────────────────────────────────────────────────── */}
           {/* [Spec: domains/pipeline/spec.md#Layout — Activity Feed] */}
-          <div className="px-4 pb-8 lg:px-6">
-            <Card className="gap-0 py-0">
+          <div className="px-4 pb-10 lg:px-6">
+            <Card className="card-elevated gap-0 py-0">
               {/* Feed header */}
               <div className="flex items-center justify-between border-b border-border px-5 py-3">
                 <div className="flex items-center gap-2">
@@ -513,7 +513,7 @@ export default function PipelinePage() {
                 <div className="flex items-center gap-2">
                   {isRunning && (
                     <Badge variant="outline" className="text-muted-foreground">
-                      <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+                      <span className="dot-pulse size-1.5 rounded-full bg-primary" />
                       Live
                     </Badge>
                   )}
@@ -528,7 +528,7 @@ export default function PipelinePage() {
                 {feedEvents.map((evt, idx) => (
                   <div
                     key={`${evt.agent}-${evt.time}-${idx}`}
-                    className="flex items-start gap-3 px-5 py-3 animate-[slideIn_0.2s_ease-out]"
+                    className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-accent/30 animate-[slideIn_0.2s_ease-out]"
                     style={{
                       backgroundColor: idx === 0 && isRunning ? evt.agentColor + "0d" : undefined,
                     }}
