@@ -162,7 +162,7 @@ export default function SomQueuePage() {
       label: "Orders in queue",
       value: String(ordersInBatch),
       valueClass: "text-foreground",
-      subtitle: `${controlledCount} with controlled substances`,
+      subtitle: `${controlledCount} controlled`,
       Icon: Activity,
     },
     {
@@ -176,14 +176,14 @@ export default function SomQueuePage() {
       label: "Flagged this batch",
       value: `${suspicionRate}%`,
       valueClass: "text-warning-text",
-      subtitle: `${flaggedOrdersCount} of ${ordersInBatch} orders flagged`,
+      subtitle: `${flaggedOrdersCount} of ${ordersInBatch} flagged`,
       Icon: ShieldCheck,
     },
     {
       label: "Blocked exposure",
       value: formatCurrency(somBlockedAmount),
       valueClass: "text-destructive-text",
-      subtitle: `across ${somExceptions.length} SOM exceptions`,
+      subtitle: `${somExceptions.length} exceptions`,
       Icon: DollarSign,
     },
   ];
@@ -195,14 +195,14 @@ export default function SomQueuePage() {
         <div className="mb-1.5 flex items-center gap-2">
           <ShieldAlert className="size-4 text-primary" />
           <span className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
-            Drug Distributor · SOM Analyst
+            SOM Analyst
           </span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Suspicious Order Monitoring
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Incoming orders pending verification — Address, License, Pricing, Pattern checks. High/Critical-risk pharmacies require override.
+          Incoming orders pending verification. High/Critical-risk pharmacies require override.
         </p>
       </div>
 
@@ -240,9 +240,6 @@ export default function SomQueuePage() {
               <CardTitle>
                 <h2 className="font-[inherit] text-sm font-semibold">Incoming orders</h2>
               </CardTitle>
-              <CardAction className="text-sm text-muted-foreground">
-                High/Critical pharmacies require human override
-              </CardAction>
             </CardHeader>
             <CardContent className="px-0">
               <Table>
@@ -275,7 +272,7 @@ export default function SomQueuePage() {
                             </span>
                             {order.isFresh && !blocked && (
                               <span className="text-[10px] font-medium uppercase tracking-wide text-success-text">
-                                Fresh · just arrived
+                                New
                               </span>
                             )}
                             {blocked && !overrideEntry && (

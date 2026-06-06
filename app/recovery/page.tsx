@@ -402,14 +402,14 @@ export default function RecoveryPage() {
             <div className="mb-1.5 flex items-center gap-2">
               <TrendingUp className="size-4 text-primary" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
-                Healthcare AP · Recovery Agent
+                Recovery Agent
               </span>
             </div>
             <h1 className="m-0 text-2xl font-semibold" style={{ letterSpacing: '-0.03em' }}>
               Recovery Queue
             </h1>
             <p className="m-0 mt-1 text-sm text-muted-foreground">
-              Vendor recovery tracking — initiated by Invoice Agent, actioned by Recovery Agent
+              Track and record vendor recoveries
             </p>
           </div>
           <Button
@@ -452,7 +452,6 @@ export default function RecoveryPage() {
               <div className="flex-1 px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">In Queue</p>
                 <p className="m-0 mt-1 text-2xl font-bold tabular-nums" style={{ letterSpacing: '-0.04em' }}>{records.length}</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">{pendingCount} active</p>
               </div>
               <div className="flex-1 bg-gradient-to-br from-destructive/5 to-transparent px-6 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total Target</p>
@@ -495,7 +494,7 @@ export default function RecoveryPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 id="trend-heading" className="m-0 text-sm font-medium">Recovery Trend</h2>
-                <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">Monthly recovery amounts — last 12 months</p>
+                <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">Last 12 months</p>
               </div>
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -556,7 +555,7 @@ export default function RecoveryPage() {
             </div>
             <div className="flex items-center gap-2">
               <CalendarClock className="size-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">SLA tracked per Parkland Policy 4.3</span>
+              <span className="sr-only">SLA tracked per Parkland Policy 4.3</span>
             </div>
           </div>
 
@@ -638,7 +637,7 @@ export default function RecoveryPage() {
               ))}
             </div>
             <p className="m-0 text-[10px] text-muted-foreground">
-              Target: 90% recovery rate · Current trajectory on track
+              Target: 90%
             </p>
           </Card>
 
@@ -681,7 +680,7 @@ export default function RecoveryPage() {
                 Agent activity log
               </h3>
             </div>
-            <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">All 5 agents · last 2 hours</p>
+            <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">Last 2 hours</p>
             <div className="mt-3 flex flex-col gap-0">
               {AGENT_LOG.map((entry, i) => (
                 <div key={i} className="flex gap-2.5">
@@ -714,7 +713,7 @@ export default function RecoveryPage() {
             <Card className="card-elevated flex-row items-center justify-between p-4 transition-colors hover:bg-accent/40">
               <div>
                 <p className="m-0 text-xs font-semibold">Vendor Recovery Scores</p>
-                <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">Recovery % reflected in vendor risk scoring</p>
+                <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">Impacts vendor risk scores</p>
               </div>
               <ArrowRight className="size-3.5 text-muted-foreground transition-colors group-hover:text-primary" />
             </Card>
@@ -913,14 +912,14 @@ function RecoveryRow({
             </div>
             <div>
               <label htmlFor={`note-${r.id}`} className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Notes <span className="font-normal normal-case text-muted-foreground">(captured for AI enrichment)</span>
+                Notes
               </label>
               <Textarea
                 id={`note-${r.id}`}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
-                placeholder="Describe the vendor response, commitments made, or reason for closure..."
+                placeholder="Vendor response or reason for closure..."
               />
             </div>
             {touched && amount <= 0 && outcome !== "Vendor Unresponsive" && outcome !== "Vendor Filed Dispute" && outcome !== "Closed — Write Off" && (

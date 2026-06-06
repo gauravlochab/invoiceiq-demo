@@ -403,7 +403,7 @@ export default function DashboardPage() {
         href: "/exceptions",
         value: metrics.apCount,
         prefix: "",
-        subtitle: `${metrics.openCount} open · ${metrics.apCount - metrics.openCount} resolved`,
+        subtitle: `${metrics.openCount} open`,
       },
       {
         key: "recovery",
@@ -413,9 +413,7 @@ export default function DashboardPage() {
         prefix: "",
         suffix: "%",
         // Front 2: recovery as a SCORE vs baseline + amount-in-recovery.
-        subtitle: `vs ~${metrics.recoveryBaseline}% baseline · ${formatCurrency(
-          metrics.amountInRecovery
-        )} in recovery`,
+        subtitle: `${formatCurrency(metrics.amountInRecovery)} in recovery`,
       },
     ],
     [metrics]
@@ -505,7 +503,7 @@ export default function DashboardPage() {
           <div className="mb-2 flex items-center gap-2">
             <span className="inline-block h-0.5 w-6 rounded-full" style={{ background: 'var(--agent-invoice)' }} />
             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Healthcare AP · Command Center
+              Command Center
             </span>
           </div>
           <h1 className="text-2xl font-semibold" style={{ letterSpacing: '-0.03em' }}>
@@ -576,10 +574,6 @@ export default function DashboardPage() {
                     <AlertOctagon className="size-3.5" aria-hidden="true" />
                     {metrics.criticalOpenCount} critical open
                   </span>
-                  <span className="ml-2 inline-flex items-center gap-0.5 text-muted-foreground">
-                    → triage now
-                    <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                  </span>
                 </CardFooter>
               </Card>
             </Link>
@@ -617,7 +611,7 @@ export default function DashboardPage() {
 
       {/* ── Context band: Pipeline + Contracts & GPO ───────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Context band] */}
-      <section aria-labelledby="context-heading" className="px-4 pb-14 lg:px-6">
+      <section aria-labelledby="context-heading" className="px-4 pb-10 lg:px-6">
         <h2 id="context-heading" className="sr-only">
           Pipeline and contract context
         </h2>
@@ -686,7 +680,7 @@ export default function DashboardPage() {
 
       {/* ── Work table: recent exceptions (promoted out of tabs) ───────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Exceptions work table] */}
-      <section aria-labelledby="work-heading" className="px-4 pb-14 lg:px-6">
+      <section aria-labelledby="work-heading" className="px-4 pb-10 lg:px-6">
         {loading ? (
           <Skeleton className="h-80 w-full" />
         ) : (
@@ -804,7 +798,7 @@ export default function DashboardPage() {
 
       {/* ── Invoice-status overview ────────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Invoice-status overview] */}
-      <section aria-labelledby="status-heading" className="px-4 pb-14 lg:px-6">
+      <section aria-labelledby="status-heading" className="px-4 pb-10 lg:px-6">
         {loading ? (
           <Skeleton className="h-24 w-full" />
         ) : (
@@ -815,9 +809,6 @@ export default function DashboardPage() {
                   Invoice Status
                 </h2>
               </CardTitle>
-              <CardDescription>
-                Count of {metrics.apCount} exceptions by review stage
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -862,7 +853,7 @@ export default function DashboardPage() {
 
       {/* ── Analysis section: 2 tabs ───────────────────────────────────── */}
       {/* [Spec: domains/dashboard/spec.md#Layout — Analysis section] */}
-      <section aria-labelledby="analysis-heading" className="px-4 pb-14 lg:px-6">
+      <section aria-labelledby="analysis-heading" className="px-4 pb-10 lg:px-6">
         <h2 id="analysis-heading" className="sr-only">
           Trend and category analysis
         </h2>
@@ -970,9 +961,6 @@ export default function DashboardPage() {
                     <CardTitle>
                       <h3 className="font-[inherit]">Discrepancy Volume</h3>
                     </CardTitle>
-                    <CardDescription>
-                      Discrepancy amount by category and time period
-                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <DiscrepancyBarChart />
@@ -990,9 +978,6 @@ export default function DashboardPage() {
                     <CardTitle>
                       <h3 className="font-[inherit]">Amount at Risk by Type</h3>
                     </CardTitle>
-                    <CardDescription>
-                      Reconciles with the Amount at Risk total
-                    </CardDescription>
                     <CardAction>
                       <span className="text-lg font-semibold tabular-nums">
                         {formatCurrency(categoryDonut.total)}
@@ -1055,9 +1040,6 @@ export default function DashboardPage() {
                       <CardTitle>
                         <h3 className="font-[inherit]">Vendor Risk Distribution</h3>
                       </CardTitle>
-                      <CardDescription>
-                        {vendorScores.length} scored vendors by risk tier
-                      </CardDescription>
                       <CardAction>
                         <ArrowUpRight
                           className="size-4 text-muted-foreground"

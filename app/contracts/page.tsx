@@ -213,8 +213,7 @@ function ContractCard({ contract, onAction }: { contract: Contract; onAction: (a
               Unclaimed rebate
             </AlertTitle>
             <AlertDescription className="text-warning-text">
-              {formatCurrency(contract.rebateMissed)} not received — No credit
-              memo for Q1 2026
+              {formatCurrency(contract.rebateMissed)} unclaimed — no credit memo received
             </AlertDescription>
           </Alert>
         </div>
@@ -441,9 +440,6 @@ export default function ContractCompliancePage() {
                 <div className="mt-1 text-xl font-semibold tabular-nums">
                   {formatCurrency(totalValue)}
                 </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  {contracts.length} contracts
-                </div>
               </div>
               <div className="flex-1 px-5 py-4">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -451,9 +447,6 @@ export default function ContractCompliancePage() {
                 </div>
                 <div className="mt-1 text-xl font-semibold tabular-nums">
                   {formatCurrency(totalSpend)}
-                </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  Q1 2026
                 </div>
               </div>
               <div className="flex-1 px-5 py-4">
@@ -473,9 +466,6 @@ export default function ContractCompliancePage() {
                 </div>
                 <div className="mt-1 text-xl font-semibold tabular-nums text-destructive-text">
                   {breachedCount}
-                </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  Immediate action
                 </div>
               </div>
             </div>

@@ -388,17 +388,17 @@ const steps = [
   {
     step: "STEP 1",
     name: "Ingest",
-    desc: "All invoices received via email, mail, EDI, and vendor portal",
+    desc: "Ingests invoices from all channels",
   },
   {
     step: "STEP 2",
     name: "Vectorize",
-    desc: "Line items, amounts, dates, and vendor IDs converted to similarity vectors",
+    desc: "Converts fields to similarity vectors",
   },
   {
     step: "STEP 3",
     name: "Flag",
-    desc: "Pairs exceeding 97% similarity threshold surfaced for review",
+    desc: "Flags pairs above 97% similarity",
   },
 ];
 
@@ -593,14 +593,14 @@ function ExceptionsPageInner() {
             <div className="mb-2 flex items-center gap-2">
               <span className="inline-block h-0.5 w-6 rounded-full" style={{ background: 'var(--agent-validation)' }} />
               <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                Healthcare AP · Validation Agent
+                Validation Agent
               </span>
             </div>
             <h1 className="m-0 text-2xl font-semibold leading-tight text-foreground" style={{ letterSpacing: '-0.03em' }}>
               Exceptions
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {apExceptions.length} exceptions · {duplicatePairs.length} duplicate pairs · Q1 2026
+              {apExceptions.length} exceptions · {duplicatePairs.length} duplicates · Q1 2026
             </p>
           </div>
           <div className="flex gap-2">
@@ -663,12 +663,10 @@ function ExceptionsPageInner() {
         <Card className="card-elevated gap-0 px-4 py-3">
           <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Open</p>
           <p className="m-0 mt-1 text-xl font-bold tabular-nums text-destructive-text">{counts.open}</p>
-          <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">require review</p>
         </Card>
         <Card className="card-elevated gap-0 px-4 py-3">
           <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Critical</p>
           <p className="m-0 mt-1 text-xl font-bold tabular-nums text-destructive-text">{counts.critical}</p>
-          <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">highest severity</p>
         </Card>
         <Card className="card-elevated gap-0 px-4 py-3">
           <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Duplicates</p>
@@ -678,7 +676,6 @@ function ExceptionsPageInner() {
         <Card className="card-elevated gap-0 px-4 py-3">
           <p className="m-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total</p>
           <p className="m-0 mt-1 text-xl font-bold tabular-nums">{counts.all}</p>
-          <p className="m-0 mt-0.5 text-[10px] text-muted-foreground">all exceptions</p>
         </Card>
       </div>
 
@@ -946,8 +943,8 @@ function ExceptionsPageInner() {
                             <TableCell colSpan={9}>
                               <EmptyState
                                 icon={FileSearch}
-                                title="No exceptions match this filter"
-                                description="Try adjusting your filters or search query to find what you're looking for."
+                                title="No exceptions match"
+                                description=""
                                 action={{
                                   label: "Clear filter",
                                   onClick: () => {
@@ -986,7 +983,7 @@ function ExceptionsPageInner() {
         <TabsContent value="duplicates">
           <div className="px-4 py-4 lg:px-6">
             <p className="mb-4 text-sm text-muted-foreground">
-              AI scanned 1,847 invoices &middot; {duplicatePairs.length} pairs flagged &middot;{" "}
+              1,847 invoices scanned &middot; {duplicatePairs.length} pairs flagged &middot;{" "}
               {duplicateAtRisk} at risk
             </p>
 
@@ -1029,7 +1026,7 @@ function ExceptionsPageInner() {
             <DialogHeader>
               <DialogTitle>Reject Duplicate Invoice</DialogTitle>
               <DialogDescription>
-                This will block the duplicate invoice from processing.
+                Blocks this invoice from payment.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-1.5">
@@ -1068,13 +1065,12 @@ function ExceptionsPageInner() {
             <DialogHeader>
               <DialogTitle>Approve with Override</DialogTitle>
               <DialogDescription>
-                Override the duplicate flag and approve this invoice for payment.
+                Approve despite duplicate flag.
               </DialogDescription>
             </DialogHeader>
             <Alert className="border-warning bg-warning/10">
               <AlertDescription className="text-warning-text">
-                This action overrides the AI duplicate detection. A record of this
-                override will be logged for audit purposes.
+                Override will be logged for audit.
               </AlertDescription>
             </Alert>
             <div className="flex flex-col gap-1.5">
@@ -1108,7 +1104,7 @@ function ExceptionsPageInner() {
             <DialogHeader>
               <DialogTitle>Escalate to Manager</DialogTitle>
               <DialogDescription>
-                Send this duplicate pair to a manager for final review.
+                Routes to a manager for review.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-1.5">

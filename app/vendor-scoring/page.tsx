@@ -211,21 +211,21 @@ export default function VendorScoringPage() {
     Flagged: {
       title: "Flag vendor as high-risk?",
       description:
-        "This marks the vendor for procurement review. The action is recorded in the audit trail.",
+        "Marks vendor for procurement review. Logged in audit trail.",
       cta: "Flag Vendor",
       destructive: false,
     },
     Penalized: {
       title: "Recommend a penalty?",
       description:
-        "This recommends a contractual penalty for the vendor. A manager must approve before any penalty is applied.",
+        "Recommends contractual penalty. Requires manager approval.",
       cta: "Recommend Penalty",
       destructive: true,
     },
     Removed: {
       title: "Remove vendor as supplier?",
       description:
-        "This removes the vendor from the approved supplier list. The action is recorded in the audit trail.",
+        "Removes from approved supplier list. Logged in audit trail.",
       cta: "Remove Vendor",
       destructive: true,
     },
@@ -241,7 +241,7 @@ export default function VendorScoringPage() {
               Vendor Scoring
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Risk assessment across {sorted.length} vendors · Q1 2026
+              {sorted.length} vendors · Q1 2026
             </p>
           </div>
           <Button

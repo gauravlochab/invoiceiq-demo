@@ -217,14 +217,14 @@ export default function PipelinePage() {
             <div className="mb-2 flex items-center gap-2">
               <span className="inline-block h-0.5 w-6 rounded-full" style={{ background: 'var(--agent-invoice)' }} />
               <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                Healthcare AP · Multi-Agent Pipeline
+                Pipeline
               </span>
             </div>
             <h1 className="m-0 text-2xl font-semibold text-foreground" style={{ letterSpacing: '-0.03em' }}>
               Multi-Agent Pipeline
             </h1>
             <p className="m-0 mt-1 text-sm text-muted-foreground">
-              5 specialized agents — each hands off to the next across the full invoice lifecycle
+              5 agents process invoices end-to-end
             </p>
           </div>
           <Button
@@ -507,7 +507,7 @@ export default function PipelinePage() {
                 <div className="flex items-center gap-2">
                   <Clock className="size-3.5 text-muted-foreground" />
                   <h2 className="text-sm font-semibold text-foreground">
-                    Agent Activity Feed
+                    Activity Feed
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
