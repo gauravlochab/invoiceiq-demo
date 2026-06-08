@@ -1002,8 +1002,11 @@ function Ex006Page() {
     { key: "approved_override", label: "Approved" },
   ] as const;
 
-  const allResolved = dynamicLineItems.every((item) => lineItemStates[item.itemCode] !== "pending");
-  const hasAnyRejection = dynamicLineItems.some((item) => lineItemStates[item.itemCode] === "rejected");
+  // Only flagged items need review — matched items (no discrepancy) are auto-resolved.
+  // [Spec: domains/invoice-detail/spec.md#Business Rules — action unlock]
+  const flaggedItems = dynamicLineItems.filter((item) => item.flags.length > 0);
+  const allResolved = flaggedItems.every((item) => lineItemStates[item.itemCode] !== "pending");
+  const hasAnyRejection = flaggedItems.some((item) => lineItemStates[item.itemCode] === "rejected");
 
   // "Going against finding" state — needs reason popup
   const [reasonPopup, setReasonPopup] = useState<{ itemCode: string; action: "accept" | "reject" } | null>(null);
