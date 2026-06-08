@@ -712,7 +712,9 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
             {isExpanded && (
               <div className="divide-y divide-border">
                 {items.map((item) => {
-                  const state = lineItemStates?.[item.itemCode] ?? "pending";
+                  // Composite key: itemCode:flag — each discrepancy reviewed independently
+                  const compositeKey = `${item.itemCode}:${groupKey}`;
+                  const state = lineItemStates?.[compositeKey] ?? lineItemStates?.[item.itemCode] ?? "pending";
                   return (
                     <div key={`${groupKey}-${item.itemCode}`} className={`px-5 py-4 ${rowBgClass(item.flags)}`}>
                       {/* [Spec: domains/invoice-detail/spec.md#Responsive-mobile]
@@ -824,7 +826,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => onAccept?.(item.itemCode)}
+                                  onClick={() => onAccept?.(compositeKey)}
                                   className="min-h-11 border-success bg-success/10 text-success-text hover:bg-success/20 sm:min-h-0 sm:h-7"
                                 >
                                   <Check className="size-3" /> Agree
@@ -832,7 +834,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => onReject?.(item.itemCode)}
+                                  onClick={() => onReject?.(compositeKey)}
                                   className="min-h-11 sm:min-h-0 sm:h-7"
                                 >
                                   <X className="size-3" /> Disagree
@@ -846,7 +848,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => onUndo?.(item.itemCode)}
+                                  onClick={() => onUndo?.(compositeKey)}
                                   className="min-h-11 text-[10px] text-muted-foreground sm:min-h-0 sm:h-7"
                                   title="Change decision"
                                 >
@@ -861,7 +863,7 @@ function DiscrepancyView({ lineItems, showActions, lineItemStates, onAccept, onR
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => onUndo?.(item.itemCode)}
+                                  onClick={() => onUndo?.(compositeKey)}
                                   className="min-h-11 text-[10px] text-muted-foreground sm:min-h-0 sm:h-7"
                                   title="Change decision"
                                 >
@@ -934,10 +936,21 @@ void REJECT_REASONS;
 function Ex006Page() {
   const { showToast } = useToast();
 
-  // Line-item accept/reject state
-  const [lineItemStates, setLineItemStates] = useState<Record<string, "pending" | "accepted" | "rejected">>(
-    Object.fromEntries(sterisLineItems.map((item) => [item.itemCode, "pending"]))
-  );
+  // Line-item accept/reject state — keyed by "itemCode:flag" so each discrepancy
+  // on the same item can be reviewed independently (e.g. STE-4821-A has both
+  // price and description flags — agreeing to price shouldn't auto-agree description).
+  // [Spec: domains/invoice-detail/spec.md#Business Rules — per-flag review]
+  const [lineItemStates, setLineItemStates] = useState<Record<string, "pending" | "accepted" | "rejected">>(() => {
+    const entries: [string, "pending"][] = [];
+    for (const item of sterisLineItems) {
+      if (item.flags && item.flags.length > 0) {
+        for (const flag of item.flags) {
+          entries.push([`${item.itemCode}:${flag}`, "pending"]);
+        }
+      }
+    }
+    return Object.fromEntries(entries);
+  });
 
   // Document change state
   const [docOverrides, setDocOverrides] = useState<Record<string, { label: string; href: string }>>({});
@@ -1002,11 +1015,10 @@ function Ex006Page() {
     { key: "approved_override", label: "Approved" },
   ] as const;
 
-  // Only flagged items need review — matched items (no discrepancy) are auto-resolved.
+  // Every composite key (itemCode:flag) must be resolved before actions unlock.
   // [Spec: domains/invoice-detail/spec.md#Business Rules — action unlock]
-  const flaggedItems = dynamicLineItems.filter((item) => item.flags.length > 0);
-  const allResolved = flaggedItems.every((item) => lineItemStates[item.itemCode] !== "pending");
-  const hasAnyRejection = flaggedItems.some((item) => lineItemStates[item.itemCode] === "rejected");
+  const allResolved = Object.values(lineItemStates).every((s) => s !== "pending");
+  const hasAnyRejection = Object.values(lineItemStates).some((s) => s === "rejected");
 
   // "Going against finding" state — needs reason popup
   const [reasonPopup, setReasonPopup] = useState<{ itemCode: string; action: "accept" | "reject" } | null>(null);
@@ -1027,9 +1039,11 @@ function Ex006Page() {
       setReasonPopup({ itemCode, action });
       setReasonNote("");
     } else {
-      // Accept — original logic
+      // Accept — itemCode may be composite "STE-4821-A:price"
       setLineItemStates((prev) => ({ ...prev, [itemCode]: "accepted" }));
-      showToast(`Line item ${itemCode} accepted — no discrepancy noted`, "success");
+      const displayCode = itemCode.includes(":") ? itemCode.split(":")[0] : itemCode;
+      const flagLabel = itemCode.includes(":") ? ` (${itemCode.split(":")[1]})` : "";
+      showToast(`${displayCode}${flagLabel} — finding accepted`, "success");
     }
   };
 
@@ -1105,7 +1119,7 @@ function Ex006Page() {
             lineItemStates={lineItemStates}
             onAccept={handleAccept}
             onReject={handleRejectOpen}
-            onUndo={(code) => setLineItemStates((prev) => ({ ...prev, [code]: "pending" }))}
+            onUndo={(compositeKey) => setLineItemStates((prev) => ({ ...prev, [compositeKey]: "pending" }))}
           />
 
           <Card className="mt-3 gap-0 py-0">
