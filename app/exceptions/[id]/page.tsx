@@ -219,30 +219,31 @@ function DocumentRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className={`relative py-2 ${withBorder ? "border-b border-border" : ""}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <FileText className="size-3 shrink-0 text-muted-foreground" />
-          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-muted-foreground">
-            {label}
-          </span>
-          {changed && (
-            <span className="ml-1 text-[9px] font-medium text-primary">changed</span>
-          )}
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-primary no-underline hover:underline"
-          >
-            Open
-            <ExternalLink className="size-2.5" />
-          </a>
+    <div className={`relative py-2.5 ${withBorder ? "border-b border-border" : ""}`}>
+      {/* Row 1: icon + filename + open link */}
+      <div className="flex items-center gap-1.5">
+        <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+          {label}
+        </span>
+        {changed && (
+          <span className="shrink-0 rounded bg-primary/10 px-1 py-0.5 text-[9px] font-medium text-primary">changed</span>
+        )}
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-1 inline-flex shrink-0 items-center gap-0.5 text-[10px] text-primary no-underline hover:underline"
+        >
+          <ExternalLink className="size-2.5" />
+        </a>
+      </div>
+      {/* Row 2: select dropdown (if provided) */}
+      {children && (
+        <div className="mt-1.5 pl-5">
           {children}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -1249,10 +1250,10 @@ function Ex006Page() {
                   >
                     <SelectTrigger
                       size="sm"
-                      className="h-6 border-none bg-transparent px-1 text-[11px] text-muted-foreground shadow-none hover:text-foreground"
+                      className="h-7 w-full rounded border-border bg-muted/50 px-2 text-[10px] text-muted-foreground shadow-none hover:bg-muted"
                       aria-label={`Change ${doc.label}`}
                     >
-                      <SelectValue placeholder="Change" />
+                      <SelectValue placeholder="Switch document…" />
                     </SelectTrigger>
                     <SelectContent>
                       {alts.map((alt) => (
